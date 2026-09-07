@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Fasilitas - RSUD Bandung Kiwari</title>
+    <title>Sistem Manajemen Fasilitas - Diklat RSUD Bandung Kiwari</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -29,8 +29,8 @@
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="showMenu()">
                 <i class="fas fa-hospital text-2xl"></i>
-                <h1 class="text-xl font-bold hidden sm:block">RSUD Bandung Kiwari - Fasilitas</h1>
-                <h1 class="text-xl font-bold sm:hidden">Fasilitas RSUD</h1>
+                <h1 class="text-xl font-bold hidden sm:block">Diklat RSUD Bandung Kiwari - Fasilitas</h1>
+                <h1 class="text-xl font-bold sm:hidden">Fasilitas Diklat RSUD Bandung Kiwari</h1>
             </div>
             <div class="flex items-center space-x-4">
                 <button onclick="showMenu()" class="hover:text-blue-200 transition" title="Beranda">
@@ -739,6 +739,30 @@
                 Swal.fire('Gagal!', 'Terjadi kesalahan: ' + error.message, 'error');
             }
         }
+
+        // MENANGKAP LEMPARAN TIKET DARI DASHBOARD
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cek apakah ada tiket di memori lokal
+            const savedTicket = localStorage.getItem('pendingMaintenanceTicket');
+            
+            if (savedTicket) {
+                try {
+                    const ticketObj = JSON.parse(savedTicket);
+                    
+                    // Bersihkan memori agar form tidak terus-terusan terbuka saat di-refresh
+                    localStorage.removeItem('pendingMaintenanceTicket');
+                    
+                    // Panggil fungsi openUpdateForm milik Anda
+                    // Beri delay sedikit agar animasi DOM lancar
+                    setTimeout(() => {
+                        openUpdateForm(ticketObj);
+                    }, 500);
+
+                } catch (e) {
+                    console.error("Gagal membaca tiket dari dashboard:", e);
+                }
+            }
+        });
     </script>
 </body>
 </html>
