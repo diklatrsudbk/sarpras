@@ -1002,12 +1002,61 @@
                                     } else if (menuId === 'survey_pd') {
                                         // (Survey tetap sama)
                                     } else {
-                                        // Maintenance (Tetap sama)
+                                        // ==========================================
+                                        // DATA MAINTENANCE
+                                        // ==========================================
+                                        let target = row[2] || '-';
+                                        let jenis = row[3] || '-';
+                                        let namaFasilitas = row[4] || '-';
+                                        let status = row[5] || 'Pending';
+                                        let tindakan = row[6] || '-';
+                                        
+                                        // 1. Pewarnaan Status Cerdas
+                                        let badgeColor = "bg-gray-100 text-gray-700";
+                                        let statusUpper = String(status).toUpperCase();
+                                        if (statusUpper.includes('SELESAI')) badgeColor = "bg-green-100 text-green-700";
+                                        else if (statusUpper.includes('PROSES')) badgeColor = "bg-blue-100 text-blue-700";
+                                        else if (statusUpper.includes('PENDING') || statusUpper.includes('BELUM')) badgeColor = "bg-red-100 text-red-700";
+                                        let badgeStatus = `<span class="px-2 py-1 text-[10px] font-bold rounded-full ${badgeColor}">${status}</span>`;
+                                        
+                                        // 2. Foto Before & After
+                                        let fotoBef = (row[7] && String(row[7]).includes('http')) ? `<a href="${row[7]}" target="_blank" class="text-yellow-500 hover:underline" title="Foto Sebelum"><i class="fas fa-image"></i></a>` : '-';
+                                        let fotoAft = (row[8] && String(row[8]).includes('http')) ? `<a href="${row[8]}" target="_blank" class="text-green-500 hover:underline" title="Foto Sesudah"><i class="fas fa-image"></i></a>` : '-';
+                                        
+                                        let ket = row[9] || '-';
+                                        let petugas = row[10] || '-';
+                                        let ttd = (row[11] && String(row[11]).includes('http')) ? `<a href="${row[11]}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
+
+                                        // 3. Paket Data JSON untuk dilempar ke maintenance.html
+                                        let ticketObj = {
+                                            row: i + 2,
+                                            target: target,
+                                            nama: namaFasilitas,
+                                            datetime: row[1] || '-',
+                                            keterangan: ket,
+                                            fotoBefore: row[7] || ''
+                                        };
+                                        let ticketJson = JSON.stringify(ticketObj).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+
+                                        // 4. Tombol Tindak Lanjuti & Hapus
+                                        let btnUpdate = `<button onclick='lemparKeMaintenance(${ticketJson})' class="text-indigo-500 hover:text-indigo-700 px-1" title="Tindak Lanjuti (Update Status)"><i class="fas fa-edit"></i></button>`;
+                                        let btnDel = `<button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700 px-1" title="Hapus Data"><i class="fas fa-trash"></i></button>`;
+
+                                        // 5. Render Baris
+                                        tr += `<td class="px-4 py-3 font-medium text-gray-700">${target}</td>`;
+                                        tr += `<td class="px-4 py-3 text-xs">${jenis}</td>`;
+                                        tr += `<td class="px-4 py-3 font-bold text-gray-900 dark:text-gray-100">${namaFasilitas}</td>`;
+                                        tr += `<td class="px-4 py-3 text-center">${badgeStatus}</td>`;
+                                        tr += `<td class="px-4 py-3 truncate max-w-[150px]" title="${tindakan}">${tindakan}</td>`;
+                                        tr += `<td class="px-4 py-3 text-center">${fotoBef}</td><td class="px-4 py-3 text-center">${fotoAft}</td>`;
+                                        tr += `<td class="px-4 py-3 min-w-[150px] whitespace-normal italic text-gray-500 leading-tight">${ket}</td>`;
+                                        tr += `<td class="px-4 py-3 text-xs font-semibold">${petugas}</td>`;
+                                        tr += `<td class="px-4 py-3 text-center">${ttd}</td>`;
+                                        
+                                        // Ganti tombol Hapus bawaan dengan tombol Update + Hapus
+                                        return tr + `<td class="px-4 py-3 text-center whitespace-nowrap">${btnUpdate} ${btnDel}</td></tr>`;
                                     }
                                     
-                                    tr += `<td class="px-4 py-3 text-center">
-                                        <button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700" title="Hapus Data"><i class="fas fa-trash"></i></button>
-                                    </td></tr>`;
                                     return tr;
                                 }).join('')}
                             </tbody>
@@ -1325,8 +1374,15 @@
                             </div>
                         </div>
                         <div class="flex space-x-2 w-full sm:w-auto justify-end">
+                            
                             <button onclick="loadContent('${menuId}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sync-alt"></i></button>
                             <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" title="Buka Spreadsheet"><i class="fas fa-file-excel"></i></a>
+                            
+                            <!-- Tombol Add Sarpras Baru -->
+                            <a href="form_sarpras.html" target="_blank" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                                <i class="fas fa-external-link-alt mr-1"></i> Add Sarpras
+                            </a>
+                            
                             <button onclick="showDialogForm('${menuId}', 'add')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</button>
                         </div>
                     </div>
@@ -1941,6 +1997,15 @@
             initTheme();
             checkAuth(); 
         });
+
+
+        // FUNGSI MELEMPAR TIKET KE HALAMAN MAINTENANCE
+        window.lemparKeMaintenance = function(ticket) {
+            // Simpan data tiket ke memori sementara browser
+            localStorage.setItem('pendingMaintenanceTicket', JSON.stringify(ticket));
+            // Buka tab baru ke halaman form maintenance
+            window.open('maintenance.html', '_blank');
+        };
     </script>
 </body>
 </html>
