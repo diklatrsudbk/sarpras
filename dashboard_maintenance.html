@@ -59,7 +59,7 @@
             <!-- Tabs Navigation -->
             <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                 <button onclick="switchTab('ringkasan')" id="tab-ringkasan" class="tab-btn active px-6 py-4 font-semibold text-purple-600 border-b-2 border-purple-600 whitespace-nowrap transition-colors">
-                    <i class="fas fa-chart-pie mr-2"></i>Ringkasan & KPI
+                    <i class="fas fa-chart-pie mr-2"></i>Dashboard
                 </button>
                 <button onclick="switchTab('ruangan')" id="tab-ruangan" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap transition-colors">
                     <i class="fas fa-door-open mr-2"></i>Pengecekan Ruangan
@@ -255,6 +255,9 @@
         function processRingkasanData(dataRuangan, dataBarang, dataMaint) {
             let monthlyData = {}; 
 
+            // Array Nama Bulan Indonesia
+            const namaBulanIndonesia = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
             // Fungsi ambil format "MM/YYYY" dari timestamp "dd/MM/yyyy - HH:mm"
             const getMonthYear = (dateString) => {
                 if(!dateString) return null;
@@ -279,7 +282,7 @@
                 if (period) { initMonth(period); monthlyData[period].barang++; }
             });
 
-            // Hitung Data Maintenance (Total Semua Laporan / Tiket di bulan tsb)
+            // Hitung Data Maintenance
             dataMaint.forEach(row => {
                 const period = getMonthYear(Object.values(row)[1] || Object.values(row)[0]);
                 if (period) { initMonth(period); monthlyData[period].maintenance++; }
@@ -297,6 +300,9 @@
             const tbody = document.getElementById('tbody-kpi');
             tbody.innerHTML = '';
 
+            // Siapkan array untuk label Chart agar ikut jadi "Januari 2026"
+            const chartLabels = [];
+
             if(sortedPeriods.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Belum ada data bulan apa pun.</td></tr>`;
             } else {
@@ -307,12 +313,16 @@
                     let pctRuangan = ((d.ruangan / targetRuangan) * 100).toFixed(1);
                     let pctBarang = ((d.barang / targetBarang) * 100).toFixed(1);
 
-                    // Mewarnai teks persentase (Hijau jika tercapai/100%, Merah jika belum)
                     const classPctR = pctRuangan >= 100 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-semibold';
                     const classPctB = pctBarang >= 100 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-semibold';
 
-                    // Convert "09/2026" jadi "Bulan 09 - 2026"
-                    const namaBulan = `Bulan ${period.split('/')[0]} Tahun ${period.split('/')[1]}`;
+                    // === UBAH "09/2026" MENJADI "September 2026" ===
+                    const monthIndex = parseInt(period.split('/')[0], 10) - 1; // 09 jadi angka 8
+                    const year = period.split('/')[1];
+                    const namaBulan = `${namaBulanIndonesia[monthIndex]} ${year}`; 
+                    
+                    // Masukkan ke array label Chart
+                    chartLabels.push(namaBulan);
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
@@ -333,7 +343,8 @@
             const dataB = sortedPeriods.map(p => monthlyData[p].barang);
             const dataM = sortedPeriods.map(p => monthlyData[p].maintenance);
 
-            renderCharts(sortedPeriods, dataR, dataB, dataM);
+            // Kirim chartLabels (yang sudah bahasa Indonesia) ke fungsi renderCharts
+            renderCharts(chartLabels, dataR, dataB, dataM);
         }
 
         function renderCharts(labels, dataR, dataB, dataM) {
