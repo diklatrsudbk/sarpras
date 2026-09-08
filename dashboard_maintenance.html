@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Laporan - Diklat RSUD Bandung Kiwari</title>
+    
+    <!-- Library Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', }
+    </script>
+    
+    <!-- Library FontAwesome Icon & Chart.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { transition: background-color 0.3s, color 0.3s; }
+        .tab-content { display: none; animation: fadeIn 0.4s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar for tables */
+        .table-container::-webkit-scrollbar { height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark .table-container::-webkit-scrollbar-track { background: #374151; }
+        .dark .table-container::-webkit-scrollbar-thumb { background: #4b5563; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-blue-700 dark:bg-blue-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-chart-line text-2xl"></i>
+                <h1 class="text-xl font-bold hidden sm:block">Dashboard Laporan Fasilitas</h1>
+                <h1 class="text-xl font-bold sm:hidden">Laporan Fasilitas</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="window.location.reload()" class="hover:text-blue-200 transition" title="Refresh Data">
+                    <i class="fas fa-sync-alt text-lg"></i>
+                </button>
+                <button id="theme-toggle" class="hover:text-blue-200 transition p-2 rounded-full bg-blue-800 dark:bg-blue-800">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:inline"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+            
+            <!-- Tabs Navigation -->
+            <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <button onclick="switchTab('ringkasan')" id="tab-ringkasan" class="tab-btn active px-6 py-4 font-semibold text-purple-600 border-b-2 border-purple-600 whitespace-nowrap transition-colors">
+                    <i class="fas fa-chart-pie mr-2"></i>Ringkasan & KPI
+                </button>
+                <button onclick="switchTab('ruangan')" id="tab-ruangan" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap transition-colors">
+                    <i class="fas fa-door-open mr-2"></i>Pengecekan Ruangan
+                </button>
+                <button onclick="switchTab('barang')" id="tab-barang" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap transition-colors">
+                    <i class="fas fa-boxes mr-2"></i>Pengecekan Alat/Barang
+                </button>
+                <button onclick="switchTab('maintenance')" id="tab-maintenance" class="tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap transition-colors">
+                    <i class="fas fa-tools mr-2"></i>Laporan Maintenance
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6">
+                <!-- Loading State Spinner -->
+                <div id="loading-state" class="flex flex-col items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+                    <p class="text-gray-500 dark:text-gray-400 font-medium tracking-wide animate-pulse">Menghitung data dari spreadsheet...</p>
+                </div>
+
+                <!-- 1. VIEW RINGKASAN & KPI (DIREVISI TOTAL) -->
+                <div id="view-ringkasan" class="tab-content active">
+                    
+                    <!-- TABEL PENILAIAN ALL BULAN -->
+                    <div class="bg-white dark:bg-gray-800 p-2 md:p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mb-8">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4"><i class="fas fa-clipboard-check mr-2 text-purple-600"></i>Rekapitulasi Penilaian Target (Seluruh Bulan)</h3>
+                        <div class="table-container overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                    <tr>
+                                        <th rowspan="2" class="px-4 py-3 border-r dark:border-gray-600 align-middle text-center bg-gray-200 dark:bg-gray-800">Bulan & Tahun</th>
+                                        <th colspan="2" class="px-4 py-2 border-b border-r dark:border-gray-600 text-center bg-blue-100/50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">Target Ruangan (60x / Bulan)</th>
+                                        <th colspan="2" class="px-4 py-2 border-b dark:border-gray-600 text-center bg-teal-100/50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300">Target Alat/Barang (8x / Bulan)</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="px-4 py-2 border-r dark:border-gray-600 text-center bg-blue-50 dark:bg-blue-900/10">Tercapai</th>
+                                        <th class="px-4 py-2 border-r dark:border-gray-600 text-center bg-blue-50 dark:bg-blue-900/10">Persentase (%)</th>
+                                        <th class="px-4 py-2 border-r dark:border-gray-600 text-center bg-teal-50 dark:bg-teal-900/10">Tercapai</th>
+                                        <th class="px-4 py-2 text-center bg-teal-50 dark:bg-teal-900/10">Persentase (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-kpi" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    <!-- Di-generate via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 3 GRAFIK CHART TERPISAH (MEMBANDINGKAN TIAP BULAN) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Chart Ruangan -->
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h4 class="font-bold text-center text-blue-700 dark:text-blue-400 mb-4"><i class="fas fa-door-open mr-2"></i>Tren Ruangan</h4>
+                            <canvas id="chartRuangan"></canvas>
+                        </div>
+                        <!-- Chart Barang -->
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h4 class="font-bold text-center text-teal-700 dark:text-teal-400 mb-4"><i class="fas fa-boxes mr-2"></i>Tren Alat/Barang</h4>
+                            <canvas id="chartBarang"></canvas>
+                        </div>
+                        <!-- Chart Maintenance -->
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h4 class="font-bold text-center text-orange-700 dark:text-orange-400 mb-4"><i class="fas fa-tools mr-2"></i>Tren Maintenance</h4>
+                            <canvas id="chartMaintenance"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. VIEW TABEL RUANGAN -->
+                <div id="view-ruangan" class="tab-content table-container overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-3 rounded-tl-lg whitespace-nowrap">Waktu Pemeriksaan</th>
+                                <th class="px-4 py-3">Nama Ruangan</th>
+                                <th class="px-4 py-3">Kondisi Kebersihan</th>
+                                <th class="px-4 py-3">Kondisi Fungsi</th>
+                                <th class="px-4 py-3">Petugas</th>
+                                <th class="px-4 py-3 rounded-tr-lg text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-ruangan" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+
+                <!-- 3. VIEW TABEL BARANG -->
+                <div id="view-barang" class="tab-content table-container overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-3 rounded-tl-lg whitespace-nowrap">Waktu Pemeriksaan</th>
+                                <th class="px-4 py-3">Nama Alat/Barang</th>
+                                <th class="px-4 py-3 text-center">Kebersihan</th>
+                                <th class="px-4 py-3 text-center">Fungsi</th>
+                                <th class="px-4 py-3 text-center">Kelengkapan</th>
+                                <th class="px-4 py-3">Petugas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-barang" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+
+                <!-- 4. VIEW TABEL MAINTENANCE -->
+                <div id="view-maintenance" class="tab-content table-container overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-3 rounded-tl-lg whitespace-nowrap">Waktu Laporan</th>
+                                <th class="px-4 py-3">Target</th>
+                                <th class="px-4 py-3">Kendala</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Tindakan Lanjutan</th>
+                                <th class="px-4 py-3 rounded-tr-lg text-center">Dokumentasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-maintenance" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPT UTAMA LOGIKA DASHBOARD -->
+    <script>
+        // PASTIKAN MENGGANTI URL INI DENGAN URL DEPLOY ANDA
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOnJRxUBvXKHNTzJtaapVsaOdfZkh24JsBP7shST86dwxHHpIFNIF7VS0RohJYBvfgOQ/exec';
+
+        // 1. Inisiasi Dark Mode
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            if(chartR && chartB && chartM) fetchRingkasan(); // Refresh Chart Text Color on Toggle
+        });
+
+        // 2. Variabel Tab Global & Chart
+        let currentTab = 'ringkasan';
+        let chartR = null, chartB = null, chartM = null;
+        
+        // 3. Fungsi Navigasi Tab
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-6 py-4 font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap transition-colors";
+            });
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+
+            let activeColor = '';
+            if (tabName === 'ruangan') activeColor = 'text-blue-600 border-blue-600';
+            else if (tabName === 'barang') activeColor = 'text-teal-600 border-teal-600';
+            else if (tabName === 'maintenance') activeColor = 'text-orange-600 border-orange-600';
+            else if (tabName === 'ringkasan') activeColor = 'text-purple-600 border-purple-600';
+            
+            document.getElementById(`tab-${tabName}`).className = `tab-btn active px-6 py-4 font-semibold ${activeColor} border-b-2 whitespace-nowrap transition-colors`;
+            
+            if (tabName === 'ringkasan') {
+                fetchRingkasan();
+            } else {
+                fetchData(tabName);
+            }
+        }
+
+        // ==========================================
+        // LOGIKA REKAP SEMUA BULAN & 3 GRAFIK
+        // ==========================================
+        async function fetchRingkasan() {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.getElementById('loading-state').style.display = 'flex';
+
+            try {
+                // Fetch ketiganya (Ruangan, Barang, Maintenance) sekaligus dari Spreadsheet
+                const [resRuangan, resBarang, resMaint] = await Promise.all([
+                    fetch(`${SCRIPT_URL}?action=getReportRuangan`).then(r => r.json()),
+                    fetch(`${SCRIPT_URL}?action=getReportBarang`).then(r => r.json()),
+                    fetch(`${SCRIPT_URL}?action=getReportMaintenance`).then(r => r.json())
+                ]);
+
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('view-ringkasan').style.display = 'block';
+
+                if (resRuangan.status === 'success' && resBarang.status === 'success' && resMaint.status === 'success') {
+                    processRingkasanData(resRuangan.data, resBarang.data, resMaint.data);
+                } else {
+                    alert('Gagal mengambil data untuk ringkasan.');
+                }
+            } catch (error) {
+                document.getElementById('loading-state').style.display = 'none';
+                alert('Terjadi kesalahan jaringan (CORS/Time Out).');
+                console.error(error);
+            }
+        }
+
+        function processRingkasanData(dataRuangan, dataBarang, dataMaint) {
+            let monthlyData = {}; 
+
+            // Fungsi ambil format "MM/YYYY" dari timestamp "dd/MM/yyyy - HH:mm"
+            const getMonthYear = (dateString) => {
+                if(!dateString) return null;
+                const parts = dateString.split(' - ')[0].split('/');
+                if(parts.length === 3) return `${parts[1]}/${parts[2]}`;
+                return null;
+            };
+
+            const initMonth = (period) => {
+                if(!monthlyData[period]) monthlyData[period] = { ruangan: 0, barang: 0, maintenance: 0 };
+            };
+
+            // Hitung Data Ruangan
+            dataRuangan.forEach(row => {
+                const period = getMonthYear(Object.values(row)[1] || Object.values(row)[0]);
+                if (period) { initMonth(period); monthlyData[period].ruangan++; }
+            });
+
+            // Hitung Data Barang
+            dataBarang.forEach(row => {
+                const period = getMonthYear(Object.values(row)[1] || Object.values(row)[0]);
+                if (period) { initMonth(period); monthlyData[period].barang++; }
+            });
+
+            // Hitung Data Maintenance (Total Semua Laporan / Tiket di bulan tsb)
+            dataMaint.forEach(row => {
+                const period = getMonthYear(Object.values(row)[1] || Object.values(row)[0]);
+                if (period) { initMonth(period); monthlyData[period].maintenance++; }
+            });
+
+            // Urutkan Bulan dari yang paling lama ke paling baru (cth: 01/2026 -> 02/2026)
+            const sortedPeriods = Object.keys(monthlyData).sort((a,b) => {
+                const [mA, yA] = a.split('/'); const [mB, yB] = b.split('/');
+                return new Date(yA, mA-1) - new Date(yB, mB-1);
+            });
+
+            // === 1. RENDER TABEL KPI SEMUA BULAN ===
+            const targetRuangan = 60;
+            const targetBarang = 8;
+            const tbody = document.getElementById('tbody-kpi');
+            tbody.innerHTML = '';
+
+            if(sortedPeriods.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Belum ada data bulan apa pun.</td></tr>`;
+            } else {
+                sortedPeriods.forEach(period => {
+                    const d = monthlyData[period];
+                    
+                    // Hitung Penilaian
+                    let pctRuangan = ((d.ruangan / targetRuangan) * 100).toFixed(1);
+                    let pctBarang = ((d.barang / targetBarang) * 100).toFixed(1);
+
+                    // Mewarnai teks persentase (Hijau jika tercapai/100%, Merah jika belum)
+                    const classPctR = pctRuangan >= 100 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-semibold';
+                    const classPctB = pctBarang >= 100 ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 dark:text-red-400 font-semibold';
+
+                    // Convert "09/2026" jadi "Bulan 09 - 2026"
+                    const namaBulan = `Bulan ${period.split('/')[0]} Tahun ${period.split('/')[1]}`;
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 border-r dark:border-gray-600 text-center">${namaBulan}</td>
+                            
+                            <td class="px-4 py-3 text-center border-r dark:border-gray-600"><span class="font-bold text-blue-600 dark:text-blue-400">${d.ruangan}</span> <span class="text-xs text-gray-400">/ 60</span></td>
+                            <td class="px-4 py-3 text-center border-r dark:border-gray-600 ${classPctR}">${pctRuangan}%</td>
+                            
+                            <td class="px-4 py-3 text-center border-r dark:border-gray-600"><span class="font-bold text-teal-600 dark:text-teal-400">${d.barang}</span> <span class="text-xs text-gray-400">/ 8</span></td>
+                            <td class="px-4 py-3 text-center ${classPctB}">${pctBarang}%</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // === 2. RENDER 3 GRAFIK TERPISAH ===
+            const dataR = sortedPeriods.map(p => monthlyData[p].ruangan);
+            const dataB = sortedPeriods.map(p => monthlyData[p].barang);
+            const dataM = sortedPeriods.map(p => monthlyData[p].maintenance);
+
+            renderCharts(sortedPeriods, dataR, dataB, dataM);
+        }
+
+        function renderCharts(labels, dataR, dataB, dataM) {
+            // Hancurkan chart lama jika ada
+            if (chartR) chartR.destroy();
+            if (chartB) chartB.destroy();
+            if (chartM) chartM.destroy();
+            
+            // Konfigurasi umum
+            Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+            const commonOptions = {
+                responsive: true,
+                plugins: { legend: { display: false } }, // Menyembunyikan legend karena judul chart sudah jelas
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } // Angka Y dijamin bulat
+            };
+
+            // 1. Chart Ruangan (Biru)
+            chartR = new Chart(document.getElementById('chartRuangan').getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ data: dataR, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+                options: commonOptions
+            });
+
+            // 2. Chart Alat/Barang (Teal)
+            chartB = new Chart(document.getElementById('chartBarang').getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ data: dataB, backgroundColor: '#14b8a6', borderRadius: 4 }] },
+                options: commonOptions
+            });
+
+            // 3. Chart Maintenance (Orange)
+            chartM = new Chart(document.getElementById('chartMaintenance').getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ data: dataM, backgroundColor: '#f97316', borderRadius: 4 }] },
+                options: commonOptions
+            });
+        }
+        // ==========================================
+
+        // ==========================================
+        // LOGIKA PENARIKAN TABEL BIASA
+        // ==========================================
+        async function fetchData(type) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.getElementById('loading-state').style.display = 'flex';
+            
+            let action = '';
+            if (type === 'ruangan') action = 'getReportRuangan';
+            else if (type === 'barang') action = 'getReportBarang';
+            else if (type === 'maintenance') action = 'getReportMaintenance';
+
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=${action}`);
+                const result = await response.json();
+                
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById(`view-${type}`).style.display = 'block';
+
+                if (result.status === 'success') {
+                    renderTable(type, result.data);
+                } else {
+                    alert('Gagal mengambil data: ' + result.message);
+                }
+            } catch (error) {
+                document.getElementById('loading-state').style.display = 'none';
+                alert('Terjadi kesalahan jaringan.');
+            }
+        }
+
+        // FUNGSI INJEKSI BARIS TABEL HTML
+        function renderTable(type, data) {
+            const tbody = document.getElementById(`tbody-${type}`);
+            tbody.innerHTML = ''; 
+
+            if(!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500"><i class="fas fa-folder-open text-3xl mb-2 block"></i> Belum ada data pelaporan.</td></tr>`;
+                return;
+            }
+
+            data.forEach((row) => {
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors";
+                
+                const vals = Object.values(row); 
+                const tgl = vals[1] || vals[0]; 
+
+                if (type === 'ruangan') {
+                    const nama = vals[2];
+                    const kebersihan = `
+                        <div class="text-xs mb-1">Rgn: <span class="font-semibold ${getWarna(vals[3])}">${vals[3]}</span></div>
+                        <div class="text-xs mb-1">Tlt: <span class="font-semibold ${getWarna(vals[4])}">${vals[4]}</span></div>
+                        <div class="text-xs">Alat: <span class="font-semibold ${getWarna(vals[5])}">${vals[5]}</span></div>
+                    `;
+                    const fungsi = `
+                        <div class="text-xs mb-1">AC: <span class="font-semibold ${getWarna(vals[6])}">${vals[6]}</span></div>
+                        <div class="text-xs mb-1">Lampu: <span class="font-semibold ${getWarna(vals[8])}">${vals[8]}</span></div>
+                        <div class="text-xs">Pintu: <span class="font-semibold ${getWarna(vals[7])}">${vals[7]}</span></div>
+                    `;
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${tgl}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200">${nama}</td>
+                        <td class="px-4 py-3">${kebersihan}</td>
+                        <td class="px-4 py-3">${fungsi}</td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium">${vals[13]}</div>
+                            <div class="text-xs text-gray-500 italic max-w-xs truncate" title="${vals[12]}">Ket: ${vals[12] || '-'}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${vals[14] ? `<a href="${vals[14]}" target="_blank" class="text-blue-500 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 px-3 py-1 rounded-full transition-colors" title="Lihat TTD Petugas"><i class="fas fa-signature text-sm"></i></a>` : '-'}
+                        </td>
+                    `;
+                } 
+                else if (type === 'barang') {
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${tgl}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200">${vals[2]}</td>
+                        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(vals[3])}">${vals[3]}</span></td>
+                        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(vals[4])}">${vals[4]}</span></td>
+                        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(vals[5])}">${vals[5]}</span></td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium">${vals[7]}</div>
+                            <div class="text-xs text-gray-500 italic max-w-xs truncate">Ket: ${vals[6] || '-'}</div>
+                        </td>
+                    `;
+                }
+                else if (type === 'maintenance') {
+                    const target = `<span class="font-bold">${vals[2]}</span> - ${vals[4]}`;
+                    const status = vals[5];
+                    const statusClass = status.toLowerCase().includes('selesai') ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800' : 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800';
+                    
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${tgl}</td>
+                        <td class="px-4 py-3 text-gray-800 dark:text-gray-200">${target}<br><span class="text-xs font-normal text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1 py-0.5 rounded mt-1 inline-block">${vals[3]}</span></td>
+                        <td class="px-4 py-3 text-sm max-w-xs truncate" title="${vals[9]}"><span class="font-medium text-gray-800 dark:text-gray-200">${vals[9]}</span></td>
+                        <td class="px-4 py-3 text-center"><span class="px-2.5 py-1 text-xs font-bold rounded ${statusClass}">${status}</span></td>
+                        <td class="px-4 py-3 text-sm max-w-xs truncate" title="${vals[6]}">${vals[6] || '<span class="text-gray-400 italic">Menunggu tindak lanjut teknisi</span>'}</td>
+                        <td class="px-4 py-3 text-center space-x-2">
+                            ${vals[7] ? `<a href="${vals[7]}" target="_blank" class="text-orange-500 hover:text-orange-700 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/40 px-2 py-1 rounded transition-colors" title="Lihat Temuan/Kendala"><i class="fas fa-image"></i></a>` : ''}
+                            ${vals[8] ? `<a href="${vals[8]}" target="_blank" class="text-green-500 hover:text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/40 px-2 py-1 rounded transition-colors" title="Lihat Hasil Perbaikan"><i class="fas fa-check-square"></i></a>` : ''}
+                        </td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+        }
+
+        // FUNGSI UTILITY BANTUAN CSS/WARNA
+        function getWarna(val) {
+            if(!val) return '';
+            let v = val.toString().toLowerCase();
+            if(v === 'bersih' || v === 'berfungsi' || v === 'lengkap') return 'text-green-600 dark:text-green-400';
+            if(v === 'kotor' || v === 'rusak' || v === 'tidak lengkap') return 'text-red-600 dark:text-red-400';
+            return 'text-gray-500';
+        }
+
+        function getBadgeColor(val) {
+            if(!val) return 'bg-gray-100 text-gray-600';
+            let v = val.toString().toLowerCase();
+            if(v === 'bersih' || v === 'berfungsi' || v === 'lengkap') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800';
+            if(v === 'kotor' || v === 'rusak' || v === 'tidak lengkap') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800';
+            return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600';
+        }
+
+        // Eksekusi fungsi saat Halaman Awal Selesai Dimuat
+        window.onload = () => {
+            switchTab('ringkasan');
+        };
+    </script>
+</body>
+</html>
