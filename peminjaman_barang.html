@@ -37,64 +37,88 @@
             background-position: right 0.75rem center;
             background-size: 1em;
         }
-        /* Samarkan karakter PIN tanpa memicu peringatan browser 'Change password' */
         .secure-pin-input {
             -webkit-text-security: disc;
             letter-spacing: 0.3em;
+        }
+
+        /* Animasi Berkedip untuk Baris dengan Status Booking */
+        @keyframes blinkRow {
+            0%, 100% { background-color: rgba(14, 165, 233, 0.05); }
+            50% { background-color: rgba(14, 165, 233, 0.25); border-bottom-color: rgba(14, 165, 233, 0.3); }
+        }
+        .row-booking {
+            animation: blinkRow 2s ease-in-out infinite;
         }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-30">
+    <!-- HEADER: Warna soft (putih), Logo transparan tanpa kotak, dan Tombol Back -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3.5">
-                <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-10 w-auto object-contain bg-white/95 rounded-lg p-1 shadow-sm border border-white/20" onerror="this.classList.add('hidden'); document.getElementById('headerFallbackIcon').classList.remove('hidden');">
-                <i id="headerFallbackIcon" class="fa-solid fa-hospital text-2xl text-indigo-200 hidden"></i>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold tracking-wide leading-tight">Sistem Peminjaman Barang</h1>
-                    <p class="text-[11px] text-indigo-200 font-medium">RSUD Bandung Kiwari</p>
+            <div class="flex items-center">
+                <!-- Tombol Back -->
+                <button onclick="window.history.back()" class="mr-3 sm:mr-4 text-slate-400 hover:text-indigo-600 transition" title="Kembali">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </button>
+                <div class="flex items-center space-x-3.5">
+                    <!-- Logo PNG transparan -->
+                    <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-10 w-auto object-contain" onerror="this.classList.add('hidden'); document.getElementById('headerFallbackIcon').classList.remove('hidden');">
+                    <i id="headerFallbackIcon" class="fa-solid fa-hospital text-2xl text-indigo-500 hidden"></i>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold tracking-wide leading-tight text-slate-800">Sistem Peminjaman Barang</h1>
+                        <p class="text-[11px] text-slate-500 font-medium">RSUD Bandung Kiwari</p>
+                    </div>
                 </div>
             </div>
-            <button onclick="openModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md transition-all hover:scale-105 flex items-center gap-2 text-xs sm:text-sm">
-                <i class="fa-solid fa-plus-circle"></i> <span>Buat Peminjaman</span>
+            <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow transition-all hover:scale-105 flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-plus-circle"></i> <span class="hidden sm:inline">Buat Peminjaman</span><span class="sm:hidden">Buat</span>
             </button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <!-- CARD STATISTIK: Dipecah menjadi 4 Informasi Penting -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Peminjam Aktif</p>
-                    <h3 class="text-2xl font-bold text-indigo-700 mt-1" id="statActiveCount">0</h3>
-                    <p class="text-[11px] text-slate-400">Sedang dipinjam / Overdue</p>
+                    <p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Riwayat</p>
+                    <h3 class="text-xl sm:text-2xl font-bold text-slate-700 mt-1" id="cardTotal">0</h3>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-inner">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg shadow-inner">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Sedang Aktif</p>
+                    <h3 class="text-xl sm:text-2xl font-bold text-indigo-600 mt-1" id="cardActive">0</h3>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shadow-inner">
                     <i class="fa-solid fa-hand-holding-hand"></i>
                 </div>
             </div>
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Data Ditampilkan</p>
-                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="statDisplayedCount">0</h3>
-                    <p class="text-[11px] text-slate-400">Sesuai filter & pencarian</p>
+                    <p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Overdue</p>
+                    <h3 class="text-xl sm:text-2xl font-bold text-rose-600 mt-1" id="cardOverdue">0</h3>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shadow-inner">
-                    <i class="fa-solid fa-list-check"></i>
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shadow-inner">
+                    <i class="fa-solid fa-clock"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Riwayat Data</p>
-                    <h3 class="text-2xl font-bold text-slate-700 mt-1" id="statTotalCount">0</h3>
-                    <p class="text-[11px] text-slate-400">Seluruh data tercatat</p>
+                    <p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Request Baru</p>
+                    <h3 class="text-xl sm:text-2xl font-bold text-amber-500 mt-1" id="cardRequest">0</h3>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl shadow-inner">
-                    <i class="fa-solid fa-boxes-stacked"></i>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-inner">
+                    <i class="fa-solid fa-envelope-open-text"></i>
                 </div>
             </div>
         </div>
@@ -103,7 +127,7 @@
             <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <div class="relative w-full sm:w-64">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="filterTable()" placeholder="Cari data (nama, barang, ID)..." autocomplete="off" class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="Cari data (nama, barang)..." autocomplete="off" class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                 </div>
                 <select id="filterStatus" onchange="filterTable()" class="w-full sm:w-40 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 text-slate-600">
                     <option value="ALL">Semua Status</option>
@@ -122,8 +146,9 @@
             </div>
 
             <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-                <button onclick="loadTableData()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 border border-slate-300">
-                    <i class="fa-solid fa-rotate-right" id="reloadIcon"></i> Reload Data
+                <span class="text-xs text-slate-500 font-medium whitespace-nowrap hidden sm:inline-block">Menampilkan: <span id="textDisplayedCount" class="font-bold text-slate-700">0</span> baris</span>
+                <button onclick="loadTableData()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 border border-slate-300 shadow-sm">
+                    <i class="fa-solid fa-rotate-right" id="reloadIcon"></i> Reload
                 </button>
             </div>
         </div>
@@ -133,15 +158,17 @@
                 <table class="w-full text-left text-xs" id="dataTable">
                     <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
                         <tr>
-                            <th class="p-3.5 whitespace-nowrap">ID</th>
-                            <th class="p-3.5 whitespace-nowrap">Tanggal</th>
+                            <!-- Diperkecil & diganti menjadi No -->
+                            <th class="p-3.5 whitespace-nowrap w-12 text-center">No</th>
+                            <th class="p-3.5 whitespace-nowrap">Waktu Submit</th>
                             <th class="p-3.5">Nama Peminjam</th>
                             <th class="p-3.5">Institusi + Divisi</th>
                             <th class="p-3.5">Nama Barang</th>
                             <th class="p-3.5 text-center">QTY</th>
-                            <th class="p-3.5">Waktu</th>
+                            <th class="p-3.5">Jadwal Pakai</th>
                             <th class="p-3.5">No HP</th>
-                            <th class="p-3.5 text-center">Status</th>
+                            <!-- Kolom Status dilebarkan -->
+                            <th class="p-3.5 text-center min-w-[150px]">Status</th>
                             <th class="p-3.5 text-center min-w-[130px]">Aksi</th>
                         </tr>
                     </thead>
@@ -158,19 +185,29 @@
         </div>
     </main>
 
+    <!-- Modal Form (Pengajuan) -->
     <div id="modalForm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 overflow-hidden transform transition-all">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 overflow-hidden transform transition-all relative">
+            
+            <div id="formLoadingOverlay" class="absolute inset-0 bg-white/70 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center">
+                <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center border border-indigo-100">
+                    <i class="fa-solid fa-spinner fa-spin text-5xl text-indigo-600 mb-4"></i>
+                    <span class="font-bold text-slate-800 text-base">Sedang Memproses...</span>
+                    <span class="text-xs text-slate-500 mt-1">Harap tunggu dan jangan tutup halaman ini.</span>
+                </div>
+            </div>
             
             <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
                 <h2 class="text-base sm:text-lg font-bold flex items-center gap-2">
                     <i class="fa-solid fa-file-pen"></i> Form Pengajuan Peminjaman
                 </h2>
-                <button onclick="closeModal()" class="text-indigo-200 hover:text-white text-xl transition">
+                <button type="button" onclick="closeModal()" class="text-indigo-200 hover:text-white text-xl transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <form id="loanForm" onsubmit="submitForm(event)" class="p-6 md:p-8 space-y-8 max-h-[80vh] overflow-y-auto">
+            <!-- Di sini id="loanForm" diatur agar bisa di scroll dan akan di-reset (scroll top) saat terbuka -->
+            <form id="loanForm" onsubmit="submitForm(event)" class="p-6 md:p-8 space-y-8 max-h-[80vh] overflow-y-auto scroll-smooth">
                 <div>
                     <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-indigo-100 pb-2">
                         <i class="fa-solid fa-user-gear"></i> Identitas Peminjam
@@ -359,6 +396,7 @@
         </div>
     </div>
 
+    <!-- Modal Admin Auth -->
     <div id="modalAdminAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">
             <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
@@ -376,11 +414,31 @@
         </div>
     </div>
 
+    <!-- Modal Batal Peminjaman -->
+    <div id="modalCancel" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-ban"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 mb-1">Batalkan Peminjaman</h3>
+            <p class="text-xs text-slate-500 mb-4">Harap masukkan alasan pembatalan di bawah ini.</p>
+            
+            <input type="hidden" id="cancelId">
+            <textarea id="cancelCatatan" rows="3" placeholder="Alasan pembatalan (wajib diisi)..." class="w-full p-3 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-rose-500 outline-none mb-4"></textarea>
+            
+            <div class="flex gap-2.5">
+                <button type="button" onclick="closeCancelModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-slate-50 transition">Kembali</button>
+                <button type="button" onclick="processCancel()" id="btnProsesCancel" class="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-2">Batalkan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Return -->
     <div id="modalReturn" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
             <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center">
                 <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-clipboard-check"></i> Proses Pengembalian</h2>
-                <button onclick="closeReturnModal()" class="text-teal-200 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeReturnModal()" class="text-teal-200 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="formReturn" onsubmit="submitReturn(event)" class="p-6 space-y-4">
                 <input type="hidden" id="returnID">
@@ -415,9 +473,36 @@
         </div>
     </div>
 
+    <!-- ================= CUSTOM ALERT & CONFIRM MODALS ================= -->
+    <div id="customModalAlert" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center transform transition-all duration-200 scale-95 opacity-0" id="customAlertContent">
+            <div id="customAlertIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i id="customAlertIcon" class="fa-solid fa-circle-info"></i>
+            </div>
+            <h3 id="customAlertTitle" class="text-lg font-bold text-slate-800 mb-2">Informasi</h3>
+            <p id="customAlertMessage" class="text-sm text-slate-600 mb-6 leading-relaxed">Pesan alert di sini.</p>
+            <button id="btnCustomAlertOk" class="w-full py-2.5 rounded-xl text-white font-semibold shadow-md transition">OK, Mengerti</button>
+        </div>
+    </div>
+
+    <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 border border-slate-100 text-center transform transition-all duration-200 scale-95 opacity-0" id="customConfirmContent">
+            <div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i id="customConfirmIcon" class="fa-solid fa-circle-question"></i>
+            </div>
+            <h3 id="customConfirmTitle" class="text-lg font-bold text-slate-800 mb-2">Konfirmasi</h3>
+            <p id="customConfirmMessage" class="text-sm text-slate-600 mb-6 leading-relaxed">Pesan konfirmasi di sini.</p>
+            <div class="flex gap-3">
+                <button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button>
+                <button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+    <!-- ================= END CUSTOM MODALS ================= -->
+
     <script>
         // URL Google Apps Script Web App
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxEGZUOv4c7eb8er7CGsCAEOZKYdRrcwKI-rwlR4fodg_r3cy66jG0QP77a2RsDXqS1TA/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzJbHS9NBZ8WQnHKm9uiMsUSuIXg0epdD-SReHcOjmMdp5a3kubh04JF2zNK8vABqII8g/exec";
 
         let canvas, ctx, isDrawing = false;
         let dummyData = [];
@@ -430,6 +515,97 @@
         let pendingAdminAction = null;
         const ADMIN_PASS = "admin"; // PIN Admin
 
+        let searchTimeout = null;
+
+        // --- SISTEM CUSTOM DIALOG ---
+        function customAlert(message, title = "Informasi", type = "info") {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModalAlert');
+                const content = document.getElementById('customAlertContent');
+                const titleEl = document.getElementById('customAlertTitle');
+                const msgEl = document.getElementById('customAlertMessage');
+                const iconBox = document.getElementById('customAlertIconBox');
+                const iconEl = document.getElementById('customAlertIcon');
+                const btnOk = document.getElementById('btnCustomAlertOk');
+
+                titleEl.innerText = title;
+                msgEl.innerHTML = message.replace(/\n/g, '<br>');
+
+                iconBox.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl";
+                btnOk.className = "w-full py-2.5 rounded-xl text-white font-semibold shadow-md transition";
+
+                if (type === 'success') {
+                    iconBox.classList.add('bg-emerald-100', 'text-emerald-600');
+                    btnOk.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    iconEl.className = 'fa-solid fa-circle-check';
+                } else if (type === 'error') {
+                    iconBox.classList.add('bg-rose-100', 'text-rose-600');
+                    btnOk.classList.add('bg-rose-600', 'hover:bg-rose-700');
+                    iconEl.className = 'fa-solid fa-circle-xmark';
+                } else if (type === 'warning') {
+                    iconBox.classList.add('bg-amber-100', 'text-amber-600');
+                    btnOk.classList.add('bg-amber-600', 'hover:bg-amber-700');
+                    iconEl.className = 'fa-solid fa-triangle-exclamation';
+                } else {
+                    iconBox.classList.add('bg-indigo-100', 'text-indigo-600');
+                    btnOk.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    iconEl.className = 'fa-solid fa-circle-info';
+                }
+
+                modal.classList.remove('hidden');
+                setTimeout(() => content.classList.remove('scale-95', 'opacity-0'), 10);
+
+                btnOk.onclick = () => {
+                    content.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => { modal.classList.add('hidden'); resolve(); }, 200);
+                };
+            });
+        }
+
+        function customConfirm(message, title = "Konfirmasi", type = "warning") {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModalConfirm');
+                const content = document.getElementById('customConfirmContent');
+                const titleEl = document.getElementById('customConfirmTitle');
+                const msgEl = document.getElementById('customConfirmMessage');
+                const iconBox = document.getElementById('customConfirmIconBox');
+                const iconEl = document.getElementById('customConfirmIcon');
+                const btnOk = document.getElementById('btnCustomConfirmOk');
+                const btnCancel = document.getElementById('btnCustomConfirmCancel');
+
+                titleEl.innerText = title;
+                msgEl.innerHTML = message.replace(/\n/g, '<br>');
+
+                iconBox.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl";
+                btnOk.className = "w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition";
+
+                if (type === 'danger') {
+                    iconBox.classList.add('bg-rose-100', 'text-rose-600');
+                    btnOk.classList.add('bg-rose-600', 'hover:bg-rose-700');
+                    iconEl.className = 'fa-solid fa-triangle-exclamation';
+                } else if (type === 'info') {
+                    iconBox.classList.add('bg-indigo-100', 'text-indigo-600');
+                    btnOk.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    iconEl.className = 'fa-solid fa-circle-question';
+                } else {
+                    iconBox.classList.add('bg-amber-100', 'text-amber-600');
+                    btnOk.classList.add('bg-amber-600', 'hover:bg-amber-700');
+                    iconEl.className = 'fa-solid fa-circle-exclamation';
+                }
+
+                modal.classList.remove('hidden');
+                setTimeout(() => content.classList.remove('scale-95', 'opacity-0'), 10);
+
+                const close = (result) => {
+                    content.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => { modal.classList.add('hidden'); resolve(result); }, 200);
+                };
+
+                btnOk.onclick = () => close(true);
+                btnCancel.onclick = () => close(false);
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             initCanvas();
             setMinDateTime();
@@ -437,7 +613,6 @@
             loadTableData();
         });
 
-        // Load Data dari Spreadsheet
         async function loadTableData() {
             const icon = document.getElementById('reloadIcon');
             if(icon) icon.classList.add('fa-spin');
@@ -448,7 +623,6 @@
                 dummyData = (Array.isArray(data) && data.length > 0) ? data : [];
                 renderTable();
             } catch (err) {
-                console.error("Gagal memuat data:", err);
                 const tbody = document.getElementById('tableBody');
                 tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet.</td></tr>`;
             } finally {
@@ -456,18 +630,39 @@
             }
         }
 
-        // Render Tabel & Perbarui Statistik Ringkasan
+        function handleSearchInput() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterTable();
+            }, 300);
+        }
+
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
             const unitFilter = document.getElementById('filterUnit').value;
 
-            // 1. Hitung Total Peminjam Aktif (Sedang Dipinjam / Overdue)
-            const activeCount = dummyData.filter(item => {
-                return item.STATUS === 'Sedang Dipinjam' || item.STATUS === 'Overdue';
-            }).length;
+            // Update Panel Card (4 Status)
+            let countActive = 0, countOverdue = 0, countRequest = 0;
+            
+            dummyData.forEach(item => {
+                let actualStatus = item.STATUS;
+                if (actualStatus === 'Sedang Dipinjam') {
+                    const diffHours = (new Date() - new Date(item.TGL_KEMBALI)) / (1000 * 60 * 60);
+                    if (diffHours > 3) actualStatus = 'Overdue';
+                }
+                if (actualStatus === 'Sedang Dipinjam') countActive++;
+                if (actualStatus === 'Overdue') countOverdue++;
+                if (actualStatus === 'Request') countRequest++;
+            });
 
+            document.getElementById('cardTotal').innerText = dummyData.length;
+            document.getElementById('cardActive').innerText = countActive;
+            document.getElementById('cardOverdue').innerText = countOverdue;
+            document.getElementById('cardRequest').innerText = countRequest;
+
+            // Filter Tabel
             let filteredData = dummyData.filter(item => {
                 const nama = String(item.NAMA_PEMINJAM || "");
                 const barang = String(item.NAMA_BARANG || "");
@@ -487,17 +682,14 @@
                 return textMatch && unitMatch && statusMatch;
             });
 
-            // 2. Perbarui Kartu Ringkasan Metrik
-            document.getElementById('statActiveCount').innerText = activeCount;
-            document.getElementById('statDisplayedCount').innerText = filteredData.length;
-            document.getElementById('statTotalCount').innerText = dummyData.length;
+            document.getElementById('textDisplayedCount').innerText = filteredData.length;
 
             if (filteredData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" class="p-10 text-center text-slate-400"><i class="fa-solid fa-folder-open text-3xl mb-2 block opacity-40"></i> Tidak ada data peminjaman yang cocok.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = filteredData.map(item => {
+            tbody.innerHTML = filteredData.map((item, index) => {
                 let displayStatus = item.STATUS;
                 let isOverdue = false;
                 if (item.STATUS === 'Sedang Dipinjam') {
@@ -508,7 +700,6 @@
                     }
                 }
 
-                // Tautan WhatsApp
                 const noHpSafe = item.NO_HP || "";
                 let waNumber = String(noHpSafe).replace(/\D/g, ''); 
                 if(waNumber.startsWith('0')) waNumber = '62' + waNumber.substring(1);
@@ -518,11 +709,16 @@
                 const waReminderLink = `https://wa.me/${waNumber}?text=${waReminderText}`;
                 const waDirectLink = `https://wa.me/${waNumber}`;
 
+                // Atur styling baris. Berkedip jika status = 'Booking'
+                let rowClass = "hover:bg-indigo-50/40 transition border-b border-slate-100";
+                if (displayStatus === 'Booking') rowClass += " row-booking";
+                if (isOverdue) rowClass += " bg-rose-50/40";
+
                 return `
-                <tr class="hover:bg-indigo-50/40 transition border-b border-slate-100 ${isOverdue ? 'bg-rose-50/40' : ''}">
-                    <td class="p-3.5 font-mono font-semibold text-slate-600 text-xs">${item.ID}</td>
+                <tr class="${rowClass}">
+                    <td class="p-3.5 text-center font-mono font-semibold text-slate-600 text-xs">${index + 1}</td>
                     
-                    <td class="p-3.5 text-slate-600 text-xs whitespace-nowrap">${item.TANGGAL}</td>
+                    <td class="p-3.5 text-slate-600 text-xs whitespace-nowrap">${item.TIMESTAMPT || item.TANGGAL}</td>
                     
                     <td class="p-3.5">
                         <span class="font-semibold text-slate-800 block">${item.NAMA_PEMINJAM || '-'}</span>
@@ -572,7 +768,6 @@
             }).join('');
         }
 
-        // Render Tombol Aksi Admin (+ Tombol Hapus)
         function renderActionButtons(id, status, isOverdue, waLink) {
             let btns = '';
             const s = String(status).trim();
@@ -580,30 +775,27 @@
             if (s === 'Request') {
                 btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Booking'))" class="bg-sky-500 hover:bg-sky-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-calendar-check"></i> Acc Booking</button>`;
                 btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Sedang Dipinjam'))" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-hand-holding-hand"></i> Acc Pinjam</button>`;
-                btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Cancel'))" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+                btns += `<button onclick="openCancelModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
             } 
             else if (s === 'Booking') {
                 btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Sedang Dipinjam'))" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-hand-holding-hand"></i> Serahkan Barang</button>`;
-                btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Cancel'))" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+                btns += `<button onclick="openCancelModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
             }
             else if (s === 'Sedang Dipinjam' || s === 'Overdue') {
                 if(isOverdue) {
                     btns += `<a href="${waLink}" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA</a>`;
                 }
-                btns += `<button onclick="requireAdmin(() => openReturnModal('${id}', 'Selesai'))" class="bg-teal-500 hover:bg-teal-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-check-double"></i> Selesai (Normal)</button>`;
-                btns += `<button onclick="requireAdmin(() => openReturnModal('${id}', 'Selesai tapi Rusak/Hilang'))" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-triangle-exclamation"></i> Rusak / Hilang</button>`;
-                btns += `<button onclick="requireAdmin(() => updateStatus('${id}', 'Cancel'))" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+                btns += `<button onclick="openReturnModal('${id}', 'Selesai')" class="bg-teal-500 hover:bg-teal-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-check-double"></i> Selesai (Normal)</button>`;
+                btns += `<button onclick="openReturnModal('${id}', 'Selesai tapi Rusak/Hilang')" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition"><i class="fa-solid fa-triangle-exclamation"></i> Rusak / Hilang</button>`;
             } else {
                 btns += `<span class="text-slate-400 text-[11px] italic font-medium w-full text-center block mb-1">Done (${s})</span>`;
             }
 
-            // Tombol Hapus (Tersedia untuk semua status, dilindungi otorisasi admin)
             btns += `<button onclick="requireAdmin(() => deleteRecord('${id}'))" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold w-full transition mt-1"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
 
             return btns;
         }
 
-        // Status Badge Style
         function getStatusBadge(status) {
             const s = String(status).trim();
             const map = {
@@ -617,12 +809,20 @@
             };
             const cls = map[s] || 'bg-slate-100 text-slate-600 border-slate-300';
             const icon = s === 'Overdue' ? '<i class="fa-solid fa-clock mr-1"></i>' : '';
-            return `<span class="px-2 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase border inline-block ${cls}">${icon}${s}</span>`;
+            
+            let badgeHtml = `<span class="px-2 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase border inline-block ${cls}">${icon}${s}</span>`;
+            
+            // Catatan dibungkus lebar (whitespace-normal) jika Booking
+            if (s === 'Booking') {
+                badgeHtml += `<div class="text-[9px] text-sky-600 mt-1.5 whitespace-normal leading-tight font-medium animate-pulse">Segera kontak admin untuk pengambilan barang</div>`;
+            }
+
+            return badgeHtml;
         }
 
-        // --- SISTEM HAPUS DATA ---
         async function deleteRecord(id) {
-            if (!confirm(`Yakin ingin MENGHAPUS data dengan ID: ${id}?\nTindakan ini akan menghapus baris dari Spreadsheet.`)) return;
+            const isConfirmed = await customConfirm(`Yakin ingin MENGHAPUS data dengan ID: ${id}?\nTindakan ini akan menghapus baris dari Spreadsheet selamanya.`, "Hapus Data", "danger");
+            if (!isConfirmed) return;
 
             const prevData = [...dummyData];
             dummyData = dummyData.filter(d => String(d.ID).trim() !== String(id).trim());
@@ -635,16 +835,47 @@
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({ action: 'deleteRecord', ID: id })
                 });
-                alert(`Data ${id} berhasil dihapus!`);
+                await customAlert(`Data berhasil dihapus!`, "Berhasil", "success");
             } catch (err) {
-                console.error("Gagal menghapus:", err);
                 dummyData = prevData;
                 renderTable();
-                alert("Terjadi kesalahan jaringan saat menghapus data.");
+                await customAlert("Terjadi kesalahan jaringan saat menghapus data.", "Gagal", "error");
             }
         }
 
-        // --- SISTEM OTORISASI PIN ADMIN ---
+        function openCancelModal(id) {
+            document.getElementById('modalCancel').classList.remove('hidden');
+            document.getElementById('cancelId').value = id;
+            document.getElementById('cancelCatatan').value = '';
+        }
+
+        function closeCancelModal() {
+            document.getElementById('modalCancel').classList.add('hidden');
+        }
+
+        async function processCancel() {
+            const id = document.getElementById('cancelId').value;
+            const catatan = document.getElementById('cancelCatatan').value.trim();
+            
+            if(!catatan) {
+                await customAlert("Alasan pembatalan wajib diisi!", "Peringatan", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('btnProsesCancel');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses...`;
+
+            try {
+                await updateStatus(id, 'Cancel', catatan);
+                closeCancelModal();
+            } catch (error) {
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Batalkan Data`;
+            }
+        }
+
         function requireAdmin(actionCallback) {
             pendingAdminAction = actionCallback;
             document.getElementById('modalAdminAuth').classList.remove('hidden');
@@ -662,7 +893,7 @@
             if (e.key === 'Enter') verifyAdmin();
         }
 
-        function verifyAdmin() {
+        async function verifyAdmin() {
             const pass = document.getElementById('adminPassword').value;
             if (pass === ADMIN_PASS) {
                 document.getElementById('modalAdminAuth').classList.add('hidden');
@@ -670,14 +901,13 @@
                 pendingAdminAction = null;
                 if (actionToRun) actionToRun();
             } else {
-                alert("PIN Admin Salah!");
+                await customAlert("PIN Admin Salah!", "Akses Ditolak", "error");
                 document.getElementById('adminPassword').value = '';
                 document.getElementById('adminPassword').focus();
             }
         }
 
-        // --- UPDATE STATUS KE BACKEND ---
-        async function updateStatus(id, newStatus) {
+        async function updateStatus(id, newStatus, catatan = "") {
             const index = dummyData.findIndex(d => String(d.ID).trim() === String(id).trim());
             let oldStatus = "";
             if (index > -1) {
@@ -695,21 +925,21 @@
                         action: 'updateStatus',
                         ID: id,
                         STATUS: newStatus,
-                        CATATAN: "",
+                        CATATAN: catatan, 
                         BUKTI_FOTO: null
                     })
                 });
-                alert(`Status transaksi ${id} berhasil diubah menjadi: ${newStatus}`);
+                await customAlert(`Status transaksi berhasil diubah menjadi: ${newStatus}`, "Berhasil", "success");
             } catch (err) {
                 if (index > -1) {
                     dummyData[index].STATUS = oldStatus;
                     renderTable();
                 }
-                alert("Gagal memperbarui status ke server.");
+                await customAlert("Gagal memperbarui status ke server.", "Terjadi Kesalahan", "error");
+                throw err; 
             }
         }
 
-        // --- MODAL PENGEMBALIAN & PREVIEW FOTO ---
         function openReturnModal(id, statusTarget) {
             document.getElementById('modalReturn').classList.remove('hidden');
             document.getElementById('returnID').value = id;
@@ -766,7 +996,7 @@
             const btn = document.getElementById('btnSubmitReturn');
 
             if(fileInput.files.length === 0) {
-                alert("Bukti foto wajib diunggah!");
+                await customAlert("Bukti foto wajib diunggah!", "Peringatan", "warning");
                 return;
             }
 
@@ -799,9 +1029,9 @@
                         })
                     });
                     closeReturnModal();
-                    alert("Pengembalian dan bukti foto berhasil diproses!");
+                    await customAlert("Pengembalian dan bukti foto berhasil diproses!", "Berhasil", "success");
                 } catch(err) {
-                    alert("Gagal mengupload, periksa koneksi internet.");
+                    await customAlert("Gagal mengupload, periksa koneksi internet.", "Terjadi Kesalahan", "error");
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-upload"></i> Proses`;
@@ -810,22 +1040,28 @@
             reader.readAsDataURL(file);
         }
 
-        // --- GENERATE ID PB_DDMMYYHHMM001 & SUBMIT BARU ---
         async function submitForm(e) {
             e.preventDefault();
 
             if (document.getElementById('UNIT_PEMINJAM').value === 'Peserta Didik' && !isValidNim) {
-                alert("Pengajuan ditolak! Hanya NIM yang terdaftar yang diperbolehkan meminjam barang.");
+                await customAlert("Pengajuan ditolak! Hanya NIM yang terdaftar yang diperbolehkan meminjam barang.", "Akses Ditolak", "error");
                 return;
             }
             if (selectedItemsList.length === 0) {
-                alert("Silakan tambahkan minimal satu barang untuk dipinjam.");
+                await customAlert("Silakan tambahkan minimal satu barang untuk dipinjam.", "Peringatan", "warning");
                 return;
             }
             if (!document.getElementById('checkSK').checked) {
-                alert("Anda harus menyetujui Syarat & Ketentuan Peminjaman.");
+                await customAlert("Anda harus menyetujui Syarat & Ketentuan Peminjaman.", "Peringatan", "warning");
                 return;
             }
+
+            if (submitActionType === 'Sedang Dipinjam') {
+                const isConfirmed = await customConfirm("Pastikan sudah mengetahui / atas izin petugas dan barang sudah diserahkan / sudah di ambil.", "Konfirmasi Pinjam Langsung", "info");
+                if (!isConfirmed) return; 
+            }
+
+            document.getElementById('formLoadingOverlay').classList.remove('hidden');
 
             const canvasObj = document.getElementById('sigCanvas');
             const tempCanvas = document.createElement('canvas');
@@ -838,7 +1074,6 @@
             tempCtx.drawImage(canvasObj, 0, 0, tempCanvas.width, tempCanvas.height);
             const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
 
-            // Logika Format ID PB_DDMMYYHHMM001
             const now = new Date();
             const dd = String(now.getDate()).padStart(2, '0');
             const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -891,18 +1126,12 @@
 
             const btnReq = document.getElementById('btnSubmitRequest');
             const btnBook = document.getElementById('btnSubmitBooking');
-            
-            if(submitActionType === 'Request') {
-                btnReq.disabled = true; btnReq.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
-            } else {
-                btnBook.disabled = true; btnBook.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
-            }
 
             try {
                 await fetch(GAS_WEB_APP_URL, {
                     method: "POST",
                     mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
                 
@@ -910,22 +1139,20 @@
                 renderTable();
                 loadBarangDropdown(); 
                 
-                alert(`Pengajuan peminjaman barang berhasil dikirim dengan ID: ${idStr}`);
                 closeModal();
+                await customAlert(`Pengajuan peminjaman barang berhasil dikirim!`, "Berhasil Terkirim", "success");
             } catch (err) {
-                alert("Terjadi kesalahan saat menyimpan data. Periksa koneksi internet.");
+                await customAlert("Terjadi kesalahan saat menyimpan data. Periksa koneksi internet.", "Gagal Terkirim", "error");
             } finally {
-                btnReq.disabled = false; btnReq.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Request Peminjaman`;
-                btnBook.disabled = false; btnBook.innerHTML = `<i class="fa-solid fa-hand-holding-hand"></i> Pinjam Langsung`;
+                document.getElementById('formLoadingOverlay').classList.add('hidden');
             }
         }
 
-        // --- FUNGSI CANVAS TTD ---
         function initCanvas() {
             canvas = document.getElementById('sigCanvas');
             ctx = canvas.getContext('2d');
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width || 800; 
+            
+            canvas.width = 800; 
             canvas.height = 160;
             ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
@@ -936,8 +1163,8 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseleave', stopDrawing);
 
-            canvas.addEventListener('touchstart', (e) => { startDrawing(e.touches[0]); e.preventDefault(); });
-            canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); });
+            canvas.addEventListener('touchstart', (e) => { startDrawing(e.touches[0]); e.preventDefault(); }, {passive: false});
+            canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); }, {passive: false});
             canvas.addEventListener('touchend', stopDrawing);
         }
 
@@ -1097,14 +1324,14 @@
             }
         }
 
-        function addItem() {
+        async function addItem() {
             const select = document.getElementById('NAMA_BARANG_INPUT');
             const qtyInput = document.getElementById('QTY_INPUT');
             const name = select.value;
             const qty = parseInt(qtyInput.value);
 
-            if (!name) { alert("Pilih barang terlebih dahulu!"); return; }
-            if (qty < 1 || isNaN(qty)) { alert("Jumlah barang tidak valid!"); return; }
+            if (!name) { await customAlert("Pilih barang terlebih dahulu!", "Peringatan", "warning"); return; }
+            if (qty < 1 || isNaN(qty)) { await customAlert("Jumlah barang tidak valid!", "Peringatan", "warning"); return; }
 
             const itemData = availableItems.find(i => i.nama === name);
             if (!itemData) return;
@@ -1113,7 +1340,7 @@
             const existingQty = existingIndex > -1 ? selectedItemsList[existingIndex].qty : 0;
             
             if ((existingQty + qty) > itemData.stok) {
-                alert(`STOK TIDAK MENCUKUPI!\nSisa stok "${itemData.nama}" saat ini hanya ${itemData.stok}. Total yang ingin dipinjam: ${existingQty + qty}.`);
+                await customAlert(`Sisa stok "${itemData.nama}" saat ini hanya ${itemData.stok}.\nTotal yang ingin dipinjam: ${existingQty + qty}.`, "Stok Tidak Mencukupi!", "error");
                 return;
             }
 
@@ -1153,7 +1380,7 @@
             `).join('');
         }
 
-        function calculateDuration() {
+        async function calculateDuration() {
             const tglPinjamVal = document.getElementById('TGL_PINJAM').value;
             const tglKembaliEl = document.getElementById('TGL_KEMBALI');
             const durasiEl = document.getElementById('DURASI');
@@ -1165,7 +1392,7 @@
                 const end = new Date(tglKembaliEl.value);
 
                 if (end < start) {
-                    alert("Waktu kembali tidak boleh lebih awal dari waktu pinjam!");
+                    await customAlert("Waktu kembali tidak boleh lebih awal dari waktu pinjam!", "Waktu Tidak Valid", "error");
                     tglKembaliEl.value = "";
                     durasiEl.value = "";
                     return;
@@ -1187,8 +1414,19 @@
 
         function openModal() {
             document.getElementById('modalForm').classList.remove('hidden');
-            const rect = document.getElementById('signatureArea').getBoundingClientRect();
-            if(rect.width > 0) canvas.width = rect.width - 4;
+            
+            // Me-reset scroll ke paling atas form
+            document.getElementById('loanForm').scrollTop = 0;
+            
+            setTimeout(() => {
+                const rect = document.getElementById('signatureArea').getBoundingClientRect();
+                if(rect.width > 0) {
+                    canvas.width = rect.width - 4; 
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#1e1b4b';
+                }
+            }, 50);
         }
 
         function closeModal() {
