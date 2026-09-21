@@ -2,208 +2,203 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Survey Kepuasan - Diklat RSUDBK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#714B67">
+    <title>Sistem Survei Kepuasan - Diklat RSUDBK</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:'Poppins', sans-serif;
+        :root{
+            --brand:#714B67;
+            --brand-dark:#4f3248;
+            --ink:#1e293b;
+            --muted:#64748b;
+            --line:#e2e8f0;
+            --bg:#f5f7fb;
         }
+
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+
+        html,body{height:100%}
 
         body{
-            background:#f5f7fb;
+            background:
+                radial-gradient(circle at 15% 0%, rgba(113,75,103,.10), transparent 45%),
+                radial-gradient(circle at 100% 100%, rgba(37,99,235,.08), transparent 40%),
+                var(--bg);
+            color:var(--ink);
+            display:flex;
+            flex-direction:column;
             min-height:100vh;
-            color:#333;
-        }
-
-        [x-cloak]{
-            display:none !important;
-        }
-
-        /* Header */
-        header{
-            background:#ffffff;
-            box-shadow:0 2px 10px rgba(0,0,0,.05);
-            position:sticky;
-            top:0;
-            z-index:100;
-        }
-
-        .navbar{
-            max-width:1200px;
-            margin:auto;
-            padding:15px 20px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
-
-        .logo{
-            color:#714B67;
-            font-weight: 700;
-        }
-
-        .menu{
-            display:flex;
-            gap:20px;
-        }
-
-        .menu a{
-            text-decoration:none;
-            color:#444;
-            font-weight:500;
-            transition:.3s;
-        }
-
-        .menu a:hover{
-            color:#714B67;
+            min-height:100dvh;
+            padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+            -webkit-tap-highlight-color:transparent;
         }
 
         /* Hero */
         .hero{
-            max-width:900px;
+            max-width:820px;
             margin:0 auto;
-            padding:60px 20px;
+            padding:clamp(20px,5vh,56px) 20px clamp(14px,3vh,32px);
             text-align:center;
         }
 
         .hero-logo{
             display:block;
-            width:180px;
-            margin:0 auto 25px;
+            width:clamp(64px,12vh,120px);
+            height:auto;
+            margin:0 auto clamp(10px,2vh,20px);
         }
 
         .hero h1{
-            font-size:40px;
+            font-size:clamp(20px,4.2vw,38px);
             font-weight:700;
-            color:#714B67;
-            margin-bottom:8px;
+            line-height:1.2;
+            color:var(--brand);
+            letter-spacing:-.01em;
+            margin-bottom:6px;
         }
 
         .hero h2{
-            font-size:22px;
-            font-weight:600;
+            font-size:clamp(13px,2.4vw,20px);
+            font-weight:500;
             color:#334155;
-            margin-bottom:20px;
+            margin-bottom:12px;
         }
 
         .hero p{
-            max-width:750px;
+            max-width:640px;
             margin:0 auto;
-            color:#64748b;
-            line-height:1.8;
-            font-size: 15px;
+            color:var(--muted);
+            line-height:1.7;
+            font-size:14px;
         }
 
-        /* Cards */
+        /* Menu */
         .menu-section{
-            max-width:1200px;
-            margin:auto;
-            padding:20px 20px 70px;
+            flex:1;
+            width:100%;
+            max-width:1100px;
+            margin:0 auto;
+            padding:0 20px 24px;
+            display:flex;
+            flex-direction:column;
         }
 
         .cards{
+            flex:1;
             display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
-            gap:25px;
+            grid-template-columns:repeat(4,1fr);
+            gap:20px;
+            align-content:start;
         }
 
         .card{
+            --c:#2563eb;
+            position:relative;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            text-align:center;
+            gap:10px;
             background:#fff;
-            border-radius:20px;
-            padding:35px 25px;
+            border:1px solid var(--line);
+            border-radius:18px;
+            padding:28px 20px;
             text-decoration:none;
-            color:#333;
-            box-shadow:0 8px 30px rgba(0,0,0,.04);
-            transition:all .3s ease;
-            border:1px solid #e2e8f0;
-            text-align: center;
+            color:var(--ink);
+            box-shadow:0 6px 24px rgba(15,23,42,.05);
+            transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
         }
 
-        .card:hover{
-            transform:translateY(-8px);
+        .card:hover,
+        .card:focus-visible{
+            transform:translateY(-6px);
+            box-shadow:0 16px 34px color-mix(in srgb, var(--c) 22%, transparent);
+            border-color:var(--c);
+            outline:none;
         }
 
-        .icon{
-            font-size:42px;
-            margin-bottom:20px;
-            display: block;
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover .icon {
-            transform: scale(1.1);
-        }
+        .card:focus-visible{outline:3px solid color-mix(in srgb, var(--c) 40%, transparent);outline-offset:2px}
+        .card:active{transform:scale(.98)}
 
-        .card h3{
-            margin-bottom:12px;
-            color:#1e293b;
-            font-size: 18px;
+        .icon-wrap{
+            width:64px;height:64px;
+            border-radius:18px;
+            display:grid;place-items:center;
+            background:color-mix(in srgb, var(--c) 12%, #fff);
+            color:var(--c);
+            font-size:28px;
+            transition:transform .25s ease;
         }
+        .card:hover .icon-wrap{transform:scale(1.08)}
 
-        .card p{
-            color:#64748b;
-            font-size:14px;
-            line-height:1.6;
-        }
+        .card h3{font-size:17px;font-weight:600;color:var(--ink)}
 
-        /* Warna Spesifik Tiap Kartu */
-        
-        /* Survey CI: #2563eb */
-        .card-ci .icon { color: #2563eb; }
-        .card-ci:hover { 
-            border-color: #2563eb; 
-            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.15); 
-        }
+        .card p{color:var(--muted);font-size:13px;line-height:1.6}
 
-        /* Survey Pasien: #0c4a6e */
-        .card-pasien .icon { color: #0c4a6e; }
-        .card-pasien:hover { 
-            border-color: #0c4a6e; 
-            box-shadow: 0 15px 35px rgba(12, 74, 110, 0.15); 
+        .go{
+            margin-top:auto;
+            font-size:13px;
+            font-weight:600;
+            color:var(--c);
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
         }
+        .go i{transition:transform .25s ease}
+        .card:hover .go i{transform:translateX(4px)}
 
-        /* Survey Peserta Didik: Emerald 600 (#059669) */
-        .card-didik .icon { color: #059669; }
-        .card-didik:hover { 
-            border-color: #059669; 
-            box-shadow: 0 15px 35px rgba(5, 150, 105, 0.15); 
-        }
-
-        /* Survey Residen: #4338ca */
-        .card-residen .icon { color: #4338ca; }
-        .card-residen:hover { 
-            border-color: #4338ca; 
-            box-shadow: 0 15px 35px rgba(67, 56, 202, 0.15); 
-        }
+        .card-ci{--c:#2563eb}
+        .card-pasien{--c:#0c4a6e}
+        .card-didik{--c:#059669}
+        .card-residen{--c:#4338ca}
 
         footer{
             text-align:center;
-            padding:25px;
+            padding:14px 20px 18px;
             color:#94a3b8;
-            font-size:14px;
+            font-size:12px;
         }
 
-        /* Mobile */
-        @media(max-width:768px){
-            .hero{
-                padding:40px 20px;
-            }
+        /* Tablet: 2x2 */
+        @media (max-width:900px){
+            .cards{grid-template-columns:repeat(2,1fr);gap:16px}
+        }
 
-            .hero h1{
-                font-size:28px;
-            }
+        /* HP: satu kolom ringkas, teks lengkap tetap tampil */
+        @media (max-width:600px){
+            .hero{padding:14px 16px 10px}
+            .hero-logo{width:52px;margin-bottom:8px}
+            .hero h1{font-size:18px}
+            .hero h2{font-size:13px;margin-bottom:8px}
+            .hero p{font-size:12px;line-height:1.55}
 
-            .hero h2{
-                font-size:18px;
+            .menu-section{padding:0 12px 6px}
+            .cards{grid-template-columns:1fr;gap:8px;align-content:stretch}
+
+            .card{
+                display:grid;
+                grid-template-columns:44px 1fr;
+                column-gap:12px;
+                row-gap:2px;
+                align-items:center;
+                text-align:left;
+                padding:10px 12px;
+                border-radius:14px;
             }
+            .icon-wrap{width:44px;height:44px;border-radius:12px;font-size:19px;grid-row:1 / 3}
+            .card h3{font-size:14px;line-height:1.3}
+            .card p.full{font-size:11.5px;line-height:1.45}
+            .go{display:none}
+
+            footer{padding:6px 16px 10px;font-size:11px}
+        }
+
+        @media (prefers-reduced-motion:reduce){
+            *{transition:none !important}
         }
     </style>
 </head>
@@ -212,45 +207,45 @@
     <section class="hero">
         <img src="img/rsudbk.png" alt="Logo RSUDBK" class="hero-logo">
         <h1>DIKLAT RSUD BANDUNG KIWARI</h1>
-        <h2>Sistem Survei Kepuasan & Evaluasi</h2>
+        <h2>Sistem Survei Kepuasan &amp; Evaluasi</h2>
         <p>
-            Platform terintegrasi untuk mengelola evaluasi dan mengumpulkan umpan balik. 
-            Sistem ini dirancang guna memfasilitasi penilaian kinerja, sarana prasarana, 
+            Platform terintegrasi untuk mengelola evaluasi dan mengumpulkan umpan balik.
+            Sistem ini dirancang guna memfasilitasi penilaian kinerja, sarana prasarana,
             dan mutu pelayanan secara transparan dan akuntabel.
         </p>
     </section>
 
-    <section class="menu-section">
+    <main class="menu-section">
         <div class="cards">
-            <!-- Kartu Survey CI -->
-            <a href="survey_ci.html" target="_blank" class="card card-ci">
-                <i class="fa-solid fa-clipboard-user icon"></i>
+            <a href="survey_ci.html" target="_blank" rel="noopener" class="card card-ci">
+                <span class="icon-wrap"><i class="fa-solid fa-clipboard-user"></i></span>
                 <h3>Survei CI</h3>
-                <p>Formulir evaluasi kinerja dan penilaian kompetensi peserta didik oleh Clinical Instructor (CI) atau Pembimbing Klinik.</p>
+                <p class="full">Formulir evaluasi kinerja dan penilaian kompetensi peserta didik oleh Clinical Instructor (CI) atau Pembimbing Klinik.</p>
+                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Kartu Survey Pasien -->
-            <a href="survey_pasien.html" target="_blank" class="card card-pasien">
-                <i class="fa-solid fa-hand-holding-medical icon"></i>
+            <a href="survey_pasien.html" target="_blank" rel="noopener" class="card card-pasien">
+                <span class="icon-wrap"><i class="fa-solid fa-hand-holding-medical"></i></span>
                 <h3>Survei Pasien</h3>
-                <p>Pengumpulan tingkat kepuasan pasien terhadap kualitas pelayanan dan asuhan yang diberikan oleh peserta didik.</p>
+                <p class="full">Pengumpulan tingkat kepuasan pasien terhadap kualitas pelayanan dan asuhan yang diberikan oleh peserta didik.</p>
+                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Kartu Survey Peserta Didik -->
-            <a href="survey_peserta_didik.html" target="_blank" class="card card-didik">
-                <i class="fa-solid fa-user-graduate icon"></i>
+            <a href="survey_peserta_didik.html" target="_blank" rel="noopener" class="card card-didik">
+                <span class="icon-wrap"><i class="fa-solid fa-user-graduate"></i></span>
                 <h3>Survei Peserta Didik</h3>
-                <p>Umpan balik dari peserta didik mengenai program pendidikan, fasilitas, serta kualitas bimbingan dari Komkordik dan CI.</p>
+                <p class="full">Umpan balik dari peserta didik mengenai program pendidikan, fasilitas, serta kualitas bimbingan dari Komkordik dan CI.</p>
+                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
-            <!-- Kartu Survey Residen -->
-            <a href="survey_residen.html" target="_blank" class="card card-residen">
-                <i class="fa-solid fa-user-doctor icon"></i>
+            <a href="survey_residen.html" target="_blank" rel="noopener" class="card card-residen">
+                <span class="icon-wrap"><i class="fa-solid fa-user-doctor"></i></span>
                 <h3>Survei Residen</h3>
-                <p>Formulir evaluasi khusus bagi dokter residen terkait proses pendidikan klinis dan pengalaman pelayanan di rumah sakit.</p>
+                <p class="full">Formulir evaluasi khusus bagi dokter residen terkait proses pendidikan klinis dan pengalaman pelayanan di rumah sakit.</p>
+                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
             </a>
         </div>
-    </section>
+    </main>
 
     <footer>
         © 2026 Form Diklat RSUDBK. All rights reserved.
