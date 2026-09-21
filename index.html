@@ -100,29 +100,55 @@
             line-height:1.8;
         }
 
-        /* Cards */
+        /* Cards & Grid System */
         .menu-section{
-            max-width:1200px;
+            max-width:1400px; /* Diperlebar sedikit agar 6 kolom lebih lega */
             margin:auto;
             padding:40px 20px 70px;
         }
 
-        /* Diubah menjadi responsive grid (max 4 kolom jika layar lebar) */
         .cards{
             display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
-            gap:25px;
+            gap:20px;
+            
+            /* Default: HP Portrait (1 Kolom / 6x1) */
+            grid-template-columns: 1fr;
         }
 
+        /* HP Landscape (2 Kolom / 2x2(3)) */
+        @media (max-width: 767px) and (orientation: landscape) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Tablet Portrait (2 Kolom / 2x2(3)) */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Tablet Landscape (6 Kolom / 1x6) */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .cards { grid-template-columns: repeat(6, 1fr); }
+        }
+
+        /* Desktop (6 Kolom / 1x6) */
+        @media (min-width: 1025px) {
+            .cards { grid-template-columns: repeat(6, 1fr); }
+        }
+
+        /* Card Styling */
         .card{
             background:#fff;
             border-radius:20px;
-            padding:30px;
+            padding:25px 15px; /* Disesuaikan agar muat saat 6 kolom */
+            text-align: center; /* Dibuat center agar lebih rapi */
             text-decoration:none;
             color:#333;
             box-shadow:0 8px 30px rgba(0,0,0,.06);
             transition:.3s;
             border:1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .card:hover{
@@ -131,19 +157,20 @@
         }
 
         .icon{
-            font-size:48px;
+            font-size:42px;
             margin-bottom:15px;
         }
 
         .card h3{
+            font-size: 16px;
             margin-bottom:10px;
             color:#1e293b;
         }
 
         .card p{
             color:#64748b;
-            font-size:14px;
-            line-height:1.6;
+            font-size:13px;
+            line-height:1.5;
         }
 
         footer{
@@ -160,7 +187,7 @@
             margin-bottom: 24px;
         }
 
-        /* Mobile */
+        /* Mobile specific styling overriding header/hero */
         @media(max-width:768px){
             .navbar{
                 flex-direction:column;
@@ -188,36 +215,16 @@
                 font-size:18px;
             }
         }
-
-        .modal-backdrop{
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,.5);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            padding:20px;
-            z-index:9999;
-        }
-
-        .modal-box{
-            background:#fff;
-            width:100%;
-            max-width:420px;
-            border-radius:24px;
-            padding:30px;
-            box-shadow:0 20px 60px rgba(0,0,0,.2);
-        }
     </style>
 </head>
-<body x-data="appData()">
+<body>
 
     <section class="hero">
         <img src="img/rsudbk.png" alt="RSUDBK" class="hero-logo">
         <h1>RSUDBK</h1>
         <h2>Sistem Sarana dan Prasarana Diklat</h2>
         <p>
-            Sistem pengelolaan data Sarana dan Prasarana , Peserta Didik yang terintegrasi dengan
+            Sistem pengelolaan data Sarana dan Prasarana, Peserta Didik yang terintegrasi dengan
             Google Spreadsheet dan Google Drive untuk memudahkan proses
             pendaftaran, pengarsipan dokumen, dan monitoring.
         </p>
@@ -225,28 +232,46 @@
 
     <section class="menu-section">
         <div class="cards">
-            <div class="card" @click="showLogin=true" style="cursor:pointer">             
+            <!-- Menu 1 -->
+            <a href="dashboard.html" class="card">
                 <div class="icon">📊</div>
                 <h3>Dashboard</h3>
                 <p>Lihat ringkasan data peserta didik dan statistik pendaftaran.</p>
-            </div>
+            </a>
 
+            <!-- Menu 2 -->
             <a href="input_pesertadidik.html" class="card">
                 <div class="icon">📝</div>
-                <h3>Input Data Peserta Didik</h3>
+                <h3>Input Biodata</h3>
                 <p>Tambahkan data peserta didik baru beserta dokumen pendukung.</p>
             </a>
 
-            <a href="input_pesertadidik.html" class="card">
+            <!-- Menu 3 -->
+            <a href="cek_pesertadidik.html" class="card">
                 <div class="icon">👥</div>
                 <h3>Data Peserta Didik</h3>
-                <p>Kelola, cari, dan lihat seluruh data peserta didik yang telah tersimpan.</p>
+                <p>Kelola, cari, dan lihat seluruh data peserta yang tersimpan.</p>
             </a>
 
+            <!-- Menu 4 -->
             <a href="peminjaman_menu.html" class="card">
                 <div class="icon">📋</div>
                 <h3>Peminjaman</h3>
-                <p>Ajukan request peminjaman fasilitas atau dokumen peserta didik di sini.</p>
+                <p>Ajukan request peminjaman fasilitas atau dokumen di sini.</p>
+            </a>
+
+            <!-- Menu 5 (Baru - Target _blank) -->
+            <a href="survey_menu.html" target="_blank" class="card">
+                <div class="icon">🗒️</div>
+                <h3>Survey & Evaluasi</h3>
+                <p>Isi kuesioner, survey, dan evaluasi terkait kegiatan diklat.</p>
+            </a>
+
+            <!-- Menu 6 (Baru - Target _blank) -->
+            <a href="sarpras_menu.html" target="_blank" class="card">
+                <div class="icon">🏢</div>
+                <h3>Sarana Prasarana</h3>
+                <p>Kelola dan cek ketersediaan data fasilitas atau sarpras diklat.</p>
             </a>
         </div>
     </section>
@@ -255,52 +280,5 @@
         © 2026 Form Sarana dan Prasarana Diklat RSUDBK. All rights reserved.
     </footer>
 
-    <div x-show="showLogin" x-cloak x-transition class="modal-backdrop">
-        <div @click.away="showLogin=false" class="modal-box">
-            <div class="text-center mb-6">
-                <div style="font-size:60px;">🔐</div>
-                <h2 style="margin-top:10px;font-size:24px;font-weight:700;">Login Dashboard</h2>
-                <p style="margin-top:8px;color:#64748b;">Masukkan akun administrator</p>
-            </div>
-
-            <div style="margin-bottom:16px;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;">Username</label>
-                <input type="text" x-model="username" placeholder="Masukkan username" style="width:100%; padding:14px; border:1px solid #ddd; border-radius:12px;">
-            </div>
-
-            <div style="margin-bottom:24px;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;">Password</label>
-                <input type="password" x-model="password" placeholder="Masukkan password" style="width:100%; padding:14px; border:1px solid #ddd; border-radius:12px;">
-            </div>
-
-            <div style="display:flex;gap:12px;">
-                <button @click="showLogin=false" style="flex:1; padding:14px; border:none; border-radius:12px; background:#e2e8f0; cursor:pointer;">
-                    Batal
-                </button>
-                <button @click="loginDashboard()" style="flex:1; padding:14px; border:none; border-radius:12px; background:#714B67; color:white; font-weight:600; cursor:pointer;">
-                    Masuk
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Satukan state Alpine ke dalam satu fungsi bersih
-        function appData() {
-            return {
-                showLogin: false,
-                username: '',
-                password: '',
-                loginDashboard() {
-                    if (this.username === 'admin' && this.password === 'admin') {
-                        sessionStorage.setItem('dashboardLogin', 'true');
-                        window.location.href = 'dashboard.html';
-                    } else {
-                        alert('Username atau Password salah');
-                    }
-                }
-            }
-        }
-    </script>
 </body>
 </html>
