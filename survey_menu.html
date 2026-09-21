@@ -197,6 +197,43 @@
             footer{padding:6px 16px 10px;font-size:11px}
         }
 
+        /* HP landscape: 2x2, teks tetap lengkap */
+        @media (orientation:landscape) and (max-height:520px){
+            .hero{
+                display:grid;
+                grid-template-columns:auto 1fr;
+                column-gap:14px;
+                align-items:center;
+                text-align:left;
+                max-width:none;
+                padding:8px 18px 6px;
+            }
+            .hero-logo{grid-row:1 / 4;width:56px;margin:0}
+            .hero h1{font-size:17px;margin-bottom:0}
+            .hero h2{font-size:12px;margin-bottom:4px}
+            .hero p{font-size:11px;line-height:1.45;margin:0;max-width:none}
+
+            .menu-section{padding:0 18px 4px}
+            .cards{grid-template-columns:repeat(2,1fr);gap:8px;align-content:stretch}
+
+            .card{
+                display:grid;
+                grid-template-columns:40px 1fr;
+                column-gap:10px;
+                row-gap:2px;
+                align-items:center;
+                text-align:left;
+                padding:8px 12px;
+                border-radius:12px;
+            }
+            .icon-wrap{width:40px;height:40px;border-radius:11px;font-size:17px;grid-row:1 / 3}
+            .card h3{font-size:13px}
+            .card p.full{font-size:10.5px;line-height:1.4}
+            .go{display:none}
+
+            footer{padding:4px 16px 6px;font-size:10px}
+        }
+
         @media (prefers-reduced-motion:reduce){
             *{transition:none !important}
         }
@@ -207,9 +244,9 @@
     <section class="hero">
         <img src="img/rsudbk.png" alt="Logo RSUDBK" class="hero-logo">
         <h1>DIKLAT RSUD BANDUNG KIWARI</h1>
-        <h2>Sistem Survei Kepuasan &amp; Evaluasi</h2>
+        <h2>Sistem Survey Kepuasan &amp; Evaluasi</h2>
         <p>
-            Platform terintegrasi untuk mengelola evaluasi dan mengumpulkan umpan balik.
+            Platform terintegrasi untuk mengelola evaluasi dan mengumpulkan data kepuasan.
             Sistem ini dirancang guna memfasilitasi penilaian kinerja, sarana prasarana,
             dan mutu pelayanan secara transparan dan akuntabel.
         </p>
@@ -219,30 +256,30 @@
         <div class="cards">
             <a href="survey_ci.html" target="_blank" rel="noopener" class="card card-ci">
                 <span class="icon-wrap"><i class="fa-solid fa-clipboard-user"></i></span>
-                <h3>Survei CI</h3>
+                <h3>Survey CI</h3>
                 <p class="full">Formulir evaluasi kinerja dan penilaian kompetensi peserta didik oleh Clinical Instructor (CI) atau Pembimbing Klinik.</p>
-                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
+                <span class="go">Isi survey <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
             <a href="survey_pasien.html" target="_blank" rel="noopener" class="card card-pasien">
                 <span class="icon-wrap"><i class="fa-solid fa-hand-holding-medical"></i></span>
-                <h3>Survei Pasien</h3>
-                <p class="full">Pengumpulan tingkat kepuasan pasien terhadap kualitas pelayanan dan asuhan yang diberikan oleh peserta didik.</p>
-                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
+                <h3>Survey Pasien</h3>
+                <p class="full">Pengumpulan tingkat kepuasan pasien terhadap kualitas pelayanan yang diberikan oleh peserta didik.</p>
+                <span class="go">Isi survey <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
             <a href="survey_peserta_didik.html" target="_blank" rel="noopener" class="card card-didik">
                 <span class="icon-wrap"><i class="fa-solid fa-user-graduate"></i></span>
-                <h3>Survei Peserta Didik</h3>
-                <p class="full">Umpan balik dari peserta didik mengenai program pendidikan, fasilitas, serta kualitas bimbingan dari Komkordik dan CI.</p>
-                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
+                <h3>Survey Peserta Didik</h3>
+                <p class="full">Kepuasan peserta didik mengenai program pendidikan, fasilitas, serta kualitas bimbingan dari Diklat, Komkordik dan CI.</p>
+                <span class="go">Isi survey <i class="fa-solid fa-arrow-right"></i></span>
             </a>
 
             <a href="survey_residen.html" target="_blank" rel="noopener" class="card card-residen">
                 <span class="icon-wrap"><i class="fa-solid fa-user-doctor"></i></span>
-                <h3>Survei Residen</h3>
+                <h3>Survey Residen</h3>
                 <p class="full">Formulir evaluasi khusus bagi dokter residen terkait proses pendidikan klinis dan pengalaman pelayanan di rumah sakit.</p>
-                <span class="go">Isi survei <i class="fa-solid fa-arrow-right"></i></span>
+                <span class="go">Isi survey <i class="fa-solid fa-arrow-right"></i></span>
             </a>
         </div>
     </main>
