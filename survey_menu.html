@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Survey Kepuasan - Diklat RSUDBK</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins', sans-serif;
+        }
+
+        body{
+            background:#f5f7fb;
+            min-height:100vh;
+            color:#333;
+        }
+
+        [x-cloak]{
+            display:none !important;
+        }
+
+        /* Header */
+        header{
+            background:#ffffff;
+            box-shadow:0 2px 10px rgba(0,0,0,.05);
+            position:sticky;
+            top:0;
+            z-index:100;
+        }
+
+        .navbar{
+            max-width:1200px;
+            margin:auto;
+            padding:15px 20px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .logo{
+            color:#714B67;
+            font-weight: 700;
+        }
+
+        .menu{
+            display:flex;
+            gap:20px;
+        }
+
+        .menu a{
+            text-decoration:none;
+            color:#444;
+            font-weight:500;
+            transition:.3s;
+        }
+
+        .menu a:hover{
+            color:#714B67;
+        }
+
+        /* Hero */
+        .hero{
+            max-width:900px;
+            margin:0 auto;
+            padding:60px 20px;
+            text-align:center;
+        }
+
+        .hero-logo{
+            display:block;
+            width:180px;
+            margin:0 auto 25px;
+        }
+
+        .hero h1{
+            font-size:40px;
+            font-weight:700;
+            color:#714B67;
+            margin-bottom:8px;
+        }
+
+        .hero h2{
+            font-size:22px;
+            font-weight:600;
+            color:#334155;
+            margin-bottom:20px;
+        }
+
+        .hero p{
+            max-width:750px;
+            margin:0 auto;
+            color:#64748b;
+            line-height:1.8;
+            font-size: 15px;
+        }
+
+        /* Cards */
+        .menu-section{
+            max-width:1200px;
+            margin:auto;
+            padding:20px 20px 70px;
+        }
+
+        .cards{
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+            gap:25px;
+        }
+
+        .card{
+            background:#fff;
+            border-radius:20px;
+            padding:35px 25px;
+            text-decoration:none;
+            color:#333;
+            box-shadow:0 8px 30px rgba(0,0,0,.04);
+            transition:all .3s ease;
+            border:1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .card:hover{
+            transform:translateY(-8px);
+        }
+
+        .icon{
+            font-size:42px;
+            margin-bottom:20px;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover .icon {
+            transform: scale(1.1);
+        }
+
+        .card h3{
+            margin-bottom:12px;
+            color:#1e293b;
+            font-size: 18px;
+        }
+
+        .card p{
+            color:#64748b;
+            font-size:14px;
+            line-height:1.6;
+        }
+
+        /* Warna Spesifik Tiap Kartu */
+        
+        /* Survey CI: #2563eb */
+        .card-ci .icon { color: #2563eb; }
+        .card-ci:hover { 
+            border-color: #2563eb; 
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.15); 
+        }
+
+        /* Survey Pasien: #0c4a6e */
+        .card-pasien .icon { color: #0c4a6e; }
+        .card-pasien:hover { 
+            border-color: #0c4a6e; 
+            box-shadow: 0 15px 35px rgba(12, 74, 110, 0.15); 
+        }
+
+        /* Survey Peserta Didik: Emerald 600 (#059669) */
+        .card-didik .icon { color: #059669; }
+        .card-didik:hover { 
+            border-color: #059669; 
+            box-shadow: 0 15px 35px rgba(5, 150, 105, 0.15); 
+        }
+
+        /* Survey Residen: #4338ca */
+        .card-residen .icon { color: #4338ca; }
+        .card-residen:hover { 
+            border-color: #4338ca; 
+            box-shadow: 0 15px 35px rgba(67, 56, 202, 0.15); 
+        }
+
+        footer{
+            text-align:center;
+            padding:25px;
+            color:#94a3b8;
+            font-size:14px;
+        }
+
+        /* Mobile */
+        @media(max-width:768px){
+            .hero{
+                padding:40px 20px;
+            }
+
+            .hero h1{
+                font-size:28px;
+            }
+
+            .hero h2{
+                font-size:18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <img src="img/rsudbk.png" alt="Logo RSUDBK" class="hero-logo">
+        <h1>DIKLAT RSUD BANDUNG KIWARI</h1>
+        <h2>Sistem Survei Kepuasan & Evaluasi</h2>
+        <p>
+            Platform terintegrasi untuk mengelola evaluasi dan mengumpulkan umpan balik. 
+            Sistem ini dirancang guna memfasilitasi penilaian kinerja, sarana prasarana, 
+            dan mutu pelayanan secara transparan dan akuntabel.
+        </p>
+    </section>
+
+    <section class="menu-section">
+        <div class="cards">
+            <!-- Kartu Survey CI -->
+            <a href="survey_ci.html" target="_blank" class="card card-ci">
+                <i class="fa-solid fa-clipboard-user icon"></i>
+                <h3>Survei CI</h3>
+                <p>Formulir evaluasi kinerja dan penilaian kompetensi peserta didik oleh Clinical Instructor (CI) atau Pembimbing Klinik.</p>
+            </a>
+
+            <!-- Kartu Survey Pasien -->
+            <a href="survey_pasien.html" target="_blank" class="card card-pasien">
+                <i class="fa-solid fa-hand-holding-medical icon"></i>
+                <h3>Survei Pasien</h3>
+                <p>Pengumpulan tingkat kepuasan pasien terhadap kualitas pelayanan dan asuhan yang diberikan oleh peserta didik.</p>
+            </a>
+
+            <!-- Kartu Survey Peserta Didik -->
+            <a href="survey_peserta_didik.html" target="_blank" class="card card-didik">
+                <i class="fa-solid fa-user-graduate icon"></i>
+                <h3>Survei Peserta Didik</h3>
+                <p>Umpan balik dari peserta didik mengenai program pendidikan, fasilitas, serta kualitas bimbingan dari Komkordik dan CI.</p>
+            </a>
+
+            <!-- Kartu Survey Residen -->
+            <a href="survey_residen.html" target="_blank" class="card card-residen">
+                <i class="fa-solid fa-user-doctor icon"></i>
+                <h3>Survei Residen</h3>
+                <p>Formulir evaluasi khusus bagi dokter residen terkait proses pendidikan klinis dan pengalaman pelayanan di rumah sakit.</p>
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        © 2026 Form Diklat RSUDBK. All rights reserved.
+    </footer>
+
+</body>
+</html>
