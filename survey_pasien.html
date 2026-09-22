@@ -619,6 +619,7 @@
   </footer>
 
   <!-- Alpine JS Script for App Logic -->
+  <!-- Alpine JS Script for App Logic -->
   <script>
     function surveyForm() {
       return {
@@ -634,12 +635,12 @@
         toastShow: false,
         toastMessage: '',
 
-        // Google Sheet Connector URL State (Hardcoded with user's URL as default)
-        scriptUrl: 'https://script.google.com/macros/s/AKfycbxhfUiKoGP_KHkQEbG4FmF940RtPeJj-pCF7q4kDW5ob036fFcGYcOuJEQU-KXPDf_0/exec',
+        // 1. URL SCRIPT SUDAH DIGANTI DENGAN MILIK ANDA YANG BARU
+        scriptUrl: 'https://script.google.com/macros/s/AKfycbzzm_awY-9fYT4f1vLHGjYs9_IiJmFtrCvPMLV8TIvbs0OjPnE9o-PnejSBwFc3BbcL/exec',
 
         // Form Fields Data
         formData: {
-          tanggal: new Date().toISOString().substring(0, 10), // default to today
+          tanggal: new Date().toISOString().substring(0, 10),
           nama: '',
           gender: '',
           usia: '',
@@ -670,7 +671,7 @@
         'Rawat Inap Bedah (Ranap Bedah Lt.11)',
         'Instalasi Salakanagara (LAB Lt.1)',
         'Instalasi Surawisesa (LAB Lt.2)',
-        'Instalasi Manikmaya (Rehab Medik Lt.3)',
+        'Instalasi Manikmaya (Rehab Medik Lt.3)'
       ],
 
         imagePreview: null,
@@ -749,7 +750,6 @@
         getRenamedFileName() {
           if (!this.originalFileName) return '';
           
-          // Clean the username for safe file system names
           const nameSafe = this.formData.nama.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Pasien';
           const tanggalSafe = this.formData.tanggal || new Date().toISOString().substring(0, 10);
           const ext = this.originalExtension || 'jpg';
@@ -790,7 +790,7 @@
           }
         },
 
-        // Submit form data to Web App Google Apps Script
+        // 2. LOGIKA PENGIRIMAN DIPERBAIKI (TIDAK ADA LAGI "FAKE SUCCESS")
         async submitForm() {
           this.showValidationError = false;
 
@@ -802,30 +802,33 @@
             return;
           }
 
-          // Atur penamaan dinamis foto sebelum dikirim
           this.formData.fotoName = this.getRenamedFileName();
-
           this.submitting = true;
 
           try {
-            // Mengirim data menggunakan POST fetch. 
             const response = await fetch(this.scriptUrl, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // Mencegah Pre-flight CORS trigger
-              },
               body: JSON.stringify(this.formData)
             });
 
-            this.submitting = false;
-            this.submitSuccess = true;
+            const result = await response.json(); // Membaca balasan dari Google Script
+
+            if (result.status === "success") {
+              this.submitting = false;
+              this.submitSuccess = true;
+            } else {
+              // Jika Google Script mengalami error (misal ID Folder salah), tampilkan di layar
+              this.submitting = false;
+              this.submitError = true;
+              this.errorMessage = result.message; 
+            }
 
           } catch (error) {
+            // Jika gagal terhubung ke Google sama sekali (Masalah CORS / Jaringan)
             console.error("Terjadi kesalahan pengiriman:", error);
-            // Penanganan fallback: Seringkali Apps Script sukses menulis ke Drive & Sheet tetapi mengembalikan redirect
-            // yang memicu penolakan CORS di peramban web. Kita anggap sukses dan tunjukkan pesan sukses agar pengguna tidak bingung.
             this.submitting = false;
-            this.submitSuccess = true;
+            this.submitError = true;
+            this.errorMessage = "Gagal terhubung ke server Google. Pastikan URL Web App benar dan koneksi stabil.";
           }
         },
 
