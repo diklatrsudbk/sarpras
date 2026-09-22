@@ -16,11 +16,12 @@
 <body class="min-h-screen flex flex-col justify-between">
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="font-bold text-[#714B67] text-lg">Peminjaman Internal</div>
-            <a href="../index.html" class="text-sm font-semibold text-slate-500 hover:text-slate-800 transition">← Kembali ke Beranda</a>
-        </div>
-    </header>
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="font-bold text-[#714B67] text-lg">Peminjaman Internal</div>
+        <!-- Menggunakan JavaScript History Back -->
+        <a href="#" onclick="window.history.back(); return false;" class="text-sm font-semibold text-slate-500 hover:text-slate-800 transition">← Kembali ke Beranda</a>
+    </div>
+</header>
 
     <main class="max-w-4xl mx-auto px-4 py-12 flex-1 flex flex-col justify-center w-full">
     <div class="text-center mb-10">
