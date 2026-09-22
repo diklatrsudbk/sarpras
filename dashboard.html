@@ -46,6 +46,7 @@
                 <p class="text-sm text-gray-500 mt-1">Silakan masuk ke akun Anda</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-5">
+                <!-- INFO: Pengecekan login via Frontend (sementara). Untuk Production, pindahkan validasi ke Google Apps Script -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
                     <div class="relative">
@@ -90,17 +91,10 @@
                     <div class="flex items-center"><i class="fas fa-star w-6 text-center"></i> <span>Data Survey</span></div><i class="fas fa-chevron-down text-xs"></i>
                 </button>
                 <div id="survey-sub" class="hidden pl-8 space-y-1">
-                    <!-- Data Survey Pasien -->
-<a href="#" onclick="loadContent('survey_pd', this)" class="nav-item flex items-center ..."> Survey Kepuasan Pasien</a>
-
-<!-- Data Survey Residen -->
-<a href="#" onclick="loadContent('survey_residen', this)" class="nav-item flex items-center ..."> Survey Kepuasan Residen</a>
-
-<!-- Data Survey Evaluasi PD -->
-<a href="#" onclick="loadContent('survey_eval_pd', this)" class="nav-item flex items-center ..."> Survey Peserta Didik</a>
-
-<!-- Data Survey CI -->
-<a href="#" onclick="loadContent('survey_eval_ci', this)" class="nav-item flex items-center ..."> Survey Kepuasan CI</a>
+                    <a href="#" onclick="loadContent('survey_pd', this)" class="nav-item flex items-center px-4 py-2.5 rounded-lg transition-colors text-sm hover:bg-gray-100 dark:hover:bg-gray-700"> Survey Kepuasan Pasien</a>
+                    <a href="#" onclick="loadContent('survey_residen', this)" class="nav-item flex items-center px-4 py-2.5 rounded-lg transition-colors text-sm hover:bg-gray-100 dark:hover:bg-gray-700"> Survey Kepuasan Residen</a>
+                    <a href="#" onclick="loadContent('survey_eval_pd', this)" class="nav-item flex items-center px-4 py-2.5 rounded-lg transition-colors text-sm hover:bg-gray-100 dark:hover:bg-gray-700"> Survey Peserta Didik</a>
+                    <a href="#" onclick="loadContent('survey_eval_ci', this)" class="nav-item flex items-center px-4 py-2.5 rounded-lg transition-colors text-sm hover:bg-gray-100 dark:hover:bg-gray-700"> Survey Kepuasan CI</a>
                 </div>
             </div>
 
@@ -208,36 +202,119 @@
         // Helper toggle checkbox references
         let currentToggleCheckbox = null;
 
+        // FUNGSI SECURITY HELPER UNTUK MENCEGAH XSS (Cross Site Scripting)
+        function esc(str) {
+            if (str === null || str === undefined || str === '') return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // FUNGSI HELPER UNTUK FORMAT TANGGAL KE DD-MM-YYYY | HH:MM
+            function formatTanggal(isoString) {
+                if (!isoString || isoString === '-') return '-';
+                
+                // Coba parse string ke object Date
+                const dateObj = new Date(isoString);
+                
+                // Jika tidak valid (misal teks biasa), kembalikan string aslinya saja
+                if (isNaN(dateObj.getTime())) return esc(isoString);
+
+                const pad = (num) => num.toString().padStart(2, '0');
+                
+                const day = pad(dateObj.getDate());
+                const month = pad(dateObj.getMonth() + 1); // Bulan dimulai dari 0
+                const year = dateObj.getFullYear();
+                const hours = pad(dateObj.getHours());
+                const minutes = pad(dateObj.getMinutes());
+
+                return `${day}-${month}-${year} | ${hours}:${minutes}`;
+            }
+
         /* ====================================================
-           FUNGSI API & CRUD UMUM
+           FUNGSI API & CRUD UMUM DENGAN ERROR HANDLING
            ==================================================== */
         
+        // Fungsi utama dengan alur: Cek Koneksi -> Fetch -> Timeout -> Retry -> Result
+        async function fetchWithRobustHandling(url, options = {}) {
+            const MAX_RETRIES = 3;       // Maksimal coba ulang 3 kali
+            const TIMEOUT_MS = 15000;    // Batas waktu tunggu 15 detik per request
+
+            // 1. Cek Koneksi Awal
+            if (!navigator.onLine) {
+                return { error: true, message: "Koneksi internet terputus. Pastikan perangkat terhubung ke jaringan." };
+            }
+
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                // 2. Siapkan sistem Timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                options.signal = controller.signal;
+
+                try {
+                    // 3. Kirim Data
+                    const response = await fetch(url, options);
+                    clearTimeout(timeoutId); // Hentikan timer jika respons diterima
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    }
+
+                    // 4. Verifikasi Data (Harus JSON valid)
+                    const textData = await response.text();
+                    try {
+                        const jsonData = JSON.parse(textData);
+                        return jsonData; // 5. BERHASIL: Kembalikan data murni
+                    } catch (parseError) {
+                        throw new Error("Server merespons, tetapi format data tidak dikenali (Bukan JSON).");
+                    }
+
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    console.warn(`Percobaan ${attempt} gagal:`, error.message);
+                    
+                    // Jika ini adalah percobaan terakhir
+                    if (attempt === MAX_RETRIES) {
+                        // Cek ulang koneksi internet di tahap akhir
+                        if (!navigator.onLine) {
+                            return { error: true, message: "Koneksi internet terputus di tengah proses." };
+                        }
+                        // Deteksi jika gagal karena Timeout
+                        if (error.name === 'AbortError') {
+                            return { error: true, message: "Server memakan waktu terlalu lama untuk merespons. Silakan coba beberapa saat lagi." };
+                        }
+                        // Deteksi error lainnya (termasuk CORS murni yang gagal total)
+                        return { error: true, message: `Gagal memproses data setelah ${MAX_RETRIES} percobaan. (${error.message})` };
+                    }
+                    
+                    // Jeda sejenak sebelum mencoba ulang (1 detik x attempt)
+                    await new Promise(res => setTimeout(res, 1000 * attempt));
+                }
+            }
+        }
+
+        // Penggunaan untuk GET (Tarik Data)
         async function fetchAPI(action, params = {}) {
             let url = `${API_URL}?action=${action}`;
             for (const key in params) {
                 if(params[key]) url += `&${key}=${encodeURIComponent(params[key])}`;
             }
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Koneksi jaringan bermasalah");
-                return await response.json();
-            } catch (error) {
-                console.error("Fetch API Error:", error);
-                return { error: true, message: error.message };
-            }
+            return await fetchWithRobustHandling(url, { method: 'GET' });
         }
 
+        // Penggunaan untuk POST (Simpan/Hapus Data)
         async function fetchPostAPI(payload) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                return await response.json();
-            } catch (error) {
-                console.error("Fetch POST Error:", error);
-                return { error: true, message: error.message };
-            }
+            return await fetchWithRobustHandling(API_URL, {
+                method: 'POST',
+                redirect: 'follow', // Dibutuhkan oleh Google Apps Script
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8", 
+                },
+                body: JSON.stringify(payload)
+            });
         }
 
         async function confirmDelete(menuId, sheetName, rowIndex, fileUrl = "") {
@@ -391,73 +468,66 @@
         }
 
         async function loadContent(menuId, navElement = null, sheetFilter = '') {
-    requestToken++;
-    const myToken = requestToken;
+            requestToken++;
+            const myToken = requestToken;
 
-    currentMenu = menuId;
-    const loader = document.getElementById('loader');
-    const container = document.getElementById('contentContainer');
-    
-    if(navElement) {
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        navElement.classList.add('active');
-        document.getElementById('headerTitle').innerText = navElement.innerText;
-    }
+            currentMenu = menuId;
+            const loader = document.getElementById('loader');
+            const container = document.getElementById('contentContainer');
+            
+            if(navElement) {
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                navElement.classList.add('active');
+                document.getElementById('headerTitle').innerText = navElement.innerText;
+            }
 
-    if(window.innerWidth < 1024) {
-        document.getElementById('sidebar').classList.add('-translate-x-full');
-        document.getElementById('mobileOverlay').classList.add('hidden');
-    }
+            if(window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('mobileOverlay').classList.add('hidden');
+            }
 
-    loader.classList.remove('hidden');
-    chartsInstance.forEach(chart => chart.destroy());
-    chartsInstance = [];
+            loader.classList.remove('hidden');
+            chartsInstance.forEach(chart => chart.destroy());
+            chartsInstance = [];
 
-    try {
-        let res;
-        if (menuId === 'dashboard') {
-            const yFilter = document.getElementById('dashYearFilter');
-            const targetYear = yFilter ? yFilter.value : new Date().getFullYear().toString();
-            res = await fetchAPI('getDashboard', { year: targetYear });
-        } 
-        // -------------------------------------------------------------------------
-        // PERBAIKAN DI SINI: Masukkan 'survey_' agar membaca sheetFilter
-        // -------------------------------------------------------------------------
-        else if (['pd', 'pl', 'dh'].includes(menuId) || menuId.startsWith('survey_')) {
-            res = await fetchAPI('getMenuData', { menuId: menuId, sheetName: sheetFilter });
+            try {
+                let res;
+                if (menuId === 'dashboard') {
+                    const yFilter = document.getElementById('dashYearFilter');
+                    const targetYear = yFilter ? yFilter.value : new Date().getFullYear().toString();
+                    res = await fetchAPI('getDashboard', { year: targetYear });
+                } 
+                else if (['pd', 'pl', 'dh'].includes(menuId) || menuId.startsWith('survey_')) {
+                    res = await fetchAPI('getMenuData', { menuId: menuId, sheetName: sheetFilter });
+                }
+                else if (menuId.startsWith('pinjam_') || menuId.startsWith('sarpras_') || menuId.startsWith('set_') || menuId.startsWith('check_')) {
+                    res = await fetchAPI('getMenuData', { menuId: menuId });
+                }
+
+                if (myToken !== requestToken) return;
+
+                if (res && res.error) throw new Error(res.message);
+
+                if (menuId === 'dashboard') renderDashboard(res);
+                else if (['pd', 'pl', 'dh'].includes(menuId)) renderMainDataView(menuId, res, res.sheetList || [], res.activeSheet || sheetFilter);
+                else if (menuId.startsWith('pinjam_')) renderPeminjamanView(menuId, res);
+                else if (menuId.startsWith('sarpras_')) renderSarprasView(menuId, res);
+                else if (menuId.startsWith('survey_')) renderSurveyView(menuId, res);
+                else if (menuId.startsWith('set_')) renderPengaturanView(menuId, res);
+                else if (menuId.startsWith('check_')) renderChecklistView(menuId, res);
+                else {
+                    container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl shadow"><h3>Fitur belum tersedia</h3></div>`;
+                }
+            } catch (error) {
+                if (myToken !== requestToken) return; 
+                console.error(error);
+                container.innerHTML = `<div class="p-8 text-center text-red-500 bg-white dark:bg-darkcard rounded-xl shadow"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><p>Gagal memuat data. Periksa koneksi Apps Script Anda.</p><p class="text-xs text-gray-400 mt-2">${error.message}</p></div>`;
+            } finally {
+                if (myToken === requestToken) {
+                    loader.classList.add('hidden');
+                }
+            }
         }
-        else if (menuId.startsWith('pinjam_') || menuId.startsWith('sarpras_') || menuId.startsWith('set_') || menuId.startsWith('check_')) {
-            res = await fetchAPI('getMenuData', { menuId: menuId });
-        }
-
-        if (myToken !== requestToken) return;
-
-        if (res && res.error) throw new Error(res.message);
-
-        if (menuId === 'dashboard') {
-            renderDashboard(res);
-        }
-        else if (['pd', 'pl', 'dh'].includes(menuId)) {
-            renderMainDataView(menuId, res, res.sheetList || [], res.activeSheet || sheetFilter);
-        }
-        else if (menuId.startsWith('pinjam_')) renderPeminjamanView(menuId, res);
-        else if (menuId.startsWith('sarpras_')) renderSarprasView(menuId, res);
-        else if (menuId.startsWith('survey_')) renderSurveyView(menuId, res);
-        else if (menuId.startsWith('set_')) renderPengaturanView(menuId, res);
-        else if (menuId.startsWith('check_')) renderChecklistView(menuId, res);
-        else {
-            container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl shadow"><h3>Fitur belum tersedia</h3></div>`;
-        }
-    } catch (error) {
-        if (myToken !== requestToken) return; 
-        console.error(error);
-        container.innerHTML = `<div class="p-8 text-center text-red-500 bg-white dark:bg-darkcard rounded-xl shadow"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><p>Gagal memuat data. Periksa koneksi Apps Script Anda.</p></div>`;
-    } finally {
-        if (myToken === requestToken) {
-            loader.classList.add('hidden');
-        }
-    }
-}
 
         // =========================================================
         // DASHBOARD SUPER LENGKAP V2 (DENGAN 6 TAB + SURVEY CHART)
@@ -476,7 +546,6 @@
             activeBtn.classList.add('border-primary', 'text-primary');
         };
 
-        // Sub-Tab khusus dalam Tab Survey
         window.switchSurveySubTab = function(subTabId) {
             document.querySelectorAll('.survey-sub-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(subTabId).classList.remove('hidden');
@@ -492,11 +561,10 @@
 
         function renderDashboard(data) {
             const container = document.getElementById('contentContainer');
-            // Menarik data survey_pd dari server
             const { pd, pl, pinjam, sarpras, survey_pd, year, years } = data;
             const textColor = document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151';
             const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#3b82f6', '#06b6d4'];
-            const ratingColors = ['#10b981', '#84cc16', '#facc15', '#f97316', '#ef4444']; // Sangat Baik (Hijau) -> Sangat Kurang (Merah)
+            const ratingColors = ['#10b981', '#84cc16', '#facc15', '#f97316', '#ef4444']; 
 
             let yearOptions = `<option value="ALL" ${year === 'ALL' ? 'selected' : ''}>Semua Tahun</option>`;
             if (years && years.length > 0) {
@@ -518,7 +586,6 @@
                     </div>
                 </div>
 
-                <!-- KARTU SUMMARY LAMA TETAP ADA -->
                 <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 mb-8">
                     <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col justify-center text-center">
                         <h4 class="text-[11px] text-gray-500 uppercase font-bold mb-1">Peserta Didik</h4>
@@ -550,7 +617,6 @@
                     </div>
                 </div>
 
-                <!-- MENU 6 TAB UTAMA -->
                 <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 mb-6 scrollbar-hide">
                     <button onclick="switchDashTab('tab-pd')" id="btn-tab-pd" class="dash-tab-btn px-4 py-3 font-bold border-b-2 border-primary text-primary whitespace-nowrap outline-none transition">Peserta Didik</button>
                     <button onclick="switchDashTab('tab-pl')" id="btn-tab-pl" class="dash-tab-btn px-4 py-3 font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap outline-none transition">Peserta Pelatihan</button>
@@ -560,7 +626,6 @@
                     <button onclick="switchDashTab('tab-mtc')" id="btn-tab-mtc" class="dash-tab-btn px-4 py-3 font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap outline-none transition">Maintenance</button>
                 </div>
 
-                <!-- TAB 1 & 2 (PD & PL) DISINI SEPERTI BIASA -->
                 <div id="tab-pd" class="dash-tab-content">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800"><div class="h-64 relative"><canvas id="chartPdPie"></canvas></div></div>
@@ -573,26 +638,19 @@
                     <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 w-full"><div class="h-80 relative"><canvas id="chartPlSheet"></canvas></div></div>
                 </div>
 
-                <!-- ========================================== -->
-                <!-- KONTEN TAB 3: DATA SURVEY KEPUASAN -->
-                <!-- ========================================== -->
                 <div id="tab-survey" class="dash-tab-content hidden">
-                    <!-- SUB MENU: PESERTA DIDIK vs RESIDEN -->
                     <div class="flex space-x-2 mb-4">
                         <button onclick="switchSurveySubTab('sub-survey-pd')" id="btn-sub-survey-pd" class="survey-sub-btn bg-primary text-white px-4 py-2 rounded-full text-sm font-bold shadow-sm transition">Survey Peserta Didik</button>
                         <button onclick="switchSurveySubTab('sub-survey-residen')" id="btn-sub-survey-residen" class="survey-sub-btn bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow-sm transition">Survey Residen</button>
                     </div>
 
-                    <!-- SUB-TAB 1: PESERTA DIDIK -->
                     <div id="sub-survey-pd" class="survey-sub-content">
-                        <!-- Chart 1: Trendline Kepuasan -->
                         <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-6">
                             <h4 class="text-sm font-bold mb-1 text-center">Trendline Rata-Rata Kepuasan Pasien per Bulan</h4>
                             <p class="text-xs text-center text-gray-400 mb-4">(Skala 1 - 5 Bintang | Total Responden: ${survey_pd?.total || 0})</p>
                             <div class="h-64 relative"><canvas id="chartSvPdTrend"></canvas></div>
                         </div>
 
-                        <!-- Chart 2, 3, 4: Pie Kategori, Pie Gender, Bar Q1-Q5 -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                             <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                                 <h4 class="text-sm font-bold text-center mb-4">Kategori Penilaian</h4>
@@ -608,7 +666,6 @@
                             </div>
                         </div>
 
-                        <!-- Chart 5: Ruangan -->
                         <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 w-full">
                             <h4 class="text-sm font-bold mb-1 text-center">Tingkat Survey per Ruangan</h4>
                             <p class="text-xs text-center text-gray-400 mb-4">Sebaran Pasien Berdasarkan Ruangan Perawatan</p>
@@ -616,7 +673,6 @@
                         </div>
                     </div>
 
-                    <!-- SUB-TAB 2: RESIDEN (Placeholder Sementara) -->
                     <div id="sub-survey-residen" class="survey-sub-content hidden">
                         <div class="bg-gray-50 dark:bg-gray-800 p-10 rounded-xl text-center border-2 border-dashed border-gray-200 dark:border-gray-700">
                             <i class="fas fa-tools text-4xl text-gray-300 mb-3"></i>
@@ -626,15 +682,11 @@
                     </div>
                 </div>
 
-                <!-- KONTEN TAB 4-6 SEMENTARA KOSONG -->
                 <div id="tab-pinjam" class="dash-tab-content hidden"><div class="p-8 text-center text-gray-400 font-bold">Grafik Peminjaman Siap Diisi</div></div>
                 <div id="tab-sarpras" class="dash-tab-content hidden"><div class="p-8 text-center text-gray-400 font-bold">Grafik Sarpras Siap Diisi</div></div>
                 <div id="tab-mtc" class="dash-tab-content hidden"><div class="p-8 text-center text-gray-400 font-bold">Grafik Maintenance Siap Diisi</div></div>
                 `;
 
-            // ==========================================
-            // RENDER GRAFIK LAMA (PD & PL)
-            // ==========================================
             if(document.getElementById('chartPdPie') && pd) {
                 const pieLabels = (pd.jenjangTop10 && pd.jenjangTop10.labels.length) ? pd.jenjangTop10.labels : ['Belum Ada Data'];
                 const pieData = (pd.jenjangTop10 && pd.jenjangTop10.data.length) ? pd.jenjangTop10.data : [1];
@@ -654,11 +706,7 @@
                 chartsInstance.push(new Chart(document.getElementById('chartPlSheet'), { type: 'bar', data: { labels: plLabels, datasets: [{ data: plData, backgroundColor: '#10b981', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins:{ legend:{ display:false } } } }));
             }
 
-            // ==========================================
-            // RENDER GRAFIK BARU (SURVEY PESERTA DIDIK)
-            // ==========================================
             if(survey_pd && survey_pd.total > 0) {
-                // Tooltip cerdas untuk menghitung Persentase (%) di Pie Chart
                 const pieTooltipOptions = {
                     callbacks: {
                         label: function(ctx) {
@@ -669,7 +717,6 @@
                     }
                 };
 
-                // 1. Trendline Rata-Rata
                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
                 chartsInstance.push(new Chart(document.getElementById('chartSvPdTrend'), {
                     type: 'line',
@@ -677,7 +724,6 @@
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 5, ticks: {color: textColor} }, x: {ticks: {color: textColor}} }, plugins: { legend: { display: false } } }
                 }));
 
-                // 2. Pie Chart Kategori (Sangat Baik - Sangat Kurang)
                 const katLabels = ['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Sangat Kurang'];
                 const katData = [survey_pd.kategori['Sangat Baik'], survey_pd.kategori['Baik'], survey_pd.kategori['Cukup'], survey_pd.kategori['Kurang'], survey_pd.kategori['Sangat Kurang']];
                 chartsInstance.push(new Chart(document.getElementById('chartSvPdPieKategori'), {
@@ -686,7 +732,6 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ position: 'bottom', labels: {color: textColor, boxWidth:10} }, tooltip: pieTooltipOptions } }
                 }));
 
-                // 3. Pie Chart Gender
                 const genderLabels = Object.keys(survey_pd.gender);
                 const genderData = Object.values(survey_pd.gender);
                 chartsInstance.push(new Chart(document.getElementById('chartSvPdPieGender'), {
@@ -695,7 +740,6 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ position: 'bottom', labels: {color: textColor} }, tooltip: pieTooltipOptions } }
                 }));
 
-                // 4. Bar Chart Q1 - Q5
                 chartsInstance.push(new Chart(document.getElementById('chartSvPdBarQ'), {
                     type: 'bar',
                     data: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'], datasets: [{ data: survey_pd.qAvg, backgroundColor: '#8b5cf6', borderRadius: 4 }] },
@@ -707,8 +751,7 @@
                     }
                 }));
 
-                // 5. Bar Chart Ruangan
-                const sortedRuang = Object.entries(survey_pd.ruangan).sort((a,b)=>b[1]-a[1]).slice(0, 10); // Ambil Top 10
+                const sortedRuang = Object.entries(survey_pd.ruangan).sort((a,b)=>b[1]-a[1]).slice(0, 10);
                 chartsInstance.push(new Chart(document.getElementById('chartSvPdBarRuangan'), {
                     type: 'bar',
                     data: { labels: sortedRuang.map(r=>r[0]), datasets: [{ data: sortedRuang.map(r=>r[1]), backgroundColor: '#14b8a6', borderRadius: 4 }] },
@@ -745,11 +788,11 @@
                 const jenjangSet = [...new Set(data.map(r => `${r[12]||''} ${r[10]||''}`.trim()).filter(Boolean))].sort();
                 
                 extraFilters += `<select id="filterInstitusi" onchange="applyFilters()" class="bg-white border border-gray-300 text-sm rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-primary outline-none min-w-[140px]"><option value="">Semua Institusi</option>`;
-                institusiSet.forEach(i => extraFilters += `<option value="${i}">${i}</option>`);
+                institusiSet.forEach(i => extraFilters += `<option value="${esc(i)}">${esc(i)}</option>`);
                 extraFilters += `</select>`;
                 
                 extraFilters += `<select id="filterJenjang" onchange="applyFilters()" class="bg-white border border-gray-300 text-sm rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-primary outline-none min-w-[140px]"><option value="">Sem. Jurusan/Jenjang</option>`;
-                jenjangSet.forEach(j => extraFilters += `<option value="${j}">${j}</option>`);
+                jenjangSet.forEach(j => extraFilters += `<option value="${esc(j)}">${esc(j)}</option>`);
                 extraFilters += `</select>`;
             }
 
@@ -794,19 +837,19 @@
                 data.forEach((row, i) => {
                     const rowIndex = i + 2; 
                     let searchStr = "", instStr = "", jenjStr = "";
-                    if(menuId === 'pd') { searchStr = `${row[0]||''} ${row[1]||''}`; instStr = row[9]||''; jenjStr = `${row[12]||''} ${row[10]||''}`.trim(); }
-                    else if (menuId === 'pl') { searchStr = `${row[2]||''} ${row[3]||''}`; }
-                    else if (menuId === 'dh') { searchStr = `${row[2]||''}`; }
+                    if(menuId === 'pd') { searchStr = `${esc(row[0])||''} ${esc(row[1])||''}`; instStr = esc(row[9])||''; jenjStr = `${esc(row[12])||''} ${esc(row[10])||''}`.trim(); }
+                    else if (menuId === 'pl') { searchStr = `${esc(row[2])||''} ${esc(row[3])||''}`; }
+                    else if (menuId === 'dh') { searchStr = `${esc(row[2])||''}`; }
 
                     html += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition" data-search="${searchStr}" data-institusi="${instStr}" data-jenjang="${jenjStr}">`;
                     
                     if(menuId === 'pd') {
-                        html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${row[22]||'-'}</td><td class="px-4 py-3 font-medium">${row[0]||'-'}</td><td class="px-4 py-3">${row[9]||'-'}</td><td class="px-4 py-3">${row[12]||''} ${row[10]||''}</td><td class="px-4 py-3">${row[17]||''} s/d ${row[18]||''}</td>`;
+                        html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${esc(row[22])||'-'}</td><td class="px-4 py-3 font-medium">${esc(row[0])||'-'}</td><td class="px-4 py-3">${esc(row[9])||'-'}</td><td class="px-4 py-3">${esc(row[12])||''} ${esc(row[10])||''}</td><td class="px-4 py-3">${esc(row[17])||''} s/d ${esc(row[18])||''}</td>`;
                     } else if (menuId === 'pl') {
-                        html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3 font-medium">${row[2]||'-'}</td><td class="px-4 py-3">${row[14]||'-'}</td><td class="px-4 py-3">${row[23]||'-'}</td>`;
+                        html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3 font-medium">${esc(row[2])||'-'}</td><td class="px-4 py-3">${esc(row[14])||'-'}</td><td class="px-4 py-3">${esc(row[23])||'-'}</td>`;
                     } else if (menuId === 'dh') {
-                        let linkTTD = (row[5] && String(row[5]).includes('http')) ? `<a href="${row[5]}" target="_blank" class="text-primary hover:underline"><i class="fas fa-external-link-alt"></i> Lihat</a>` : '-';
-                        html += `<td class="px-4 py-3">${row[0]||i+1}</td><td class="px-4 py-3 font-medium">${row[2]||'-'}</td><td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3 text-center">${linkTTD}</td>`;
+                        let linkTTD = (row[5] && String(row[5]).includes('http')) ? `<a href="${esc(row[5])}" target="_blank" class="text-primary hover:underline"><i class="fas fa-external-link-alt"></i> Lihat</a>` : '-';
+                        html += `<td class="px-4 py-3">${esc(row[0])||i+1}</td><td class="px-4 py-3 font-medium">${esc(row[2])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3 text-center">${linkTTD}</td>`;
                     }
                     html += `<td class="px-4 py-3 text-center">
                                 <button onclick="customAlert('Fitur Detail Segera Hadir', 'info')" class="text-gray-400 hover:text-primary px-1" title="Detail"><i class="fas fa-list"></i></button>
@@ -836,7 +879,7 @@
                 const statusSet = [...new Set(data.map(r => r[statusIndex]).filter(Boolean))].sort();
                 
                 extraFilters += `<select id="filterStatus" onchange="applyFilters()" class="bg-white border border-gray-300 text-sm rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-primary outline-none min-w-[140px]"><option value="">Semua Status</option>`;
-                statusSet.forEach(s => extraFilters += `<option value="${s}">${s}</option>`);
+                statusSet.forEach(s => extraFilters += `<option value="${esc(s)}">${esc(s)}</option>`);
                 extraFilters += `</select>`;
             }
 
@@ -875,18 +918,19 @@
                 rowCount = data.length;
                 data.forEach((row, i) => {
                     let searchStr = "", statusStr = "";
-                    if(menuId === 'pinjam_kunci') { searchStr = `${row[7]||''} ${row[3]||''}`; statusStr = row[5]||''; }
-                    else if(menuId === 'pinjam_ruangan') { searchStr = `${row[9]||''} ${row[7]||''}`; statusStr = row[6]||''; }
-                    else { searchStr = `${row[8]||''} ${row[6]||''}`; statusStr = row[5]||''; }
+                    if(menuId === 'pinjam_kunci') { searchStr = `${esc(row[7])||''} ${esc(row[3])||''}`; statusStr = esc(row[5])||''; }
+                    else if(menuId === 'pinjam_ruangan') { searchStr = `${esc(row[9])||''} ${esc(row[7])||''}`; statusStr = esc(row[6])||''; }
+                    else { searchStr = `${esc(row[8])||''} ${esc(row[6])||''}`; statusStr = esc(row[5])||''; }
 
                     html += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-search="${searchStr}" data-status="${statusStr}">`;
                     
                     if (menuId === 'pinjam_kunci') {
-                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3 font-medium">${row[7]||'-'}</td><td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${row[11]||'-'} s/d ${row[12]||'-'}</td><td class="px-4 py-3">${formatStatus(row[5])}</td>`;
+                         // PERBAIKAN: Bungkus row[11] dan row[12] dengan formatTanggal jika perlu
+                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${formatTanggal(row[2])}</td><td class="px-4 py-3 font-medium">${esc(row[7])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${formatTanggal(row[11])} s/d ${formatTanggal(row[12])}</td><td class="px-4 py-3">${formatStatus(row[5])}</td>`;
                     } else if (menuId === 'pinjam_ruangan') {
-                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3">${formatStatus(row[6])}</td><td class="px-4 py-3">${row[7]||'-'}</td><td class="px-4 py-3 font-medium">${row[9]||'-'}</td><td class="px-4 py-3">${row[5]||'-'}</td><td class="px-4 py-3">${row[4]||'-'}</td>`;
+                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${formatTanggal(row[2])}</td><td class="px-4 py-3">${formatStatus(row[6])}</td><td class="px-4 py-3">${esc(row[7])||'-'}</td><td class="px-4 py-3 font-medium">${esc(row[9])||'-'}</td><td class="px-4 py-3">${esc(row[5])||'-'}</td><td class="px-4 py-3">${esc(row[4])||'-'}</td>`;
                     } else { 
-                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3">${formatStatus(row[5])}</td><td class="px-4 py-3">${row[6]||'-'}</td><td class="px-4 py-3 font-medium">${row[8]||'-'}</td><td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${row[4]||'-'}</td>`;
+                         html += `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3">${formatTanggal(row[2])}</td><td class="px-4 py-3">${formatStatus(row[5])}</td><td class="px-4 py-3">${esc(row[6])||'-'}</td><td class="px-4 py-3 font-medium">${esc(row[8])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${esc(row[4])||'-'}</td>`;
                     }
                     html += `<td class="px-4 py-3 text-center">
                                 <button class="text-gray-400 hover:text-primary"><i class="fas fa-ellipsis-v"></i></button>
@@ -901,9 +945,6 @@
             container.innerHTML = html;
         }
 
-        // =========================================================================
-        // VIEW: CHECKLIST, MAINTENANCE & SURVEY (DENGAN FILTER SHEET)
-        // =========================================================================
         function renderChecklistView(menuId, response) {
             const container = document.getElementById('contentContainer');
             const { data, sheetId, sheetList, activeSheet } = response;
@@ -913,7 +954,6 @@
             let theadHtml = "";
             let printLink = ""; 
             
-            // 1. TENTUKAN HEADER TABEL (Kolom Kelengkapan Ditambahkan)
             if (menuId === 'check_ruangan') {
                 title = "Checklist Ruangan";
                 printLink = "print_ruangan.html";
@@ -922,25 +962,10 @@
                 title = "Checklist Barang";
                 printLink = "print_barang.html";
                 theadHtml = `<tr><th class="px-4 py-3">No</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3">Nama Alat/Barang</th><th class="px-4 py-3">Kebersihan</th><th class="px-4 py-3">Fungsi</th><th class="px-4 py-3 text-center">Foto Temuan</th><th class="px-4 py-3">Kelengkapan</th><th class="px-4 py-3">Ket</th><th class="px-4 py-3">Petugas</th><th class="px-4 py-3 text-center">TTD</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
-            } else if (menuId === 'survey_pd') {
-                title = "Data Survey Kepuasan";
-                theadHtml = `<tr><th class="px-4 py-3">No</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3">Nama Pasien</th><th class="px-4 py-3">Demografi</th><th class="px-4 py-3">Ruangan</th><th class="px-4 py-3 text-center">Q1</th><th class="px-4 py-3 text-center">Q2</th><th class="px-4 py-3 text-center">Q3</th><th class="px-4 py-3 text-center">Q4</th><th class="px-4 py-3 text-center">Q5</th><th class="px-4 py-3">Kritik & Saran</th><th class="px-4 py-3 text-center">Drive Link</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
             } else {
                 title = "Data Maintenance";
                 printLink = "print_maintenance.html";
                 theadHtml = `<tr><th class="px-4 py-3">No</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3">Target MTC</th><th class="px-4 py-3">Jenis Tindakan</th><th class="px-4 py-3">Nama Fasilitas/Alat</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Tindakan</th><th class="px-4 py-3 text-center">Foto Before</th><th class="px-4 py-3 text-center">Foto After</th><th class="px-4 py-3">Ket</th><th class="px-4 py-3">Petugas</th><th class="px-4 py-3 text-center">TTD</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
-            }
-
-            let sheetDropdownHtml = '';
-            if (sheetList && sheetList.length > 0 && menuId === 'survey_pd') {
-                sheetDropdownHtml = `
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-300 hidden sm:block">Pilih Tahun:</span>
-                        <select onchange="loadContent('${menuId}', null, this.value)" class="bg-white border border-gray-300 text-gray-700 rounded-lg text-sm px-3 py-2 focus:ring-primary outline-none cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-sm font-bold">
-                            ${sheetList.map(s => `<option value="${s}" ${s === activeSheet ? 'selected' : ''}>Data Tahun ${s}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
             }
 
             let html = `
@@ -948,7 +973,6 @@
                     <div class="p-4 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col sm:flex-row justify-between items-center gap-3">
                         <div class="flex items-center gap-3 w-full sm:w-auto">
                             <h3 class="text-lg font-bold capitalize hidden sm:block whitespace-nowrap">${title}</h3>
-                            ${sheetDropdownHtml}
                             <div class="relative w-full sm:w-auto">
                                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
                                 <input type="text" id="searchInput" onkeyup="applyFilters()" placeholder="Cari Data..." class="w-full sm:w-48 pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 focus:ring-primary outline-none">
@@ -958,7 +982,7 @@
                             <button onclick="loadContent('${menuId}', null, '${activeSheet}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sync-alt"></i></button>
                             <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" title="Buka Spreadsheet"><i class="fas fa-file-excel"></i></a>
                             ${printLink ? `<a href="${printLink}" target="_blank" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition flex items-center whitespace-nowrap"><i class="fas fa-print mr-1"></i> Print</a>` : ''}
-                            ${menuId !== 'survey_pd' ? `<a href="maintenance.html" target="_blank" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</a>` : ''}
+                            <a href="maintenance.html" target="_blank" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</a>
                         </div>
                     </div>
                     <div class="table-container p-0">
@@ -969,49 +993,42 @@
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
                                 ${(!data || data.length === 0) ? `<tr><td colspan="17" class="p-8 text-center font-bold text-gray-400 italic">Data Kosong</td></tr>` : data.map((row, i) => {
                                     
-                                    let searchStr = (row[1]||'') + ' ' + (row[2]||'');
+                                    let searchStr = (esc(row[1])||'') + ' ' + (esc(row[2])||'');
                                     let tr = `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-search="${searchStr}">`;
                                     
                                     tr += `<td class="px-4 py-3">${i+1}</td>`;
-                                    tr += `<td class="px-4 py-3 text-xs whitespace-normal w-32"><span class="font-bold">${row[1]||'-'}</span><br/><span class="text-gray-500">${row[0]||'-'}</span></td>`;
+                                    tr += `<td class="px-4 py-3 text-xs whitespace-normal w-32"><span class="font-bold">${esc(row[1])||'-'}</span><br/><span class="text-gray-500">${esc(row[0])||'-'}</span></td>`;
                                     
-                                    // 2. PEMETAAN KOLOM (Index bergeser +1 setelah foto)
                                     if (menuId === 'check_ruangan') {
-                                        tr += `<td class="px-4 py-3 font-medium">${row[2]||'-'}</td>`;
-                                        tr += `<td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${row[4]||'-'}</td><td class="px-4 py-3">${row[5]||'-'}</td>`;
-                                        tr += `<td class="px-4 py-3">${row[6]||'-'}</td><td class="px-4 py-3">${row[7]||'-'}</td><td class="px-4 py-3">${row[8]||'-'}</td><td class="px-4 py-3">${row[9]||'-'}</td><td class="px-4 py-3">${row[10]||'-'}</td>`;
-                                        let foto = (row[11] && String(row[11]).includes('http')) ? `<a href="${row[11]}" target="_blank" class="text-yellow-500 hover:underline" title="Lihat Foto"><i class="fas fa-image"></i></a>` : '-';
+                                        tr += `<td class="px-4 py-3 font-medium">${esc(row[2])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${esc(row[4])||'-'}</td><td class="px-4 py-3">${esc(row[5])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3">${esc(row[6])||'-'}</td><td class="px-4 py-3">${esc(row[7])||'-'}</td><td class="px-4 py-3">${esc(row[8])||'-'}</td><td class="px-4 py-3">${esc(row[9])||'-'}</td><td class="px-4 py-3">${esc(row[10])||'-'}</td>`;
+                                        let foto = (row[11] && String(row[11]).includes('http')) ? `<a href="${esc(row[11])}" target="_blank" class="text-yellow-500 hover:underline" title="Lihat Foto"><i class="fas fa-image"></i></a>` : '-';
                                         tr += `<td class="px-4 py-3 text-center">${foto}</td>`;
-                                        tr += `<td class="px-4 py-3 font-semibold">${row[12]||'-'}</td>`; // Kelengkapan
-                                        tr += `<td class="px-4 py-3 truncate max-w-xs" title="${row[13]||''}">${row[13]||'-'}</td>`;
-                                        tr += `<td class="px-4 py-3">${row[14]||'-'}</td>`;
-                                        let ttd = (row[15] && String(row[15]).includes('http')) ? `<a href="${row[15]}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
+                                        tr += `<td class="px-4 py-3 font-semibold">${esc(row[12])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3 truncate max-w-xs" title="${esc(row[13])||''}">${esc(row[13])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3">${esc(row[14])||'-'}</td>`;
+                                        let ttd = (row[15] && String(row[15]).includes('http')) ? `<a href="${esc(row[15])}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
                                         tr += `<td class="px-4 py-3 text-center">${ttd}</td>`;
 
                                     } else if (menuId === 'check_barang') {
-                                        tr += `<td class="px-4 py-3 font-medium">${row[2]||'-'}</td>`;
-                                        tr += `<td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${row[4]||'-'}</td>`;
-                                        let foto = (row[5] && String(row[5]).includes('http')) ? `<a href="${row[5]}" target="_blank" class="text-yellow-500 hover:underline" title="Lihat Foto"><i class="fas fa-image"></i></a>` : '-';
+                                        tr += `<td class="px-4 py-3 font-medium">${esc(row[2])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${esc(row[4])||'-'}</td>`;
+                                        let foto = (row[5] && String(row[5]).includes('http')) ? `<a href="${esc(row[5])}" target="_blank" class="text-yellow-500 hover:underline" title="Lihat Foto"><i class="fas fa-image"></i></a>` : '-';
                                         tr += `<td class="px-4 py-3 text-center">${foto}</td>`;
-                                        tr += `<td class="px-4 py-3 font-semibold">${row[6]||'-'}</td>`; // Kelengkapan
-                                        tr += `<td class="px-4 py-3 truncate max-w-xs" title="${row[7]||''}">${row[7]||'-'}</td>`;
-                                        tr += `<td class="px-4 py-3">${row[8]||'-'}</td>`;
-                                        let ttd = (row[9] && String(row[9]).includes('http')) ? `<a href="${row[9]}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
+                                        tr += `<td class="px-4 py-3 font-semibold">${esc(row[6])||'-'}</td>`; 
+                                        tr += `<td class="px-4 py-3 truncate max-w-xs" title="${esc(row[7])||''}">${esc(row[7])||'-'}</td>`;
+                                        tr += `<td class="px-4 py-3">${esc(row[8])||'-'}</td>`;
+                                        let ttd = (row[9] && String(row[9]).includes('http')) ? `<a href="${esc(row[9])}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
                                         tr += `<td class="px-4 py-3 text-center">${ttd}</td>`;
 
-                                    } else if (menuId === 'survey_pd') {
-                                        // (Survey tetap sama)
                                     } else {
-                                        // ==========================================
-                                        // DATA MAINTENANCE
-                                        // ==========================================
-                                        let target = row[2] || '-';
-                                        let jenis = row[3] || '-';
-                                        let namaFasilitas = row[4] || '-';
-                                        let status = row[5] || 'Pending';
-                                        let tindakan = row[6] || '-';
+                                        let target = esc(row[2]) || '-';
+                                        let jenis = esc(row[3]) || '-';
+                                        let namaFasilitas = esc(row[4]) || '-';
+                                        let status = esc(row[5]) || 'Pending';
+                                        let tindakan = esc(row[6]) || '-';
                                         
-                                        // 1. Pewarnaan Status Cerdas
                                         let badgeColor = "bg-gray-100 text-gray-700";
                                         let statusUpper = String(status).toUpperCase();
                                         if (statusUpper.includes('SELESAI')) badgeColor = "bg-green-100 text-green-700";
@@ -1019,30 +1036,27 @@
                                         else if (statusUpper.includes('PENDING') || statusUpper.includes('BELUM')) badgeColor = "bg-red-100 text-red-700";
                                         let badgeStatus = `<span class="px-2 py-1 text-[10px] font-bold rounded-full ${badgeColor}">${status}</span>`;
                                         
-                                        // 2. Foto Before & After
-                                        let fotoBef = (row[7] && String(row[7]).includes('http')) ? `<a href="${row[7]}" target="_blank" class="text-yellow-500 hover:underline" title="Foto Sebelum"><i class="fas fa-image"></i></a>` : '-';
-                                        let fotoAft = (row[8] && String(row[8]).includes('http')) ? `<a href="${row[8]}" target="_blank" class="text-green-500 hover:underline" title="Foto Sesudah"><i class="fas fa-image"></i></a>` : '-';
+                                        let fotoBef = (row[7] && String(row[7]).includes('http')) ? `<a href="${esc(row[7])}" target="_blank" class="text-yellow-500 hover:underline" title="Foto Sebelum"><i class="fas fa-image"></i></a>` : '-';
+                                        let fotoAft = (row[8] && String(row[8]).includes('http')) ? `<a href="${esc(row[8])}" target="_blank" class="text-green-500 hover:underline" title="Foto Sesudah"><i class="fas fa-image"></i></a>` : '-';
                                         
-                                        let ket = row[9] || '-';
-                                        let petugas = row[10] || '-';
-                                        let ttd = (row[11] && String(row[11]).includes('http')) ? `<a href="${row[11]}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
+                                        let ket = esc(row[9]) || '-';
+                                        let petugas = esc(row[10]) || '-';
+                                        let ttd = (row[11] && String(row[11]).includes('http')) ? `<a href="${esc(row[11])}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-signature"></i></a>` : '-';
 
-                                        // 3. Paket Data JSON untuk dilempar ke maintenance.html
+                                        // MENGGUNAKAN URI ENCODING AGAR TIDAK XSS / BREAK HTML QUOTES
                                         let ticketObj = {
                                             row: i + 2,
                                             target: target,
                                             nama: namaFasilitas,
-                                            datetime: row[1] || '-',
+                                            datetime: esc(row[1]) || '-',
                                             keterangan: ket,
-                                            fotoBefore: row[7] || ''
+                                            fotoBefore: esc(row[7]) || ''
                                         };
-                                        let ticketJson = JSON.stringify(ticketObj).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                                        let encodedTicket = encodeURIComponent(JSON.stringify(ticketObj));
 
-                                        // 4. Tombol Tindak Lanjuti & Hapus
-                                        let btnUpdate = `<button onclick='lemparKeMaintenance(${ticketJson})' class="text-indigo-500 hover:text-indigo-700 px-1" title="Tindak Lanjuti (Update Status)"><i class="fas fa-edit"></i></button>`;
+                                        let btnUpdate = `<button onclick="lemparKeMaintenance('${encodedTicket}')" class="text-indigo-500 hover:text-indigo-700 px-1" title="Tindak Lanjuti (Update Status)"><i class="fas fa-edit"></i></button>`;
                                         let btnDel = `<button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700 px-1" title="Hapus Data"><i class="fas fa-trash"></i></button>`;
 
-                                        // 5. Render Baris
                                         tr += `<td class="px-4 py-3 font-medium text-gray-700">${target}</td>`;
                                         tr += `<td class="px-4 py-3 text-xs">${jenis}</td>`;
                                         tr += `<td class="px-4 py-3 font-bold text-gray-900 dark:text-gray-100">${namaFasilitas}</td>`;
@@ -1053,11 +1067,10 @@
                                         tr += `<td class="px-4 py-3 text-xs font-semibold">${petugas}</td>`;
                                         tr += `<td class="px-4 py-3 text-center">${ttd}</td>`;
                                         
-                                        // Ganti tombol Hapus bawaan dengan tombol Update + Hapus
                                         return tr + `<td class="px-4 py-3 text-center whitespace-nowrap">${btnUpdate} ${btnDel}</td></tr>`;
                                     }
                                     
-                                    return tr;
+                                    return tr + `<td class="px-4 py-3 text-center whitespace-nowrap"><button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -1069,11 +1082,6 @@
             container.innerHTML = html;
         }
 
-        // =========================================================================
-        // VIEW: SEMUA JENIS SURVEY (DENGAN TOMBOL ADD FORM & COPY LINK)
-        // =========================================================================
-        
-        // Fungsi global untuk ganti Tab khusus di dalam tabel Survey Evaluasi PD
         window.switchSurveyEvalPdTab = function(tabName) {
             document.querySelectorAll('.eval-pd-table').forEach(el => el.classList.add('hidden'));
             document.getElementById('table-' + tabName).classList.remove('hidden');
@@ -1087,9 +1095,7 @@
             activeBtn.classList.add('bg-primary', 'text-white', 'shadow-md');
         };
 
-        // FUNGSI BARU: Global Copy Link
         window.copySurveyLink = function(filename) {
-            // Membentuk link lengkap (Absolute URL) berdasarkan lokasi aplikasi saat ini
             const currentUrl = window.location.href.split('?')[0]; 
             const basePath = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
             const fullLink = basePath + '/' + filename;
@@ -1106,7 +1112,6 @@
             const { data, sheetId, sheetList, activeSheet } = response;
             let rowCount = data ? data.length : 0;
             
-            // Tentukan Judul & File Tujuan (Link Form) Berdasarkan menuId
             let title = "Data Survey";
             let targetFormFile = "";
 
@@ -1124,20 +1129,18 @@
                 targetFormFile = "survey_ci.html";
             }
             
-            // Dropdown Tahun (Otomatis deteksi dari sheet)
             let sheetDropdownHtml = '';
             if (sheetList && sheetList.length > 0) {
                 sheetDropdownHtml = `
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-600 dark:text-gray-300 hidden sm:block">Filter Tahun:</span>
                         <select onchange="loadContent('${menuId}', null, this.value)" class="bg-white border border-gray-300 text-gray-700 rounded-lg text-sm px-3 py-2 focus:ring-primary outline-none cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-sm font-bold">
-                            ${sheetList.map(s => `<option value="${s}" ${s === activeSheet ? 'selected' : ''}>Tahun ${s}</option>`).join('')}
+                            ${sheetList.map(s => `<option value="${esc(s)}" ${s === activeSheet ? 'selected' : ''}>Tahun ${esc(s)}</option>`).join('')}
                         </select>
                     </div>
                 `;
             }
 
-            // Fungsi Helper untuk mewarnai teks rating
             const fs = (val) => {
                 if(!val) return '-';
                 let v = String(val).trim().toLowerCase();
@@ -1145,25 +1148,20 @@
                 if(v==='sangat baik'||v==='baik'||v==='5'||v==='4') c="text-green-600";
                 else if(v==='cukup'||v==='3') c="text-yellow-600";
                 else if(v==='kurang'||v==='sangat kurang'||v==='2'||v==='1') c="text-red-600";
-                return `<span class="font-bold text-[13px] whitespace-nowrap ${c}">${val}</span>`;
+                return `<span class="font-bold text-[13px] whitespace-nowrap ${c}">${esc(val)}</span>`;
             };
 
-            // Fungsi Helper untuk Grid Kategori Residen
             const makeGrid = (qs, labels, title) => {
                 let html = `<div class="flex gap-2 justify-center bg-gray-50 dark:bg-gray-800 p-1.5 rounded border border-gray-100 dark:border-gray-700">`;
                 qs.forEach((q, idx) => {
-                    html += `<div class="text-center"><span class="text-[9px] text-gray-400 block leading-none mb-1 font-bold">${labels[idx]}</span>${fs(q)}</div>`;
+                    html += `<div class="text-center"><span class="text-[9px] text-gray-400 block leading-none mb-1 font-bold">${esc(labels[idx])}</span>${fs(q)}</div>`;
                 });
                 html += `</div>`;
                 return html;
             };
 
-            // =========================================================================
-            // GENERATOR TABEL BERDASARKAN TIPE SURVEY
-            // =========================================================================
             let tableAreaHtml = '';
 
-            // 1. SURVEY PASIEN -> PESERTA DIDIK
             if (menuId === 'survey_pd') {
                 tableAreaHtml = `
                     <table class="w-full text-sm text-left whitespace-nowrap">
@@ -1179,20 +1177,18 @@
                             ${(!data || data.length === 0) ? `<tr><td colspan="12" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
                                 return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td class="px-4 py-3">${i+1}</td>
-                                    <td class="px-4 py-3 text-xs whitespace-normal w-32"><span class="font-bold">${row[1]||'-'}</span><br/><span class="text-gray-400">${row[0]||'-'}</span></td>
-                                    <td class="px-4 py-3 font-bold">${row[2]||'-'}</td>
-                                    <td class="px-4 py-3 text-xs whitespace-normal w-48"><span class="font-bold">${row[3]||'-'}</span>, ${row[4]||'-'} Thn<br><span class="text-gray-500">${row[5]||'-'}</span></td>
-                                    <td class="px-4 py-3 font-bold text-blue-600">${row[6]||'-'}</td>
+                                    <td class="px-4 py-3 text-xs whitespace-normal w-32"><span class="font-bold">${esc(row[1])||'-'}</span><br/><span class="text-gray-400">${esc(row[0])||'-'}</span></td>
+                                    <td class="px-4 py-3 font-bold">${esc(row[2])||'-'}</td>
+                                    <td class="px-4 py-3 text-xs whitespace-normal w-48"><span class="font-bold">${esc(row[3])||'-'}</span>, ${esc(row[4])||'-'} Thn<br><span class="text-gray-500">${esc(row[5])||'-'}</span></td>
+                                    <td class="px-4 py-3 font-bold text-blue-600">${esc(row[6])||'-'}</td>
                                     <td class="px-4 py-3 text-center">${fs(row[7])}</td><td class="px-4 py-3 text-center">${fs(row[8])}</td><td class="px-4 py-3 text-center">${fs(row[9])}</td><td class="px-4 py-3 text-center">${fs(row[10])}</td><td class="px-4 py-3 text-center">${fs(row[11])}</td>
-                                    <td class="px-4 py-3 min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${row[12]||'-'}</td>
+                                    <td class="px-4 py-3 min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${esc(row[12])||'-'}</td>
                                     <td class="px-4 py-3 text-center"><button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>
                                 </tr>`;
                             }).join('')}
                         </tbody>
                     </table>`;
             } 
-            
-            // 2. SURVEY KEPUSAN RESIDEN
             else if (menuId === 'survey_residen') {
                 tableAreaHtml = `
                     <table class="w-full text-sm text-left whitespace-nowrap">
@@ -1207,8 +1203,8 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
                             ${(!data || data.length === 0) ? `<tr><td colspan="11" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
-                                let residenInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${row[1]||'-'}</span><br/><span class="text-xs text-blue-600">${row[2]||'-'}</span><br/><span class="text-xs text-gray-500">${row[3]||'-'} (Smt ${row[4]||'-'})</span>`;
-                                let periode = `<span class="text-xs"><b class="text-green-600">Mulai:</b> ${row[5]||'-'}<br><b class="text-red-600">Selesai:</b> ${row[6]||'-'}</span>`;
+                                let residenInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${esc(row[1])||'-'}</span><br/><span class="text-xs text-blue-600">${esc(row[2])||'-'}</span><br/><span class="text-xs text-gray-500">${esc(row[3])||'-'} (Smt ${esc(row[4])||'-'})</span>`;
+                                let periode = `<span class="text-xs"><b class="text-green-600">Mulai:</b> ${esc(row[5])||'-'}<br><b class="text-red-600">Selesai:</b> ${esc(row[6])||'-'}</span>`;
                                 let katA = makeGrid([row[7], row[8], row[9]], ['Q1','Q2','Q3']);
                                 let katB = makeGrid([row[10], row[11], row[12], row[13]], ['Q1','Q2','Q3','Q4']);
                                 let katC = makeGrid([row[14], row[15], row[16]], ['Q1','Q2','Q3']);
@@ -1217,20 +1213,18 @@
                                 
                                 return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td class="px-4 py-3">${i+1}</td>
-                                    <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${row[0]||'-'}</td>
+                                    <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${esc(row[0])||'-'}</td>
                                     <td class="px-4 py-3 whitespace-normal min-w-[180px]">${residenInfo}</td>
                                     <td class="px-4 py-3 whitespace-normal min-w-[140px]">${periode}</td>
                                     <td class="px-4 py-3 text-center">${katA}</td><td class="px-4 py-3 text-center">${katB}</td>
                                     <td class="px-4 py-3 text-center">${katC}</td><td class="px-4 py-3 text-center">${katD}</td><td class="px-4 py-3 text-center">${katE}</td>
-                                    <td class="px-4 py-3 min-w-[250px] whitespace-normal italic text-gray-500 leading-tight">${row[24]||'-'}</td>
+                                    <td class="px-4 py-3 min-w-[250px] whitespace-normal italic text-gray-500 leading-tight">${esc(row[24])||'-'}</td>
                                     <td class="px-4 py-3 text-center"><button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>
                                 </tr>`;
                             }).join('')}
                         </tbody>
                     </table>`;
             }
-
-            // 3. SURVEY KEPUASAN PESERTA DIDIK (EVALUASI DGN 3 TAB)
             else if (menuId === 'survey_eval_pd') {
                 const tabSwitcher = `
                     <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex flex-wrap gap-2">
@@ -1246,13 +1240,13 @@
                     tbodyKomkordik = emptyStr; tbodyCi = emptyStr; tbodySarpras = emptyStr;
                 } else {
                     data.forEach((row, i) => {
-                        let instInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${row[1]||'-'}</span><br/><span class="text-xs text-blue-600">${row[2]||'-'}</span><br/><span class="text-xs text-purple-600 font-bold bg-purple-50 px-1 rounded">Stase: ${row[3]||'-'}</span>`;
-                        let periode = `<span class="text-xs"><b class="text-green-600">Mulai:</b> ${row[4]||'-'}<br><b class="text-red-600">Selesai:</b> ${row[5]||'-'}</span>`;
-                        let saran = `<div class="min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${row[21]||'-'}</div>`;
+                        let instInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${esc(row[1])||'-'}</span><br/><span class="text-xs text-blue-600">${esc(row[2])||'-'}</span><br/><span class="text-xs text-purple-600 font-bold bg-purple-50 px-1 rounded">Stase: ${esc(row[3])||'-'}</span>`;
+                        let periode = `<span class="text-xs"><b class="text-green-600">Mulai:</b> ${esc(row[4])||'-'}<br><b class="text-red-600">Selesai:</b> ${esc(row[5])||'-'}</span>`;
+                        let saran = `<div class="min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${esc(row[21])||'-'}</div>`;
                         let btnHapus = `<button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>`;
-                        let fotoBukti = (row[22] && String(row[22]).includes('http')) ? `<a href="${row[22]}" target="_blank" class="bg-blue-50 text-blue-500 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold"><i class="fas fa-image"></i> Lihat</a>` : '<span class="text-gray-300">-</span>';
+                        let fotoBukti = (row[22] && String(row[22]).includes('http')) ? `<a href="${esc(row[22])}" target="_blank" class="bg-blue-50 text-blue-500 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold"><i class="fas fa-image"></i> Lihat</a>` : '<span class="text-gray-300">-</span>';
 
-                        let baseTd = `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${row[0]||'-'}</td><td class="px-4 py-3 whitespace-normal min-w-[200px]">${instInfo}</td><td class="px-4 py-3 whitespace-normal min-w-[140px]">${periode}</td>`;
+                        let baseTd = `<td class="px-4 py-3">${i+1}</td><td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${esc(row[0])||'-'}</td><td class="px-4 py-3 whitespace-normal min-w-[200px]">${instInfo}</td><td class="px-4 py-3 whitespace-normal min-w-[140px]">${periode}</td>`;
 
                         tbodyKomkordik += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">${baseTd}<td class="px-4 py-3 text-center">${fs(row[6])}</td><td class="px-4 py-3 text-center">${fs(row[7])}</td><td class="px-4 py-3 text-center">${fs(row[8])}</td><td class="px-4 py-3 text-center">${fs(row[9])}</td><td class="px-4 py-3 text-center">${fs(row[10])}</td><td class="px-4 py-3">${saran}</td><td class="px-4 py-3 text-center">${fotoBukti}</td><td class="px-4 py-3 text-center">${btnHapus}</td></tr>`;
                         tbodyCi += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">${baseTd}<td class="px-4 py-3 text-center">${fs(row[11])}</td><td class="px-4 py-3 text-center">${fs(row[12])}</td><td class="px-4 py-3 text-center">${fs(row[13])}</td><td class="px-4 py-3 text-center">${fs(row[14])}</td><td class="px-4 py-3 text-center">${fs(row[15])}</td><td class="px-4 py-3">${saran}</td><td class="px-4 py-3 text-center">${fotoBukti}</td><td class="px-4 py-3 text-center">${btnHapus}</td></tr>`;
@@ -1276,8 +1270,6 @@
 
                 tableAreaHtml = tabSwitcher + buildTable('table-komkordik', '', tbodyKomkordik, false) + buildTable('table-ci', '', tbodyCi, true) + buildTable('table-sarpras', '', tbodySarpras, true);
             }
-
-            // 4. SURVEY KEPUASAN CI
             else if (menuId === 'survey_eval_ci') {
                 tableAreaHtml = `
                     <table class="w-full text-sm text-left whitespace-nowrap">
@@ -1290,16 +1282,16 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
                             ${(!data || data.length === 0) ? `<tr><td colspan="12" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
-                                let instInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${row[1]||'-'}</span><br/><span class="text-xs text-blue-600">${row[2]||'-'} (Stase: ${row[3]||'-'})</span><br/><span class="text-xs font-bold text-teal-600"><i class="fas fa-map-marker-alt"></i> ${row[4]||'-'}</span>`;
-                                let fotoBukti = (row[12] && String(row[12]).includes('http')) ? `<a href="${row[12]}" target="_blank" class="bg-blue-50 text-blue-500 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold"><i class="fas fa-image"></i> Lihat</a>` : '<span class="text-gray-300">-</span>';
+                                let instInfo = `<span class="font-bold text-gray-800 dark:text-gray-100">${esc(row[1])||'-'}</span><br/><span class="text-xs text-blue-600">${esc(row[2])||'-'} (Stase: ${esc(row[3])||'-'})</span><br/><span class="text-xs font-bold text-teal-600"><i class="fas fa-map-marker-alt"></i> ${esc(row[4])||'-'}</span>`;
+                                let fotoBukti = (row[12] && String(row[12]).includes('http')) ? `<a href="${esc(row[12])}" target="_blank" class="bg-blue-50 text-blue-500 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold"><i class="fas fa-image"></i> Lihat</a>` : '<span class="text-gray-300">-</span>';
                                 
                                 return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td class="px-4 py-3">${i+1}</td>
-                                    <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${row[0]||'-'}</td>
+                                    <td class="px-4 py-3 text-[10px] text-gray-400 whitespace-normal w-24">${esc(row[0])||'-'}</td>
                                     <td class="px-4 py-3 whitespace-normal min-w-[200px]">${instInfo}</td>
-                                    <td class="px-4 py-3 font-semibold text-gray-700">${row[5]||'-'}</td>
+                                    <td class="px-4 py-3 font-semibold text-gray-700">${esc(row[5])||'-'}</td>
                                     <td class="px-4 py-3 text-center">${fs(row[6])}</td><td class="px-4 py-3 text-center">${fs(row[7])}</td><td class="px-4 py-3 text-center">${fs(row[8])}</td><td class="px-4 py-3 text-center">${fs(row[9])}</td><td class="px-4 py-3 text-center">${fs(row[10])}</td>
-                                    <td class="px-4 py-3 min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${row[11]||'-'}</td>
+                                    <td class="px-4 py-3 min-w-[200px] whitespace-normal italic text-gray-500 leading-tight">${esc(row[11])||'-'}</td>
                                     <td class="px-4 py-3 text-center">${fotoBukti}</td>
                                     <td class="px-4 py-3 text-center"><button onclick="confirmDelete('${menuId}', '${activeSheet}', ${i + 2})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>
                                 </tr>`;
@@ -1308,9 +1300,6 @@
                     </table>`;
             }
 
-            // =========================================================================
-            // RENDERING KESELURUHAN (HEADER BUTTONS + TABEL)
-            // =========================================================================
             let html = `
                 <div class="bg-white dark:bg-darkcard rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div class="p-4 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col md:flex-row justify-between items-center gap-3">
@@ -1319,7 +1308,6 @@
                             ${sheetDropdownHtml}
                         </div>
                         
-                        <!-- KUMPULAN TOMBOL AKSI: COPY LINK, FORM BARU, REFRESH, EXCEL -->
                         <div class="flex space-x-2 w-full md:w-auto justify-start md:justify-end overflow-x-auto pb-1 scrollbar-hide">
                             <button onclick="copySurveyLink('${targetFormFile}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-bold transition flex items-center whitespace-nowrap" title="Copy Link Form">
                                 <i class="fas fa-link mr-1"></i> Copy Link
@@ -1347,8 +1335,6 @@
             container.innerHTML = html;
         }
 
-
-
         function renderSarprasView(menuId, response) {
             const container = document.getElementById('contentContainer');
             const { data, sheetId } = response;
@@ -1374,15 +1360,11 @@
                             </div>
                         </div>
                         <div class="flex space-x-2 w-full sm:w-auto justify-end">
-                            
                             <button onclick="loadContent('${menuId}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sync-alt"></i></button>
                             <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" title="Buka Spreadsheet"><i class="fas fa-file-excel"></i></a>
-                            
-                            <!-- Tombol Add Sarpras Baru -->
-                            <a href="form_sarpras.html" target="_blank" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <a href="sarpras_menu.html" target="_blank" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center">
                                 <i class="fas fa-external-link-alt mr-1"></i> Add Sarpras
                             </a>
-                            
                             <button onclick="showDialogForm('${menuId}', 'add')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</button>
                         </div>
                     </div>
@@ -1395,22 +1377,22 @@
                                 ${(!data || data.length === 0) ? `<tr><td colspan="8" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
                                     
                                     const encodedRow = encodeURIComponent(JSON.stringify(row)); 
-                                    let searchStr = (row[1]||'') + ' ' + (row[2]||'');
+                                    let searchStr = (esc(row[1])||'') + ' ' + (esc(row[2])||'');
                                     let rowHtml = `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-search="${searchStr}">`;
                                     
                                     if (menuId === 'sarpras_kunci') {
-                                        rowHtml += `<td class="px-4 py-3">${row[0]||i+1}</td><td class="px-4 py-3 font-medium">${row[1]||'-'}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${formatStatus(row[4])}</td>`;
+                                        rowHtml += `<td class="px-4 py-3">${esc(row[0])||i+1}</td><td class="px-4 py-3 font-medium">${esc(row[1])||'-'}</td><td class="px-4 py-3">${esc(row[2])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${formatStatus(row[4])}</td>`;
                                     } else if (menuId === 'sarpras_ruangan') {
-                                        rowHtml += `<td class="px-4 py-3">${row[0]||i+1}</td><td class="px-4 py-3 font-medium">${row[1]||'-'}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3">${row[3]||'-'}</td><td class="px-4 py-3">${formatStatus(row[4])}</td>`;
+                                        rowHtml += `<td class="px-4 py-3">${esc(row[0])||i+1}</td><td class="px-4 py-3 font-medium">${esc(row[1])||'-'}</td><td class="px-4 py-3">${esc(row[2])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'-'}</td><td class="px-4 py-3">${formatStatus(row[4])}</td>`;
                                     } else {
-                                        let imgLink = row[6] && String(row[6]).includes('http') ? `<a href="${row[6]}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-image"></i> Lihat</a>` : '-';
-                                        rowHtml += `<td class="px-4 py-3">${row[0]||i+1}</td><td class="px-4 py-3 font-medium">${row[1]||'-'}</td><td class="px-4 py-3">${row[2]||'-'}</td><td class="px-4 py-3">${row[3]||'0'}</td><td class="px-4 py-3">${row[4]||'-'}</td><td class="px-4 py-3">${row[5]||'-'}</td><td class="px-4 py-3 text-center">${imgLink}</td>`;
+                                        let imgLink = row[6] && String(row[6]).includes('http') ? `<a href="${esc(row[6])}" target="_blank" class="text-blue-500 hover:underline"><i class="fas fa-image"></i> Lihat</a>` : '-';
+                                        rowHtml += `<td class="px-4 py-3">${esc(row[0])||i+1}</td><td class="px-4 py-3 font-medium">${esc(row[1])||'-'}</td><td class="px-4 py-3">${esc(row[2])||'-'}</td><td class="px-4 py-3">${esc(row[3])||'0'}</td><td class="px-4 py-3">${esc(row[4])||'-'}</td><td class="px-4 py-3">${esc(row[5])||'-'}</td><td class="px-4 py-3 text-center">${imgLink}</td>`;
                                     }
 
                                     const fileUrl = (menuId !== 'sarpras_kunci' && menuId !== 'sarpras_ruangan' && row[6]) ? row[6] : "";
                                     rowHtml += `<td class="px-4 py-3 text-center">
                                         <button onclick="editSarpras('${menuId}', ${i + 2}, '${encodedRow}')" class="text-blue-500 hover:text-blue-700 px-2" title="Edit Data"><i class="fas fa-edit"></i></button>
-                                        <button onclick="confirmDelete('${menuId}', null, ${i + 2}, '${fileUrl}')" class="text-red-500 hover:text-red-700 px-2" title="Hapus Data"><i class="fas fa-trash"></i></button>
+                                        <button onclick="confirmDelete('${menuId}', null, ${i + 2}, '${esc(fileUrl)}')" class="text-red-500 hover:text-red-700 px-2" title="Hapus Data"><i class="fas fa-trash"></i></button>
                                     </td></tr>`;
                                     return rowHtml;
                                 }).join('')}
@@ -1419,6 +1401,97 @@
                     </div>
                     <div class="px-4 py-3 border-t dark:border-gray-700 text-xs text-gray-500 bg-gray-50/50 dark:bg-gray-800/30 flex justify-between items-center">
                         <span>Menampilkan <strong id="totalDataCount">${rowCount}</strong> baris data</span>
+                    </div>
+                </div>`;
+            container.innerHTML = html;
+        }
+
+        function renderPengaturanView(menuId, response) {
+            const container = document.getElementById('contentContainer');
+            const { data, sheetId } = response;
+            let rowCount = data ? data.length : 0;
+            
+            const title = menuId === 'set_pd' ? 'Pengaturan Peserta Didik' : (menuId === 'set_pl' ? 'Pengaturan Peserta Pelatihan' : 'Pengaturan Daftar Hadir');
+            
+            let theadHtml = `<tr><th class="px-4 py-3">No</th><th class="px-4 py-3">Nama Sheet</th><th class="px-4 py-3">Nama Acara</th>`;
+            if (menuId === 'set_dh') {
+                theadHtml += `<th class="px-4 py-3">Pimpinan</th><th class="px-4 py-3">Tempat</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
+            } else {
+                theadHtml += `<th class="px-4 py-3">Tempat</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
+            }
+
+            let html = `
+                <div class="bg-white dark:bg-darkcard rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div class="p-4 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <h3 class="text-lg font-bold hidden sm:block whitespace-nowrap">${title}</h3>
+                        </div>
+                        <div class="flex space-x-2 w-full sm:w-auto justify-end">
+                            <button onclick="loadContent('${menuId}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sync-alt"></i></button>
+                            <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" title="Buka Spreadsheet"><i class="fas fa-file-excel"></i></a>
+                            <button onclick="showDialogForm('${menuId}')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</button>
+                        </div>
+                    </div>
+                    <div class="table-container p-0">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 border-b dark:border-gray-600">
+                                ${theadHtml}
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
+                                ${(!data || data.length === 0) ? `<tr><td colspan="8" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
+                                    
+                                    const encodedRow = encodeURIComponent(JSON.stringify(row));
+                                    let nmSheet = esc(row[1])||'-', nmAcara = esc(row[2])||'-', tempat = "", mulai = "", selesai = "", pimpinan = "";
+                                    let statusIndex = menuId === 'set_dh' ? 9 : 6;
+                                    let currentStatus = (row[statusIndex] || "").toString().toUpperCase();
+
+                                    if(menuId === 'set_dh') {
+                                        pimpinan = esc(row[3])||'-'; tempat = esc(row[6])||'-'; mulai = esc(row[7]); selesai = esc(row[8]);
+                                    } else {
+                                        tempat = esc(row[3])||'-'; mulai = esc(row[4]); selesai = esc(row[5]);
+                                    }
+
+                                    let isAktif = (currentStatus === 'OPEN');
+                                    let badgeHtml = "";
+
+                                    if(menuId === 'set_dh') {
+                                        pimpinan = esc(row[3])||'-'; tempat = esc(row[6])||'-'; mulai = formatTanggal(row[7]); selesai = formatTanggal(row[8]);
+                                    } else {
+                                        tempat = esc(row[3])||'-'; mulai = formatTanggal(row[4]); selesai = formatTanggal(row[5]);
+                                    }
+
+                                    if(currentStatus === 'OPEN') {
+                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-green-100 text-green-700">OPEN</span>`;
+                                    } else if (currentStatus === 'CLOSE') {
+                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-red-100 text-red-700">CLOSE</span>`;
+                                    } else {
+                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-yellow-100 text-yellow-700">${esc(currentStatus) || 'TERJADWAL'}</span>`;
+                                    }
+
+                                    let tr = `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                        <td class="px-4 py-3">${i+1}</td>
+                                        <td class="px-4 py-3 font-bold text-primary">${nmSheet}</td>
+                                        <td class="px-4 py-3">${nmAcara}</td>`;
+                                    
+                                    if(menuId === 'set_dh') tr += `<td class="px-4 py-3">${pimpinan}</td>`;
+                                    
+                                    tr += `<td class="px-4 py-3">${tempat}</td>
+                                        <td class="px-4 py-3 text-xs">${mulai} <br/>s/d<br/> ${selesai}</td>
+                                        <td class="px-4 py-3 text-center">${badgeHtml}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex items-center justify-center space-x-3">
+                                                <label class="relative inline-flex items-center cursor-pointer" title="Ubah Status (OPEN/CLOSE)">
+                                                    <input type="checkbox" class="sr-only peer" ${isAktif ? 'checked' : ''} onchange="handleToggleStatus('${menuId}', ${i + 2}, '${encodedRow}', this)">
+                                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                                </label>
+                                                <button onclick="confirmDelete('${menuId}', null, ${i + 2})" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>`;
+                                    return tr;
+                                }).join('')}
+                            </tbody>
+                        </table>
                     </div>
                 </div>`;
             container.innerHTML = html;
@@ -1455,9 +1528,9 @@
                     <p class="text-sm text-gray-500 mb-2">Silakan tentukan Waktu Mulai dan Selesai sebelum mengaktifkan status OPEN.</p>
                     <div class="grid grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium mb-1">Mulai</label>
-                             <input type="datetime-local" id="toggleMulai" value="${curMulai}" min="${localISOTime}" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 outline-none" required></div>
+                             <input type="datetime-local" id="toggleMulai" value="${esc(curMulai)}" min="${localISOTime}" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 outline-none" required></div>
                         <div><label class="block text-sm font-medium mb-1">Selesai</label>
-                             <input type="datetime-local" id="toggleSelesai" value="${curSelesai}" min="${localISOTime}" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 outline-none" required></div>
+                             <input type="datetime-local" id="toggleSelesai" value="${esc(curSelesai)}" min="${localISOTime}" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 outline-none" required></div>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
@@ -1535,91 +1608,6 @@
             window._currentToggleCheckbox = null;
         }
 
-        function renderPengaturanView(menuId, response) {
-            const container = document.getElementById('contentContainer');
-            const { data, sheetId } = response;
-            let rowCount = data ? data.length : 0;
-            
-            const title = menuId === 'set_pd' ? 'Pengaturan Peserta Didik' : (menuId === 'set_pl' ? 'Pengaturan Peserta Pelatihan' : 'Pengaturan Daftar Hadir');
-            
-            let theadHtml = `<tr><th class="px-4 py-3">No</th><th class="px-4 py-3">Nama Sheet</th><th class="px-4 py-3">Nama Acara</th>`;
-            if (menuId === 'set_dh') {
-                theadHtml += `<th class="px-4 py-3">Pimpinan</th><th class="px-4 py-3">Tempat</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
-            } else {
-                theadHtml += `<th class="px-4 py-3">Tempat</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-center">Aksi</th></tr>`;
-            }
-
-            let html = `
-                <div class="bg-white dark:bg-darkcard rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-                    <div class="p-4 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col sm:flex-row justify-between items-center gap-3">
-                        <div class="flex items-center gap-3 w-full sm:w-auto">
-                            <h3 class="text-lg font-bold hidden sm:block whitespace-nowrap">${title}</h3>
-                        </div>
-                        <div class="flex space-x-2 w-full sm:w-auto justify-end">
-                            <button onclick="loadContent('${menuId}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sync-alt"></i></button>
-                            <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm" title="Buka Spreadsheet"><i class="fas fa-file-excel"></i></a>
-                            <button onclick="showDialogForm('${menuId}')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center"><i class="fas fa-plus mr-1"></i> Add Baru</button>
-                        </div>
-                    </div>
-                    <div class="table-container p-0">
-                        <table class="w-full text-sm text-left whitespace-nowrap">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300 border-b dark:border-gray-600">
-                                ${theadHtml}
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-300">
-                                ${(!data || data.length === 0) ? `<tr><td colspan="8" class="p-8 text-center italic">Data Kosong</td></tr>` : data.map((row, i) => {
-                                    
-                                    const encodedRow = encodeURIComponent(JSON.stringify(row));
-                                    let nmSheet = row[1]||'-', nmAcara = row[2]||'-', tempat = "", mulai = "", selesai = "", pimpinan = "";
-                                    let statusIndex = menuId === 'set_dh' ? 9 : 6;
-                                    let currentStatus = (row[statusIndex] || "").toString().toUpperCase();
-
-                                    if(menuId === 'set_dh') {
-                                        pimpinan = row[3]||'-'; tempat = row[6]||'-'; mulai = row[7]; selesai = row[8];
-                                    } else {
-                                        tempat = row[3]||'-'; mulai = row[4]; selesai = row[5];
-                                    }
-
-                                    let isAktif = (currentStatus === 'OPEN');
-                                    let badgeHtml = "";
-
-                                    if(currentStatus === 'OPEN') {
-                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-green-100 text-green-700">OPEN</span>`;
-                                    } else if (currentStatus === 'CLOSE') {
-                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-red-100 text-red-700">CLOSE</span>`;
-                                    } else {
-                                        badgeHtml = `<span class="px-2 py-1 text-[10px] font-bold rounded bg-yellow-100 text-yellow-700">${currentStatus || 'TERJADWAL'}</span>`;
-                                    }
-
-                                    let tr = `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                        <td class="px-4 py-3">${i+1}</td>
-                                        <td class="px-4 py-3 font-bold text-primary">${nmSheet}</td>
-                                        <td class="px-4 py-3">${nmAcara}</td>`;
-                                    
-                                    if(menuId === 'set_dh') tr += `<td class="px-4 py-3">${pimpinan}</td>`;
-                                    
-                                    tr += `<td class="px-4 py-3">${tempat}</td>
-                                        <td class="px-4 py-3 text-xs">${mulai} <br/>s/d<br/> ${selesai}</td>
-                                        <td class="px-4 py-3 text-center">${badgeHtml}</td>
-                                        <td class="px-4 py-3 text-center">
-                                            <div class="flex items-center justify-center space-x-3">
-                                                <label class="relative inline-flex items-center cursor-pointer" title="Ubah Status (OPEN/CLOSE)">
-                                                    <input type="checkbox" class="sr-only peer" ${isAktif ? 'checked' : ''} onchange="handleToggleStatus('${menuId}', ${i + 2}, '${encodedRow}', this)">
-                                                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                                                </label>
-                                                <button onclick="confirmDelete('${menuId}', null, ${i + 2})" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>`;
-                                    return tr;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>`;
-            container.innerHTML = html;
-        }
-
         function editSarpras(menuId, rowIndex, encodedRow) {
             const rowData = JSON.parse(decodeURIComponent(encodedRow));
             showDialogForm(menuId, 'edit', rowIndex, rowData);
@@ -1630,7 +1618,7 @@
             let fieldsHtml = "";
             let btnText = opType === 'edit' ? "Update Data" : "Simpan Data";
 
-            const val = (idx) => (rowData && rowData[idx] !== undefined) ? rowData[idx] : "";
+            const val = (idx) => (rowData && rowData[idx] !== undefined) ? esc(rowData[idx]) : "";
 
             let tzoffset = (new Date()).getTimezoneOffset() * 60000;
             let localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
@@ -1802,6 +1790,11 @@
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
+                        
+                        // FIX COMPRESSION PNG KE JPEG: Tambahkan background putih
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, width, height);
+
                         ctx.drawImage(img, 0, 0, width, height);
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
@@ -1831,7 +1824,6 @@
                     let fileName = "";
                     let oldFileUrl = "";
 
-                    // PERBAIKAN VALIDASI: Alert standard agar tidak menutup dialog, ditambah .focus()
                     if (type === 'sarpras_kunci') {
                         const code = document.getElementById('sarKode');
                         const nomor = document.getElementById('sarNomor');
@@ -1919,7 +1911,6 @@
             const setMulai = document.getElementById('setMulai');
             const setSelesai = document.getElementById('setSelesai');
 
-            // PERBAIKAN VALIDASI PENGATURAN: Tidak akan tertutup bila error
             if (!setSheet.value || !setAcara.value || !setMulai.value || !setSelesai.value) {
                 alert("Harap isi semua kolom wajib (Nama Sheet, Acara, Mulai, Selesai)!");
                 if (!setSheet.value) setSheet.focus();
@@ -1988,9 +1979,9 @@
         function formatStatus(status) {
             if(!status) return `<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">-</span>`;
             let s = status.toString().trim().toLowerCase();
-            if(['approved', 'open', 'aktif', 'tersedia', 'selesai'].includes(s)) return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">${status}</span>`;
-            if(['rejected', 'close', 'cancel'].includes(s)) return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">${status}</span>`;
-            return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">${status}</span>`;
+            if(['approved', 'open', 'aktif', 'tersedia', 'selesai'].includes(s)) return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">${esc(status)}</span>`;
+            if(['rejected', 'close', 'cancel'].includes(s)) return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">${esc(status)}</span>`;
+            return `<span class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">${esc(status)}</span>`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1998,12 +1989,10 @@
             checkAuth(); 
         });
 
-
-        // FUNGSI MELEMPAR TIKET KE HALAMAN MAINTENANCE
-        window.lemparKeMaintenance = function(ticket) {
-            // Simpan data tiket ke memori sementara browser
+        window.lemparKeMaintenance = function(encodedTicket) {
+            // FIX STRINGIFIED BREAKAGE HTML
+            const ticket = JSON.parse(decodeURIComponent(encodedTicket));
             localStorage.setItem('pendingMaintenanceTicket', JSON.stringify(ticket));
-            // Buka tab baru ke halaman form maintenance
             window.open('maintenance.html', '_blank');
         };
     </script>
