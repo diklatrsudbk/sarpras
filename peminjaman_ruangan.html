@@ -488,7 +488,7 @@
             
             if (s === 'Request') {
                 // Terima Booking dan Tolak TETAP BUTUH ADMIN
-                btns += `<button onclick="prepareAdminAction('plot', '${id}', 'Booking')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-check"></i> Terima Booking</button>`;
+                btns += `<button onclick="prepareAdminAction('plot', '${id}', 'Booking')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-check"></i> Terima Request</button>`;
                 btns += `<button onclick="prepareAdminAction('cancel', '${id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Tolak / Cancel</button>`;
                 
             } else if (s === 'Booking') {
