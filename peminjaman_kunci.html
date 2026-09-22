@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Peminjaman Kunci Loker - RSUD Bandung Kiwari</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script> tailwind.config = { theme: { extend: { fontFamily: { sans: ['Poppins', 'sans-serif'] } } } } </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .canvas-container { touch-action: none; }
+        select.pl-10 {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1em;
+        }
+        .secure-pin-input { -webkit-text-security: disc; letter-spacing: 0.3em; }
+        @keyframes blinkRow {
+            0%, 100% { background-color: rgba(14, 165, 233, 0.05); }
+            50% { background-color: rgba(14, 165, 233, 0.25); border-bottom-color: rgba(14, 165, 233, 0.3); }
+        }
+        .row-booking { animation: blinkRow 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <button onclick="window.history.back()" class="mr-3 sm:mr-4 text-slate-400 hover:text-indigo-600 transition" title="Kembali">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </button>
+                <div class="flex items-center space-x-3.5">
+                    <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-10 w-auto object-contain" onerror="this.classList.add('hidden'); document.getElementById('headerFallbackIcon').classList.remove('hidden');">
+                    <i id="headerFallbackIcon" class="fa-solid fa-hospital text-2xl text-indigo-500 hidden"></i>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold tracking-wide leading-tight text-slate-800">Sistem Peminjaman Kunci Loker</h1>
+                        <p class="text-[11px] text-slate-500 font-medium">Khusus Peserta Didik</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow transition-all hover:scale-105 flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-plus-circle"></i> <span class="hidden sm:inline">Pinjam Kunci</span><span class="sm:hidden">Pinjam</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        <!-- Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div><p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">Total Riwayat</p><h3 class="text-xl sm:text-2xl font-bold text-slate-700 mt-1" id="cardTotal">0</h3></div>
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg"><i class="fa-solid fa-key"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div><p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">Sedang Aktif</p><h3 class="text-xl sm:text-2xl font-bold text-indigo-600 mt-1" id="cardActive">0</h3></div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg"><i class="fa-solid fa-door-open"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div><p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">Overdue</p><h3 class="text-xl sm:text-2xl font-bold text-rose-600 mt-1" id="cardOverdue">0</h3></div>
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-clock"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div><p class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">Request Baru</p><h3 class="text-xl sm:text-2xl font-bold text-amber-500 mt-1" id="cardRequest">0</h3></div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-envelope-open-text"></i></div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="Cari data (nama, nomor kunci)..." autocomplete="off" class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                </div>
+                <select id="filterStatus" onchange="filterTable()" class="w-full sm:w-40 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 text-slate-600">
+                    <option value="ALL">Semua Status</option>
+                    <option value="Request">Request</option>
+                    <option value="Booking">Booking</option>
+                    <option value="Sedang Dipinjam">Sedang Dipinjam</option>
+                    <option value="Overdue">Overdue (Terlambat)</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Cancel">Cancel</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <span class="text-xs text-slate-500 font-medium whitespace-nowrap hidden sm:inline-block">Menampilkan: <span id="textDisplayedCount" class="font-bold text-slate-700">0</span> baris</span>
+                <button onclick="loadDataSequentially()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 border border-slate-300 shadow-sm"><i class="fa-solid fa-rotate-right" id="reloadIcon"></i> Reload</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs" id="dataTable">
+                    <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                        <tr>
+                            <th class="p-3.5 w-10 text-center">No</th>
+                            <th class="p-3.5 whitespace-nowrap">Tanggal (Timestamp)</th>
+                            <th class="p-3.5">Nama Peminjam + NIM</th>
+                            <th class="p-3.5">Jenis Kunci + Nomor Kunci</th>
+                            <th class="p-3.5">Institusi+Jenjang+Jurusan</th>
+                            <th class="p-3.5">No HP</th>
+                            <th class="p-3.5">Jadwal Pakai</th>
+                            <th class="p-3.5 text-center min-w-[140px]">Status</th>
+                            <th class="p-3.5 text-center min-w-[130px]">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="9" class="p-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3 block text-indigo-500"></i>Memuat data sistem...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form (Pengajuan Khusus Kunci) -->
+    <div id="modalForm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden transform transition-all relative">
+            
+            <div id="formLoadingOverlay" class="absolute inset-0 bg-white/70 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center">
+                <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center border border-indigo-100">
+                    <i class="fa-solid fa-spinner fa-spin text-5xl text-indigo-600 mb-4"></i><span class="font-bold text-slate-800 text-base">Sedang Memproses...</span>
+                </div>
+            </div>
+            
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h2 class="text-base sm:text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-key"></i> Form Peminjaman Kunci Loker</h2>
+                <button type="button" onclick="closeModal()" class="text-indigo-200 hover:text-white text-xl transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="p-6 md:p-8 max-h-[80vh] overflow-y-auto scroll-smooth" id="formScrollArea">
+                <!-- Cek NIM -->
+                <div id="stepNimVerification">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Verifikasi NIM Peserta Didik *</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-card absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10"></i>
+                        <input type="text" id="NIM_NIK" required oninput="handleNimInput()" placeholder="Masukkan NIM Anda..." class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+                    </div>
+                    <span id="nimLoading" class="text-xs text-amber-600 hidden mt-2"><i class="fa-solid fa-spinner fa-spin"></i> Memeriksa database...</span>
+                    <span id="nimError" class="text-xs text-rose-600 hidden mt-2"><i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan atau tidak terdaftar!</span>
+                    <span id="nimSuccess" class="text-xs text-emerald-600 hidden mt-2"><i class="fa-solid fa-check-circle"></i> NIM Terverifikasi. Silakan lengkapi form di bawah.</span>
+                </div>
+
+                <form id="loanForm" onsubmit="submitForm(event)" class="space-y-8 mt-6 hidden border-t border-slate-200 pt-6">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Data Diri (Otomatis)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div><label class="text-[10px] font-semibold text-slate-500">Nama Peminjam</label><input type="text" id="NAMA_PEMINJAM" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
+                            <div><label class="text-[10px] font-semibold text-slate-500">Institusi</label><input type="text" id="INSTITUSI_PERUSAHAAN" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
+                            <div><label class="text-[10px] font-semibold text-slate-500">Jurusan / Divisi</label><input type="text" id="JURUSAN_DIVISI" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
+                            <div><label class="text-[10px] font-semibold text-slate-500">No. HP / WhatsApp</label><input type="text" id="NO_HP" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-indigo-100 pb-2"><i class="fa-solid fa-door-closed"></i> Detail Kunci & Waktu</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            
+                            <div class="sm:col-span-2">
+                                <p class="text-xs text-amber-600 mb-2 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200"><i class="fa-solid fa-circle-info mr-1"></i> Catatan: 1 Loker dapat digunakan untuk maksimal 3 orang.</p>
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <div class="flex-grow">
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Jenis Loker *</label>
+                                        <select id="JENIS_LOKER" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white">
+                                            <option value="">-- Pilih Jenis Kunci --</option>
+                                            <option value="Loker Perempuan">Loker Perempuan</option>
+                                            <option value="Loker Laki-laki">Loker Laki-laki</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-full sm:w-32">
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Jml Kunci *</label>
+                                        <input type="number" id="QTY_INPUT" min="1" max="5" value="1" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm text-center font-bold">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Pinjam *</label>
+                                <input type="datetime-local" id="TGL_PINJAM" onchange="calculateDuration()" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Kembali *</label>
+                                <input type="datetime-local" id="TGL_KEMBALI" onchange="calculateDuration()" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Durasi Peminjaman</label>
+                                <input type="text" id="DURASI" readonly placeholder="Otomatis terhitung" class="w-full px-4 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-600 font-medium shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-indigo-100 pb-2"><i class="fa-solid fa-handshake-angle"></i> Persetujuan Persyaratan</h3>
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 shadow-sm">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" id="checkSK" onchange="toggleSignature()" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                <span class="text-[11px] sm:text-xs text-slate-700 leading-relaxed font-medium">
+                                    Saya menyetujui persyaratan peminjaman, menjaga kunci loker dengan baik, menjaga ruangan loker tetap bersih, tidak menyimpan barang diluar loker, jika hilang atau rusak segera melapor dan bersedia membayar denda penggantian sebesar <b>Rp.50.000</b> per kunci, serta mengembalikan kunci kepada petugas jika sudah selesai sesuai tanggal yang sudah saya tentukan.
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="signatureArea" class="opacity-50 pointer-events-none transition-all duration-300">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-xs font-semibold text-slate-700">Tanda Tangan Digital *</label>
+                                <button type="button" onclick="clearSignature()" class="text-xs text-rose-600 font-semibold hover:text-rose-800 bg-rose-50 px-2 py-1 rounded transition">Hapus TTD</button>
+                            </div>
+                            <div class="canvas-container border-2 border-dashed border-slate-300 rounded-xl bg-white shadow-inner overflow-hidden relative h-40">
+                                <canvas id="sigCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 mt-4 flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-200">
+                        <button type="submit" onclick="submitActionType='Request'" class="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg transition flex items-center justify-center gap-2 w-full sm:w-auto">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Request
+                        </button>
+                        <button type="submit" onclick="submitActionType='Sedang Dipinjam'" class="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-lg transition flex items-center justify-center gap-2 w-full sm:w-auto">
+                            <i class="fa-solid fa-hand-holding-hand"></i> Pinjam Langsung
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Admin Plotting Kunci -->
+    <div id="modalPlotKunci" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all relative">
+            <div id="plotLoadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-[90] hidden flex flex-col items-center justify-center rounded-2xl">
+                <div class="bg-white p-5 rounded-2xl shadow-xl flex flex-col items-center border border-indigo-100">
+                    <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-600 mb-3"></i>
+                    <span class="font-bold text-slate-800 text-sm">Menyimpan Plot Kunci...</span>
+                </div>
+            </div>
+
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-key"></i> Plot Nomor Kunci</h2>
+                <button type="button" onclick="closePlotModal()" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-slate-600 mb-4" id="plotSubtitle">Pilih Kunci Loker yang akan diserahkan</p>
+                <input type="hidden" id="plotId">
+                <input type="hidden" id="plotTargetStatus">
+                <input type="hidden" id="plotReqQty">
+                
+                <div id="plotKeysContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 border border-slate-200 rounded-xl bg-slate-50 mb-6">
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button type="button" onclick="closePlotModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs">Batal</button>
+                    <button type="button" onclick="processPlot()" id="btnProsesPlot" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i> Simpan & Acc
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Utility -->
+    <div id="modalAdminAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full relative">
+             <div id="authLoadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-[90] hidden flex flex-col items-center justify-center rounded-2xl">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-indigo-600 mb-3"></i><span class="font-bold text-slate-800 text-sm">Memproses...</span>
+            </div>
+            <i class="fa-solid fa-key text-3xl text-indigo-600 mb-3"></i><h3 class="font-bold mb-4">Verifikasi Otorisasi</h3><input type="text" id="adminPassword" placeholder="••••" autocomplete="off" onkeydown="handlePinKey(event)" class="secure-pin-input text-center text-lg font-bold w-full py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 mb-4 tracking-widest"><div class="flex gap-2.5"><button onclick="closeAdminAuth()" class="w-1/2 py-2 border rounded-xl text-xs font-semibold hover:bg-slate-50">Batal</button><button onclick="verifyAdmin()" class="w-1/2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold">Konfirmasi</button></div>
+        </div>
+    </div>
+    
+    <div id="modalCancel" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full"><i class="fa-solid fa-ban text-3xl text-rose-600 mb-3"></i><h3 class="font-bold mb-4">Batalkan Peminjaman</h3><input type="hidden" id="cancelId"><textarea id="cancelCatatan" rows="3" placeholder="Alasan pembatalan..." class="w-full p-3 border rounded-lg text-xs mb-4 outline-none focus:ring-2 focus:ring-rose-500"></textarea><div class="flex gap-2.5"><button onclick="closeCancelModal()" class="w-1/2 py-2 border rounded-xl text-xs font-semibold">Kembali</button><button onclick="processCancel()" id="btnProsesCancel" class="w-1/2 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold">Batalkan Data</button></div></div>
+    </div>
+    
+    <div id="modalReturn" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden"><div class="bg-teal-700 px-6 py-4 text-white font-bold flex items-center gap-2"><i class="fa-solid fa-clipboard-check"></i> Proses Pengembalian</div><form id="formReturn" onsubmit="submitReturn(event)" class="p-6 space-y-4"><input type="hidden" id="returnID"><input type="hidden" id="returnStatus"><div id="returnStatusLabel" class="text-xs font-bold text-center p-2 rounded-lg mb-2"></div><div><label class="block text-xs font-semibold mb-1.5">Bukti Foto *</label><input type="file" id="returnPhoto" accept="image/*" onchange="previewReturnImage(event)" required class="w-full text-xs border rounded-lg p-2 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-teal-50 file:text-teal-700 font-semibold"><img id="imagePreview" src="#" class="mt-3 max-h-48 mx-auto hidden rounded-lg shadow-sm"></div><div><label class="block text-xs font-semibold mb-1.5">Catatan <span id="reqCatatan" class="text-rose-500 hidden">*</span></label><textarea id="returnCatatan" rows="2" class="w-full p-3 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-teal-500"></textarea></div><div class="flex justify-end gap-3 mt-2"><button type="button" onclick="closeReturnModal()" class="px-5 py-2 border rounded-lg text-xs font-semibold hover:bg-slate-50">Batal</button><button type="submit" id="btnSubmitReturn" class="px-6 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700">Proses</button></div></form></div>
+    </div>
+
+    <!-- Custom Alerts -->
+    <div id="customModalAlert" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customAlertContent"><div id="customAlertIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customAlertIcon" class="fa-solid fa-circle-info"></i></div><h3 id="customAlertTitle" class="text-lg font-bold mb-2 text-slate-800">Info</h3><p id="customAlertMessage" class="text-sm text-slate-600 mb-6">Pesan</p><button id="btnCustomAlertOk" class="w-full py-2.5 rounded-xl text-white font-semibold shadow-md transition">OK</button></div></div>
+    
+    <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customConfirmContent"><div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customConfirmIcon" class="fa-solid fa-circle-question"></i></div><h3 id="customConfirmTitle" class="text-lg font-bold mb-2 text-slate-800">Konfirmasi</h3><p id="customConfirmMessage" class="text-sm text-slate-600 mb-6">Pesan</p><div class="flex gap-3"><button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button><button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya</button></div></div></div>
+
+    <script>
+        // GANTI URL INI JIKA ADA DEPLOY BARU
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxYDQi-ySkvcZq1OfOSXezHYsyUjhjVFhSGMX1dqedtodEa0Tvs2xvgNvcA0Sr8GCz_OA/exec";
+        
+        let canvas, ctx, isDrawing = false;
+        let dummyData = [], dbKunci = []; 
+        let submitActionType = 'Request';
+        let isValidNim = false, nimTimeout = null, searchTimeout = null;
+        let pendingAdminAction = null; 
+        const ADMIN_PASS = "admin";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            setMinDateTime();
+            loadDataSequentially();
+        });
+
+        // ==========================================
+        // FUNGSI UTILITY TANGGAL (MEMPERBAIKI BUG OVERDUE)
+        // ==========================================
+        function parseCustomDate(dateStr) {
+            if (!dateStr) return null;
+            let d = new Date(dateStr); 
+            if (!isNaN(d.getTime())) return d;
+            
+            // Format fallback DD/MM/YYYY HH:mm
+            let splitSpace = String(dateStr).split(" ");
+            if (splitSpace.length >= 1) {
+                let dParts = splitSpace[0].split("/");
+                if (dParts.length === 3) {
+                    let tParts = splitSpace.length > 1 ? splitSpace[1].split(":") : [0, 0];
+                    return new Date(dParts[2], dParts[1] - 1, dParts[0], tParts[0] || 0, tParts[1] || 0, tParts[2] || 0);
+                }
+            }
+            return null;
+        }
+
+        function formatDisplayDate(dateStr) {
+            const d = parseCustomDate(dateStr);
+            if(!d) return dateStr;
+            const pad = n => String(n).padStart(2,'0');
+            return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        async function loadDataSequentially() {
+            const icon = document.getElementById('reloadIcon'); if(icon) icon.classList.add('fa-spin');
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = `<tr><td colspan="9" class="p-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3 block text-indigo-500"></i>Memuat Database Master Kunci...</td></tr>`;
+            
+            try {
+                const t1 = new Date().getTime();
+                const resKunci = await fetch(`${GAS_WEB_APP_URL}?action=getBarang&tipe=kunci&_t=${t1}`);
+                if(resKunci.ok) dbKunci = await resKunci.json();
+
+                tbody.innerHTML = `<tr><td colspan="9" class="p-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3 block text-indigo-500"></i>Memuat Riwayat Peminjaman...</td></tr>`;
+
+                const t2 = new Date().getTime();
+                const resTrans = await fetch(`${GAS_WEB_APP_URL}?action=getData&tipe=kunci&_t=${t2}`);
+                if(resTrans.ok) {
+                    const data = await resTrans.json();
+                    dummyData = (Array.isArray(data) && data.length > 0) ? data : [];
+                    renderTable();
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet. Periksa koneksi internet Anda.</td></tr>`;
+            } finally {
+                if(icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        // --- CUSTOM DIALOGS ---
+        function customAlert(msg, title="Info", type="info") { 
+            return new Promise(resolve => {
+                const modal = document.getElementById('customModalAlert'); const content = document.getElementById('customAlertContent');
+                document.getElementById('customAlertTitle').innerText = title; document.getElementById('customAlertMessage').innerHTML = msg.replace(/\n/g, '<br>');
+                const btnOk = document.getElementById('btnCustomAlertOk'); const iconBox = document.getElementById('customAlertIconBox'); const iconEl = document.getElementById('customAlertIcon');
+                iconBox.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl";
+                if(type==='success'){ iconBox.classList.add('bg-emerald-100','text-emerald-600'); btnOk.className="w-full py-2.5 rounded-xl text-white font-semibold shadow-md bg-emerald-600 hover:bg-emerald-700"; iconEl.className='fa-solid fa-circle-check'; }
+                else if(type==='error'){ iconBox.classList.add('bg-rose-100','text-rose-600'); btnOk.className="w-full py-2.5 rounded-xl text-white font-semibold shadow-md bg-rose-600 hover:bg-rose-700"; iconEl.className='fa-solid fa-circle-xmark'; }
+                else if(type==='warning'){ iconBox.classList.add('bg-amber-100','text-amber-600'); btnOk.className="w-full py-2.5 rounded-xl text-white font-semibold shadow-md bg-amber-600 hover:bg-amber-700"; iconEl.className='fa-solid fa-triangle-exclamation'; }
+                else { iconBox.classList.add('bg-indigo-100','text-indigo-600'); btnOk.className="w-full py-2.5 rounded-xl text-white font-semibold shadow-md bg-indigo-600 hover:bg-indigo-700"; iconEl.className='fa-solid fa-circle-info'; }
+                modal.classList.remove('hidden'); setTimeout(()=>content.classList.remove('scale-95','opacity-0'), 10);
+                btnOk.onclick = () => { content.classList.add('scale-95','opacity-0'); setTimeout(()=>{ modal.classList.add('hidden'); resolve(); }, 200); };
+            });
+        }
+        function customConfirm(msg, title="Konfirmasi", type="warning") { 
+            return new Promise(resolve => {
+                const modal = document.getElementById('customModalConfirm'); const content = document.getElementById('customConfirmContent');
+                document.getElementById('customConfirmTitle').innerText = title; document.getElementById('customConfirmMessage').innerHTML = msg.replace(/\n/g, '<br>');
+                const btnOk = document.getElementById('btnCustomConfirmOk'); const iconBox = document.getElementById('customConfirmIconBox'); const iconEl = document.getElementById('customConfirmIcon');
+                iconBox.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl";
+                if(type==='danger'){ iconBox.classList.add('bg-rose-100','text-rose-600'); btnOk.className="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm bg-rose-600 hover:bg-rose-700"; iconEl.className='fa-solid fa-triangle-exclamation'; }
+                else { iconBox.classList.add('bg-amber-100','text-amber-600'); btnOk.className="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm bg-amber-600 hover:bg-amber-700"; iconEl.className='fa-solid fa-circle-exclamation'; }
+                modal.classList.remove('hidden'); setTimeout(()=>content.classList.remove('scale-95','opacity-0'), 10);
+                const close = (res) => { content.classList.add('scale-95','opacity-0'); setTimeout(()=>{ modal.classList.add('hidden'); resolve(res); }, 200); };
+                btnOk.onclick = () => close(true); document.getElementById('btnCustomConfirmCancel').onclick = () => close(false);
+            });
+        }
+
+        function handleSearchInput() { clearTimeout(searchTimeout); searchTimeout = setTimeout(filterTable, 300); }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            let countActive=0, countOverdue=0, countRequest=0;
+            
+            // Evaluasi ulang semua status & tanggal untuk logic overdue
+            let processedData = dummyData.map(item => {
+                let ds = item.STATUS;
+                let isOverdue = false;
+                let dt = parseCustomDate(item.TGL_KEMBALI);
+                
+                // Jika status masih dipinjam dan tanggal saat ini melewati tanggal kembali (meski 1 menit) = Overdue
+                if (dt && ds === 'Sedang Dipinjam' && (new Date() > dt)) {
+                    ds = 'Overdue';
+                    isOverdue = true;
+                }
+                
+                if(ds === 'Sedang Dipinjam') countActive++; 
+                if(ds === 'Overdue') countOverdue++; 
+                if(ds === 'Request') countRequest++;
+                
+                return { ...item, CALC_STATUS: ds, IS_OVERDUE: isOverdue };
+            });
+
+            document.getElementById('cardTotal').innerText = dummyData.length; 
+            document.getElementById('cardActive').innerText = countActive;
+            document.getElementById('cardOverdue').innerText = countOverdue; 
+            document.getElementById('cardRequest').innerText = countRequest;
+
+            let filtered = processedData.filter(item => {
+                const nomorStr = String(item.NOMOR_KUNCI || "");
+                const textMatch = (item.NAMA_PEMINJAM+" "+item.NAMA_BARANG+" "+nomorStr).toLowerCase().includes(searchVal);
+                const statusMatch = statusFilter === 'ALL' || item.CALC_STATUS === statusFilter || item.STATUS === statusFilter;
+                return textMatch && statusMatch;
+            });
+            
+            document.getElementById('textDisplayedCount').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-10 text-center text-slate-400"><i class="fa-solid fa-folder-open text-3xl mb-2 block opacity-40"></i> Tidak ada data riwayat yang cocok.</td></tr>`; return;
+            }
+
+            tbody.innerHTML = filtered.map((item, index) => {
+                let ds = item.CALC_STATUS;
+                let isOverdue = item.IS_OVERDUE;
+                
+                let wa = String(item.NO_HP||"").replace(/\D/g, ''); if(wa.startsWith('0')) wa = '62'+wa.substring(1);
+                const linkWA = `https://wa.me/${wa}?text=`+encodeURIComponent(`Halo ${item.NAMA_PEMINJAM}, mengingatkan batas waktu peminjaman Loker / Kunci Anda sudah terlewat dari jadwal pengembalian. Harap segera diselesaikan.`);
+                
+                let jenisKunciStr = String(item.NAMA_BARANG).split('||')[0].trim();
+                let badgeHtml = "";
+                if (item.NOMOR_KUNCI && item.NOMOR_KUNCI.trim() !== "") {
+                    const isPerempuan = jenisKunciStr.toUpperCase().includes('PEREMPUAN');
+                    const bgClass = isPerempuan ? 'bg-pink-100 text-pink-700 border-pink-200' : 'bg-blue-100 text-blue-700 border-blue-200';
+                    const nomors = item.NOMOR_KUNCI.split(",").map(k => k.trim());
+                    nomors.forEach(n => {
+                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 mt-1.5 mr-1 rounded border text-[10px] font-bold ${bgClass}"><i class="fa-solid fa-key text-[9px] mr-1"></i>No: ${n}</span>`;
+                    });
+                }
+
+                let rowCls = "hover:bg-indigo-50/40 border-b border-slate-100";
+                if(ds === 'Booking') rowCls += " row-booking"; if(isOverdue) rowCls += " bg-rose-50/40";
+
+                return `<tr class="${rowCls}">
+                    <td class="p-3.5 text-center font-mono font-semibold text-xs">${index+1}</td>
+                    <td class="p-3.5 text-xs text-slate-600 whitespace-nowrap">${item.TIMESTAMPT}</td>
+                    <td class="p-3.5"><span class="font-semibold block text-slate-800">${item.NAMA_PEMINJAM}</span><span class="text-[10px] text-slate-500">${item.NIM_NIK}</span></td>
+                    <td class="p-3.5 text-xs font-medium text-slate-800">${jenisKunciStr}<br>${badgeHtml}</td>
+                    <td class="p-3.5 text-xs text-slate-600">${item.INSTITUSI_PERUSAHAAN}<br><span class="text-[10px] text-slate-500">${item.JURUSAN_DIVISI}</span></td>
+                    <td class="p-3.5 text-xs text-slate-600 whitespace-nowrap"><div class="flex items-center gap-1.5"><span>${item.NO_HP}</span>${wa ? `<a href="${linkWA}" target="_blank" class="text-emerald-500 hover:text-emerald-700 text-sm"><i class="fa-brands fa-whatsapp"></i></a>` : ''}</div></td>
+                    <td class="p-3.5 text-xs whitespace-nowrap"><div class="text-indigo-600"><i class="fa-regular fa-calendar-plus text-[10px]"></i> ${formatDisplayDate(item.TGL_PINJAM)}</div><div class="text-emerald-600 mt-1"><i class="fa-regular fa-calendar-check text-[10px]"></i> ${formatDisplayDate(item.TGL_KEMBALI)}</div></td>
+                    <td class="p-3.5 text-center">${getStatusBadge(ds)}</td>
+                    <td class="p-3.5 align-middle"><div class="flex flex-col gap-1 min-w-[120px]">${renderActionButtons(item, isOverdue, linkWA)}</div></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderActionButtons(item, isOverdue, waLink) {
+            let btns = ''; const s = String(item.CALC_STATUS).trim(); const id = item.ID;
+            const jenisKode = String(item.NAMA_BARANG).toUpperCase().includes('PEREMPUAN') ? 'P' : 'L';
+
+            if (s === 'Request') {
+                // MENGGUNAKAN openPlotModal
+                btns += `<button onclick="openPlotModal('${id}','${jenisKode}',${item.QTY},'Booking')" class="bg-sky-500 hover:bg-sky-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-calendar-check"></i> Acc Booking</button>`;
+                btns += `<button onclick="openPlotModal('${id}','${jenisKode}',${item.QTY},'Sedang Dipinjam')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-hand-holding-hand"></i> Acc Pinjam</button>`;
+                btns += `<button onclick="openCancelModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+            } else if (s === 'Booking') {
+                btns += `<button onclick="actionUpdateStatus('${id}','Sedang Dipinjam')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-hand-holding-hand"></i> Serahkan Kunci</button>`;
+                btns += `<button onclick="openCancelModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+            } else if (s === 'Sedang Dipinjam' || s === 'Overdue') {
+                if(isOverdue) btns += `<a href="${waLink}" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-brands fa-whatsapp text-sm"></i> Hub WA</a>`;
+                btns += `<button onclick="openReturnModal('${id}', 'Selesai')" class="bg-teal-500 hover:bg-teal-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-check-double"></i> Normal</button>`;
+                btns += `<button onclick="openReturnModal('${id}', 'Selesai tapi Rusak/Hilang')" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-triangle-exclamation"></i> Hilang/Rusak</button>`;
+            } else {
+                btns += `<span class="text-slate-400 text-[11px] italic text-center block mb-1">Done (${s})</span>`;
+            }
+            btns += `<button onclick="actionDeleteRecord('${id}')" class="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition mt-1 hover:bg-rose-100"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
+            return btns;
+        }
+
+        function getStatusBadge(s) {
+            const map = { 'Request':'bg-amber-100 text-amber-700','Booking':'bg-sky-100 text-sky-700','Cancel':'bg-slate-100 text-slate-700','Sedang Dipinjam':'bg-indigo-100 text-indigo-700','Overdue':'bg-rose-600 text-white animate-pulse','Selesai':'bg-teal-100 text-teal-700','Selesai tapi Rusak/Hilang':'bg-purple-100 text-purple-700' };
+            let b = `<span class="px-2 py-1 rounded text-[10px] font-bold uppercase border ${map[s]||'bg-slate-100 text-slate-600'}">${s}</span>`;
+            if(s==='Booking') b += `<div class="text-[9px] text-sky-600 mt-1.5 whitespace-normal leading-tight font-medium animate-pulse">Menunggu pengambilan kunci</div>`;
+            return b;
+        }
+
+        function requireAdmin(actionCallback) {
+            pendingAdminAction = actionCallback; 
+            document.getElementById('modalAdminAuth').classList.remove('hidden');
+            const pinInput = document.getElementById('adminPassword');
+            pinInput.value = ''; setTimeout(() => pinInput.focus(), 100);
+        }
+        function closeAdminAuth() { document.getElementById('modalAdminAuth').classList.add('hidden'); pendingAdminAction = null; }
+        function handlePinKey(e) { if (e.key === 'Enter') verifyAdmin(); }
+        
+        async function verifyAdmin() {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === ADMIN_PASS) {
+                document.getElementById('modalAdminAuth').classList.add('hidden');
+                if (typeof pendingAdminAction === "function") pendingAdminAction();
+                pendingAdminAction = null;
+            } else {
+                await customAlert("PIN Admin Salah!", "Akses Ditolak", "error");
+                document.getElementById('adminPassword').value = ''; document.getElementById('adminPassword').focus();
+            }
+        }
+
+        // ==========================================
+        // SISTEM PLOTTING KUNCI
+        // ==========================================
+        function openPlotModal(id, jenis, qty, targetStatus) {
+            document.getElementById('modalPlotKunci').classList.remove('hidden');
+            document.getElementById('plotId').value = id;
+            document.getElementById('plotTargetStatus').value = targetStatus;
+            document.getElementById('plotReqQty').value = qty;
+            
+            const labelJenis = jenis === 'P' ? 'Perempuan' : 'Laki-laki';
+            document.getElementById('plotSubtitle').innerHTML = `Pilih <b>${qty}</b> kunci Loker <b>${labelJenis}</b> yang diserahkan.`;
+            
+            const container = document.getElementById('plotKeysContainer');
+            container.innerHTML = "";
+
+            const available = dbKunci.filter(k => k.jenis === jenis && String(k.status).toUpperCase() === 'TERSEDIA');
+            if (available.length < qty) {
+                container.innerHTML = `<div class="col-span-full text-center p-4 text-rose-500 text-xs font-semibold">Stok Kunci Loker ${labelJenis} tidak mencukupi (Sisa: ${available.length}). Mohon Cancel request ini.</div>`;
+                document.getElementById('btnProsesPlot').disabled = true;
+                return;
+            }
+            
+            document.getElementById('btnProsesPlot').disabled = false;
+            available.forEach(k => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-white border border-slate-200 p-2 rounded-lg hover:border-indigo-300 transition cursor-pointer";
+                div.innerHTML = `<input type="checkbox" name="plotKey" value="${k.nomor}" class="w-4 h-4 text-indigo-600 key-checkbox" onchange="checkPlotLimit(${qty})">
+                                 <span class="text-xs font-semibold text-slate-700">Loker ${k.nomor}</span>`;
+                div.onclick = (e) => { if(e.target.tagName !== 'INPUT') div.querySelector('input').click(); }
+                container.appendChild(div);
+            });
+        }
+        
+        function closePlotModal() { document.getElementById('modalPlotKunci').classList.add('hidden'); }
+        function checkPlotLimit(max) {
+            const boxes = document.querySelectorAll('.key-checkbox');
+            const checked = document.querySelectorAll('.key-checkbox:checked').length;
+            boxes.forEach(b => { if(!b.checked) b.disabled = (checked >= max); });
+        }
+        
+        // --- 1. ACTION PLOT KUNCI ---
+        async function processPlot() {
+            const reqQty = parseInt(document.getElementById('plotReqQty').value);
+            const checked = Array.from(document.querySelectorAll('.key-checkbox:checked')).map(b => b.value);
+            if (checked.length !== reqQty) { await customAlert(`Pilih tepat ${reqQty} kunci!`, "Pilih Kunci", "warning"); return; }
+
+            const id = document.getElementById('plotId').value;
+            const targetStatus = document.getElementById('plotTargetStatus').value;
+            const assignedKeysStr = checked.join(', '); 
+
+            document.getElementById('plotLoadingOverlay').classList.remove('hidden');
+
+            try {
+                await fetch(GAS_WEB_APP_URL, {
+                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: assignedKeysStr, TIPE: 'kunci' })
+                });
+
+                const index = dummyData.findIndex(d => String(d.ID) === String(id));
+                if(index > -1) { 
+                    dummyData[index].STATUS = targetStatus; 
+                    dummyData[index].NOMOR_KUNCI = assignedKeysStr;
+                    renderTable(); 
+                }
+
+                closePlotModal();
+                await customAlert(`Kunci berhasil di-plot dan Status diubah menjadi: ${targetStatus}`, "Berhasil", "success");
+            } catch(e) {
+                await customAlert("Gagal menyimpan data ke server.", "Error", "error");
+            } finally { 
+                document.getElementById('plotLoadingOverlay').classList.add('hidden');
+            }
+        }
+
+        // --- 2. ACTION UPDATE STATUS ---
+        function actionUpdateStatus(id, targetStatus) { 
+            requireAdmin(async function() { 
+                const index = dummyData.findIndex(d => String(d.ID) === String(id));
+                let oldStatus = "";
+                if(index > -1) { 
+                    oldStatus = dummyData[index].STATUS;
+                    dummyData[index].STATUS = targetStatus; 
+                    renderTable(); 
+                }
+
+                try {
+                    await fetch(GAS_WEB_APP_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: "", TIPE: 'kunci' })
+                    });
+                    
+                    await customAlert(`Status berhasil diubah menjadi: ${targetStatus}`, "Berhasil", "success");
+                } catch(e) {
+                    if (index > -1) { dummyData[index].STATUS = oldStatus; renderTable(); }
+                    await customAlert("Gagal memperbarui status ke server.", "Error", "error");
+                }
+            }); 
+        }
+
+        // --- 3. ACTION DELETE RECORD ---
+        function actionDeleteRecord(id) { 
+            requireAdmin(async function() { 
+                const isConfirmed = await customConfirm(`Hapus data ${id} selamanya?`, "Hapus Data", "danger");
+                if (!isConfirmed) return;
+                
+                const prevData = [...dummyData];
+                dummyData = dummyData.filter(d => String(d.ID).trim() !== String(id).trim());
+                renderTable();
+                
+                try {
+                    await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'deleteRecord', ID: id, TIPE: 'kunci' }) });
+                    await customAlert("Data berhasil dihapus selamanya.", "Berhasil", "success");
+                } catch (err) {
+                    dummyData = prevData; renderTable();
+                    await customAlert("Gagal menghapus data.", "Error", "error");
+                }
+            }); 
+        }
+
+        // --- 4. ACTION SUBMIT BARU ---
+        function handleNimInput() {
+            clearTimeout(nimTimeout);
+            
+            document.getElementById('nimError').classList.add('hidden'); 
+            document.getElementById('nimSuccess').classList.add('hidden');
+            
+            document.getElementById('NAMA_PEMINJAM').value = '';
+            document.getElementById('INSTITUSI_PERUSAHAAN').value = '';
+            document.getElementById('JURUSAN_DIVISI').value = '';
+            document.getElementById('NO_HP').value = '';
+            isValidNim = false; 
+
+            nimTimeout = setTimeout(() => {
+                const nim = document.getElementById('NIM_NIK').value.trim();
+                if(nim.length >= 3) {
+                    document.getElementById('nimLoading').classList.remove('hidden');
+                    cekNIM(nim);
+                } else {
+                    document.getElementById('nimLoading').classList.add('hidden');
+                }
+            }, 600);
+        }
+        
+        async function cekNIM(nim) {
+            try {
+                const res = await fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`);
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('NAMA_PEMINJAM').value = data.nama||'';
+                    document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi||'';
+                    document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang||''} ${data.jurusan||''}`.trim();
+                    document.getElementById('NO_HP').value = data.noHp||'';
+                    
+                    document.getElementById('nimSuccess').classList.remove('hidden');
+                    document.getElementById('nimError').classList.add('hidden');
+                    document.getElementById('loanForm').classList.remove('hidden');
+                    isValidNim = true;
+                } else { 
+                    document.getElementById('nimError').classList.remove('hidden'); 
+                    document.getElementById('nimSuccess').classList.add('hidden');
+                    document.getElementById('loanForm').classList.add('hidden');
+                    isValidNim = false;
+                }
+            } catch(e) {
+            } finally { 
+                document.getElementById('nimLoading').classList.add('hidden'); 
+            }
+        }
+
+        async function submitForm(e) {
+            e.preventDefault();
+            if(!isValidNim) { await customAlert("NIM tidak valid!","Error","error"); return; }
+            if(!document.getElementById('checkSK').checked) { await customAlert("Setujui persyaratan peminjaman!","Peringatan","warning"); return; }
+            
+            if (submitActionType === 'Sedang Dipinjam') {
+                const isConfirmed = await customConfirm("Pastikan sudah mengetahui / atas izin petugas dan kunci sudah diserahkan / sudah di ambil.", "Konfirmasi Pinjam Langsung", "info");
+                if (!isConfirmed) return;
+            }
+
+            document.getElementById('formLoadingOverlay').classList.remove('hidden');
+            const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width/2; tempCanvas.height = canvas.height/2; 
+            tempCtx.fillStyle='#fff'; tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height); 
+            tempCtx.drawImage(canvas,0,0,tempCanvas.width,tempCanvas.height);
+            const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
+
+            const now = new Date(); const pad = (n) => String(n).padStart(2,'0');
+            const tStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const bId = `PK_${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}`;
+            const idStr = bId + String(dummyData.filter(d=>d.ID.startsWith(bId)).length+1).padStart(3,'0');
+
+            const payload = {
+                action: "requestKunci", TIPE: "kunci", ID: idStr, TIMESTAMPT: tStr, TANGGAL: now.toLocaleDateString('id-ID'),
+                NAMA_BARANG: document.getElementById('JENIS_LOKER').value, QTY: document.getElementById('QTY_INPUT').value,
+                NOMOR_KUNCI: "", STATUS: submitActionType, NIM_NIK: document.getElementById('NIM_NIK').value,
+                NAMA_PEMINJAM: document.getElementById('NAMA_PEMINJAM').value, INSTITUSI_PERUSAHAAN: document.getElementById('INSTITUSI_PERUSAHAAN').value,
+                JURUSAN_DIVISI: document.getElementById('JURUSAN_DIVISI').value, NO_HP: "'"+document.getElementById('NO_HP').value,
+                TGL_PINJAM: document.getElementById('TGL_PINJAM').value, TGL_KEMBALI: document.getElementById('TGL_KEMBALI').value,
+                DURASI: document.getElementById('DURASI').value, TANDA_TANGAN: sigData
+            };
+            
+            try {
+                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: {"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
+                
+                dummyData.unshift(payload);
+                renderTable();
+                
+                closeModal(); 
+                
+                await customAlert("Pengajuan kunci berhasil dikirim! Menunggu persetujuan admin.","Berhasil","success");
+            } catch(err) { 
+                await customAlert("Gagal terkirim.","Error","error"); 
+            } finally { 
+                document.getElementById('formLoadingOverlay').classList.add('hidden'); 
+            }
+        }
+
+        // --- 5. ACTION CANCEL ---
+        function openCancelModal(id) { document.getElementById('modalCancel').classList.remove('hidden'); document.getElementById('cancelId').value=id; document.getElementById('cancelCatatan').value=''; }
+        function closeCancelModal() { document.getElementById('modalCancel').classList.add('hidden'); }
+        async function processCancel() { 
+            const id=document.getElementById('cancelId').value, cat=document.getElementById('cancelCatatan').value; 
+            if(!cat) { await customAlert("Alasan pembatalan wajib diisi!", "Perhatian", "warning"); return; }
+            
+            const btn=document.getElementById('btnProsesCancel'); btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                await fetch(GAS_WEB_APP_URL, {
+                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: 'Cancel', CATATAN: cat, ASSIGNED_KEYS: "", TIPE: 'kunci' })
+                });
+
+                const index = dummyData.findIndex(d => String(d.ID) === String(id));
+                if(index > -1) { dummyData[index].STATUS = "Cancel"; renderTable(); }
+
+                closeCancelModal(); 
+                await customAlert(`Transaksi dibatalkan.`, "Berhasil", "success");
+            } catch(e) {
+                await customAlert("Gagal membatalkan transaksi.", "Error", "error");
+            } finally { btn.disabled=false; btn.innerHTML='Batalkan Data'; }
+        }
+
+        // --- 6. ACTION RETURN ---
+        function openReturnModal(id, stTarget) { document.getElementById('modalReturn').classList.remove('hidden'); document.getElementById('returnID').value=id; document.getElementById('returnStatus').value=stTarget; document.getElementById('returnStatusLabel').innerText = stTarget==='Selesai'?'PENGEMBALIAN NORMAL':'KUNCI RUSAK/HILANG'; document.getElementById('reqCatatan').classList.toggle('hidden', stTarget==='Selesai'); document.getElementById('returnCatatan').required = stTarget!=='Selesai'; }
+        function closeReturnModal() { document.getElementById('modalReturn').classList.add('hidden'); }
+        function previewReturnImage(e) { const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=e=>{document.getElementById('imagePreview').src=e.target.result; document.getElementById('imagePreview').classList.remove('hidden');}; r.readAsDataURL(f); } }
+        
+        async function submitReturn(e) {
+            e.preventDefault(); const btn=document.getElementById('btnSubmitReturn'); btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';
+            const id=document.getElementById('returnID').value, st=document.getElementById('returnStatus').value, cat=document.getElementById('returnCatatan').value, r=new FileReader();
+            r.onload = async function(ev) {
+                try {
+                    await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: st, CATATAN: cat, BUKTI_FOTO: ev.target.result, TIPE: 'kunci' }) });
+                    
+                    const index = dummyData.findIndex(d => String(d.ID) === String(id));
+                    if(index > -1) { dummyData[index].STATUS = st; renderTable(); }
+
+                    closeReturnModal(); 
+                    await customAlert("Proses Pengembalian Selesai", "Berhasil", "success");
+                } catch(err){
+                    await customAlert("Gagal melakukan pengembalian.", "Error", "error");
+                } finally { btn.disabled=false; btn.innerHTML='Proses'; }
+            }; r.readAsDataURL(document.getElementById('returnPhoto').files[0]);
+        }
+
+        // ==========================================
+        // SISTEM KOORDINAT CANVAS & DURASI
+        // ==========================================
+        function initCanvas() {
+            canvas = document.getElementById('sigCanvas'); ctx = canvas.getContext('2d');
+            resizeCanvas(); 
+            canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseleave', stopDrawing);
+            canvas.addEventListener('touchstart', (e)=>{startDrawing(e.touches[0]); e.preventDefault();},{passive:false}); canvas.addEventListener('touchmove', (e)=>{draw(e.touches[0]); e.preventDefault();},{passive:false}); canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
+        }
+
+        function startDrawing(e){ if(document.getElementById('signatureArea').classList.contains('pointer-events-none')) return; isDrawing = true; const pos = getCanvasPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); }
+        function draw(e){ if(!isDrawing) return; const pos = getCanvasPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); }
+        function stopDrawing(){ isDrawing=false; } 
+        function clearSignature(){ ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function toggleSignature(){ const ck=document.getElementById('checkSK').checked; const sa=document.getElementById('signatureArea'); if(ck){ sa.classList.remove('opacity-50','pointer-events-none'); } else { sa.classList.add('opacity-50','pointer-events-none'); clearSignature(); } }
+        function setMinDateTime(){ const n=new Date(); const p=(num)=>String(num).padStart(2,'0'); document.getElementById('TGL_PINJAM').min=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}T${p(n.getHours())}:${p(n.getMinutes())}`; }
+        
+        async function calculateDuration() { 
+            const s = new Date(document.getElementById('TGL_PINJAM').value);
+            const e = new Date(document.getElementById('TGL_KEMBALI').value); 
+            document.getElementById('TGL_KEMBALI').min = document.getElementById('TGL_PINJAM').value; 
+            
+            if(e < s || isNaN(e.getTime())) { document.getElementById('TGL_KEMBALI').value = ""; return; } 
+            
+            const diffMs = e - s;
+            const h = Math.floor(diffMs / (1000 * 60 * 60)); 
+            const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let durText = "";
+            if(h >= 24) { durText = `${Math.floor(h/24)} Hari ${h%24} Jam`; } 
+            else if(h > 0) { durText = `${h} Jam ${m > 0 ? m + ' Menit' : ''}`; }
+            else { durText = `${m} Menit`; }
+            
+            document.getElementById('DURASI').value = durText.trim(); 
+        }
+
+        function resizeCanvas() { canvas.width = canvas.offsetWidth || 800; canvas.height = canvas.offsetHeight || 160; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#1e1b4b'; }
+        
+        function openModal() { 
+            document.getElementById('modalForm').classList.remove('hidden'); 
+            document.getElementById('formScrollArea').scrollTop = 0; 
+            setTimeout(resizeCanvas, 150); 
+        }
+
+        function closeModal() { 
+            document.getElementById('modalForm').classList.add('hidden'); 
+            document.getElementById('loanForm').classList.add('hidden'); 
+            document.getElementById('loanForm').reset(); 
+            document.getElementById('nimSuccess').classList.add('hidden');
+            document.getElementById('nimError').classList.add('hidden');
+            document.getElementById('NIM_NIK').value = '';
+            document.getElementById('NAMA_PEMINJAM').value = '';
+            document.getElementById('INSTITUSI_PERUSAHAAN').value = '';
+            document.getElementById('JURUSAN_DIVISI').value = '';
+            document.getElementById('NO_HP').value = '';
+            isValidNim = false; 
+            clearSignature(); 
+            toggleSignature(); 
+        }
+    </script>
+</body>
+</html>
