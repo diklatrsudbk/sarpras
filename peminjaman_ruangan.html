@@ -32,7 +32,7 @@
                 </div>
             </div>
             <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow transition-all hover:scale-105 flex items-center gap-2 text-xs sm:text-sm">
-                <i class="fa-solid fa-plus-circle"></i> <span class="hidden sm:inline">Booking Ruangan</span><span class="sm:hidden">Booking</span>
+                <i class="fa-solid fa-plus-circle"></i> <span class="hidden sm:inline">Request Ruangan</span><span class="sm:hidden">Booking</span>
             </button>
         </div>
     </header>
@@ -71,9 +71,9 @@
                     <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
                         <tr>
                             <th class="p-3.5 w-10 text-center">No</th>
-                            <th class="p-3.5">Nama Peminjam / Acara</th>
-                            <th class="p-3.5">Unit / NIK / NIM</th>
-                            <th class="p-3.5 font-bold text-emerald-700">Ruangan & Peserta</th>
+                            <th class="p-3.5">Nama Peminjam</th>
+                            <th class="p-3.5">Unit</th>
+                            <th class="p-3.5 font-bold text-emerald-700">Ruangan</th>
                             <th class="p-3.5">Tanggal & Jam</th>
                             <th class="p-3.5 text-center">Status</th>
                             <th class="p-3.5 text-center min-w-[130px]">Aksi Admin</th>
@@ -353,6 +353,7 @@
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxYDQi-ySkvcZq1OfOSXezHYsyUjhjVFhSGMX1dqedtodEa0Tvs2xvgNvcA0Sr8GCz_OA/exec";
         
         let canvas, ctx, isDrawing = false;
+        let currentAbortController = null;
         let dummyData = [], dbRuangan = []; 
         let isValidNim = false, nimTimeout = null, searchTimeout = null;
         const ADMIN_PASS = "admin";
@@ -484,18 +485,29 @@
 
         function renderActionButtons(item) {
             let btns = ''; const s = String(item.STATUS).trim(); const id = item.ID;
+            
             if (s === 'Request') {
+                // Terima Booking dan Tolak TETAP BUTUH ADMIN
                 btns += `<button onclick="prepareAdminAction('plot', '${id}', 'Booking')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-check"></i> Terima Booking</button>`;
                 btns += `<button onclick="prepareAdminAction('cancel', '${id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Tolak / Cancel</button>`;
+                
             } else if (s === 'Booking') {
-                btns += `<button onclick="prepareAdminAction('mulai', '${id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-door-open"></i> Mulai Pakai</button>`;
+                // BERUBAH: Mulai Pakai LANGSUNG BUKA MODAL tanpa PIN
+                btns += `<button onclick="openMulaiModal('${id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-door-open"></i> Mulai Pakai</button>`;
+                // Cancel masih butuh admin
                 btns += `<button onclick="prepareAdminAction('cancel', '${id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
+                
             } else if (s === 'Sedang Dipinjam') {
-                btns += `<button onclick="prepareAdminAction('selesai', '${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-flag-checkered"></i> Selesai Dipakai</button>`;
+                // BERUBAH: Selesai Dipakai LANGSUNG BUKA MODAL tanpa PIN
+                btns += `<button onclick="openSelesaiModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-flag-checkered"></i> Selesai Dipakai</button>`;
+                
             } else {
                 btns += `<span class="text-slate-400 text-[11px] italic text-center block mb-1">Done (${s})</span>`;
             }
+            
+            // Hapus Record TETAP BUTUH ADMIN
             btns += `<button onclick="prepareAdminAction('delete', '${id}')" class="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition mt-1 hover:bg-rose-100"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
+            
             return btns;
         }
 
@@ -809,27 +821,84 @@
             }
         }
 
-        function handleNimInput() {
-            clearTimeout(nimTimeout);
-            document.getElementById('nimError').classList.add('hidden'); document.getElementById('nimSuccess').classList.add('hidden'); 
-            document.getElementById('PD_NAMA').value = ''; document.getElementById('PD_INSTITUSI').value = ''; document.getElementById('PD_JURUSAN').value = ''; document.getElementById('PD_NOHP').value = ''; isValidNim = false; 
-            nimTimeout = setTimeout(() => {
-                const nim = document.getElementById('PD_NIM').value.trim();
-                if(nim.length >= 3) { document.getElementById('nimLoading').classList.remove('hidden'); cekNIM(nim); } 
-                else { document.getElementById('nimLoading').classList.add('hidden'); }
-            }, 600);
+        // Tambahkan variabel global ini di bagian atas script (bersama let canvas, dll)
+
+
+function handleNimInput() {
+    clearTimeout(nimTimeout);
+    document.getElementById('nimError').classList.add('hidden'); 
+    document.getElementById('nimSuccess').classList.add('hidden'); 
+    
+    document.getElementById('PD_NAMA').value = ''; 
+    document.getElementById('PD_INSTITUSI').value = ''; 
+    document.getElementById('PD_JURUSAN').value = ''; 
+    document.getElementById('PD_NOHP').value = ''; 
+    isValidNim = false; 
+
+    nimTimeout = setTimeout(() => {
+        const nim = document.getElementById('PD_NIM').value.trim();
+        if(nim.length >= 3) { 
+            document.getElementById('nimLoading').classList.remove('hidden'); 
+            cekNIM(nim); 
+        } else { 
+            document.getElementById('nimLoading').classList.add('hidden'); 
+            // Batalkan pencarian yang sedang berjalan jika input dihapus / kurang dari 3 karakter
+            if (currentAbortController) currentAbortController.abort();
         }
+    }, 600);
+}
+
+function cekNIM(nim) {
+    // Batalkan request sebelumnya jika user mengetik lagi sebelum request pertama selesai
+    if (currentAbortController) {
+        currentAbortController.abort();
+    }
+    
+    // Buat controller baru untuk request yang baru ini
+    currentAbortController = new AbortController();
+    const signal = currentAbortController.signal;
+
+    fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
+    .then(res => {
+        if (!res.ok) throw new Error("Gagal mengambil data dari server");
+        return res.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('PD_NAMA').value = data.nama || ''; 
+            document.getElementById('PD_INSTITUSI').value = data.institusi || '';
+            document.getElementById('PD_JURUSAN').value = `${data.jenjang||''} ${data.jurusan||''}`.trim(); 
+            document.getElementById('PD_NOHP').value = data.noHp || '';
+            
+            document.getElementById('nimError').classList.add('hidden'); 
+            document.getElementById('nimSuccess').classList.remove('hidden'); 
+            isValidNim = true;
+        } else { 
+            // Ubah pesan teks menjadi NIM tidak ditemukan
+            document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan.';
+            document.getElementById('nimError').classList.remove('hidden'); 
+            document.getElementById('nimSuccess').classList.add('hidden'); 
+            isValidNim = false; 
+        }
+    })
+    .catch(err => {
+        // Jika error karena di-abort (dibatalkan oleh sistem sendiri), abaikan saja
+        if (err.name === 'AbortError') return;
         
-        function cekNIM(nim) {
-            fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`)
-            .then(res => res.json()).then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('PD_NAMA').value = data.nama||''; document.getElementById('PD_INSTITUSI').value = data.institusi||'';
-                    document.getElementById('PD_JURUSAN').value = `${data.jenjang||''} ${data.jurusan||''}`.trim(); document.getElementById('PD_NOHP').value = data.noHp||'';
-                    document.getElementById('nimError').classList.add('hidden'); document.getElementById('nimSuccess').classList.remove('hidden'); isValidNim = true;
-                } else { document.getElementById('nimError').classList.remove('hidden'); document.getElementById('nimSuccess').classList.add('hidden'); isValidNim = false; }
-            }).finally(() => document.getElementById('nimLoading').classList.add('hidden'));
+        // Jika error jaringan (putus internet / server sibuk)
+        console.error("Fetch Error:", err);
+        document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi.';
+        document.getElementById('nimError').classList.remove('hidden'); 
+        document.getElementById('nimSuccess').classList.add('hidden'); 
+        isValidNim = false;
+    })
+    .finally(() => { 
+        // Sembunyikan loading HANYA JIKA request ini tidak dibatalkan oleh request baru
+        if (!signal.aborted) {
+            document.getElementById('nimLoading').classList.add('hidden'); 
         }
+    });
+}
 
         function calcJamSelesai() {
             let start = document.getElementById('JAM_MULAI').value, durasi = document.getElementById('DURASI').value; 
