@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Peserta Didik Aktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#0ea5e9' } // Sky blue primary
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar for table */
+        .table-container::-webkit-scrollbar { height: 8px; width: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Loading Overlay Spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #0ea5e9;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary text-white p-2 rounded-lg">
+                        <i class="fa-solid fa-users-viewfinder text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-800 leading-tight">Data Peserta Didik</h1>
+                        <p class="text-xs text-slate-500 font-medium" id="header-status">Mencari Sesi...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Status Banner (Hidden by default) -->
+        <div id="event-banner" class="hidden mb-6 rounded-xl p-4 border flex items-start gap-4 transition-all duration-300 shadow-sm">
+            <div><!-- Icon Container (injected via JS) --></div>
+            <div>
+                <h3 id="banner-title" class="text-sm font-bold uppercase tracking-wider"></h3>
+                <p id="banner-desc" class="text-sm mt-1"></p>
+            </div>
+        </div>
+
+        <!-- Controls & Filters Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 p-5">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                
+                <!-- Search -->
+                <div class="md:col-span-4 relative">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                        </div>
+                        <input type="text" id="searchInput" placeholder="Cari Nama atau NIM..." 
+                            class="pl-10 w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-shadow outline-none">
+                    </div>
+                </div>
+
+                <!-- Filter Institusi -->
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Institusi</label>
+                    <div class="relative">
+                        <select id="filterInstitusi" class="w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer bg-white">
+                            <option value="">Semua Institusi</option>
+                            <!-- Options injected here -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Jurusan -->
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Jurusan</label>
+                    <div class="relative">
+                        <select id="filterJurusan" class="w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer bg-white">
+                            <option value="">Semua Jenjang & Jurusan</option>
+                            <!-- Options injected here -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative min-h-[400px]">
+            
+            <!-- Table Header Info -->
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 class="font-semibold text-slate-700">Daftar Peserta</h2>
+                <span id="data-count-info" class="text-xs font-medium text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-full">Menunggu data...</span>
+            </div>
+
+            <!-- Table Wrapper (Scrollable) -->
+            <div class="table-container overflow-x-auto w-full relative flex-grow">
+                <table class="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                            <th class="py-3 px-4 font-semibold text-center w-16">No</th>
+                            <th class="py-3 px-4 font-semibold">Peserta (Nama & NIM)</th>
+                            <th class="py-3 px-4 font-semibold">Institusi</th>
+                            <th class="py-3 px-4 font-semibold">Jenjang & Jurusan</th>
+                            <th class="py-3 px-4 font-semibold">Bagian</th>
+                            <th class="py-3 px-4 font-semibold text-center w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="text-sm divide-y divide-slate-100">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden absolute inset-0 bg-white flex-col items-center justify-center p-8 text-center h-full min-h-[300px]">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-folder-open text-2xl"></i>
+                    </div>
+                    <h3 class="text-slate-700 font-semibold mb-1">Data tidak ditemukan</h3>
+                    <p class="text-slate-500 text-sm max-w-sm">Coba sesuaikan kata kunci pencarian atau filter dropdown untuk melihat hasil lainnya.</p>
+                </div>
+            </div>
+
+            <!-- Loading Overlay Fullscreen relative to Table -->
+            <div id="table-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center transition-opacity duration-300">
+                <div class="spinner mb-4 border-slate-200 border-t-primary"></div>
+                <p id="loading-text" class="text-sm font-medium text-slate-600 animate-pulse">Menghubungkan ke Server...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Action Modal Backdrop & Container -->
+    <div id="actionModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-primary"></i> Aksi Peserta
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 transition-colors focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto">
+                <!-- User Info Preview -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Data Peserta</p>
+                    <p id="modal-nama" class="font-bold text-slate-800 text-lg line-clamp-1">-</p>
+                    <p id="modal-nim" class="text-sm text-slate-600 font-mono mt-1">-</p>
+                    <p id="modal-institusi" class="text-xs text-slate-500 mt-2 bg-slate-200/50 inline-block px-2 py-1 rounded">-</p>
+                </div>
+
+                <!-- Update Level Section (Quick Action) -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Update Level (ID Parent)</label>
+                    <p class="text-xs text-slate-500 mb-3 leading-relaxed">Update level tanpa meninggalkan halaman ini. Perubahan langsung tersimpan ke server.</p>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="input-level" placeholder="Contoh: LVL-01" class="flex-grow rounded-lg border-slate-300 border px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+                        <button id="btn-update-level" onclick="handleUpdateLevel()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100 mb-6">
+
+                <!-- Full Edit Section (Redirect) -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Edit Data Penuh</label>
+                    <p class="text-xs text-slate-500 mb-3 leading-relaxed">Membuka formulir pendaftaran lengkap di tab baru untuk mengedit seluruh data peserta (termasuk foto/dokumen).</p>
+                    
+                    <button onclick="handleEditAction()" class="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-3 rounded-xl text-sm font-bold transition-all">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Form Edit Lengkap
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container (Bottom Right) -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // ==========================================
+        // KONFIGURASI WEB APP URL
+        // ==========================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec'; 
+        const FORM_URL = 'input_pesertadidik.html'; // Set dengan URL Form Pendaftaran HTML Anda
+        
+        // State Management
+        let appState = {
+            activeSession: null,
+            allData: [],
+            filteredData: [],
+            filters: {
+                search: '',
+                institusi: '',
+                jurusan: ''
+            },
+            selectedUser: null
+        };
+
+        // DOM Elements
+        const DOM = {
+            loadingOverlay: document.getElementById('table-loading'),
+            loadingText: document.getElementById('loading-text'),
+            tableBody: document.getElementById('tableBody'),
+            emptyState: document.getElementById('empty-state'),
+            searchInput: document.getElementById('searchInput'),
+            filterInstitusi: document.getElementById('filterInstitusi'),
+            filterJurusan: document.getElementById('filterJurusan'),
+            banner: document.getElementById('event-banner'),
+            bannerTitle: document.getElementById('banner-title'),
+            bannerDesc: document.getElementById('banner-desc'),
+            headerStatus: document.getElementById('header-status'),
+            dataCountInfo: document.getElementById('data-count-info'),
+            modal: document.getElementById('actionModal'),
+        };
+
+        // Initialize Application
+        async function initApp() {
+            setLoading(true, "Mencari sesi aktif (OPEN)...");
+            
+            try {
+                // 1. Dapatkan Data Sesi Awal
+                const initRes = await fetchGas({ action: 'getInitialData' });
+                
+                if (!initRes || !initRes.success) {
+                    throw new Error(initRes?.message || "Gagal memuat konfigurasi awal.");
+                }
+
+                if (!initRes.event || initRes.event.status !== 'OPEN') {
+                    showBanner("Tidak Ada Sesi Terbuka", "Saat ini tidak ada nama_sheet yang berstatus OPEN di pengaturan.", "warning");
+                    DOM.headerStatus.textContent = "Sesi Tertutup";
+                    setLoading(false);
+                    return;
+                }
+
+                appState.activeSession = initRes.event;
+                showBanner(`Sesi Aktif: ${appState.activeSession.nama_sheet}`, `Menampilkan data dari sheet "${appState.activeSession.nama_sheet}". Acara: ${appState.activeSession.nama_acara}`, "info");
+                DOM.headerStatus.textContent = `Sheet: ${appState.activeSession.nama_sheet}`;
+
+                // 2. Ambil Semua Data Peserta
+                setLoading(true, "Mengambil data peserta...");
+                const dataRes = await fetchGas({ action: 'getAllParticipants' });
+
+                if (!dataRes || !dataRes.success) {
+                    throw new Error(dataRes?.message || "Gagal memuat data peserta.");
+                }
+
+                // Filter data strictly to only show rows from the active sheet name
+                appState.allData = (dataRes.data || []).filter(item => item.sheetName === appState.activeSession.nama_sheet);
+                
+                // 3. Ekstrak data unik untuk dropdown Filter
+                populateFilterDropdowns();
+
+                // 4. Render Table
+                applyFilters();
+                
+                showToast("Data berhasil dimuat.", "success");
+
+            } catch (error) {
+                console.error("Initialization Error:", error);
+                showToast(error.message, "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Wrapper for fetching data to GAS Web App safely
+        async function fetchGas(payload) {
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error("Fetch GAS Error: ", error);
+                throw new Error("Koneksi ke server gagal. Cek URL API.");
+            }
+        }
+
+        // UI Helpers
+        function setLoading(isLoading, text = "Memuat...") {
+            if (isLoading) {
+                DOM.loadingOverlay.classList.remove('hidden');
+                DOM.loadingText.textContent = text;
+            } else {
+                DOM.loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function showBanner(title, desc, type) {
+            DOM.banner.classList.remove('hidden', 'bg-blue-50', 'border-blue-200', 'bg-yellow-50', 'border-yellow-200');
+            const iconContainer = DOM.banner.querySelector('div:first-child');
+            const titleEl = DOM.banner.querySelector('h3');
+            const descEl = DOM.banner.querySelector('p');
+            
+            if (type === 'warning') {
+                DOM.banner.classList.add('bg-yellow-50', 'border-yellow-200');
+                iconContainer.className = "mt-0.5 text-yellow-600";
+                iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-xl"></i>';
+                titleEl.className = "text-sm font-bold text-yellow-900 uppercase tracking-wider";
+                descEl.className = "text-sm text-yellow-800 mt-1";
+            } else {
+                DOM.banner.classList.add('bg-blue-50', 'border-blue-200');
+                iconContainer.className = "mt-0.5 text-blue-500";
+                iconContainer.innerHTML = '<i class="fa-solid fa-circle-info text-xl"></i>';
+                titleEl.className = "text-sm font-bold text-blue-900 uppercase tracking-wider";
+                descEl.className = "text-sm text-blue-800 mt-1";
+            }
+            
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            let bgClass = "bg-slate-800";
+            let icon = '<i class="fa-solid fa-circle-info text-blue-400"></i>';
+            
+            if (type === 'success') {
+                bgClass = "bg-slate-800";
+                icon = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else if (type === 'error') {
+                bgClass = "bg-red-900";
+                icon = '<i class="fa-solid fa-circle-xmark text-red-400"></i>';
+            }
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all translate-y-4 opacity-0 border border-white/10 mt-2`;
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Dropdown Populasi & Filtering
+        function populateFilterDropdowns() {
+            const institusiSet = new Set();
+            const jurusanSet = new Set(); 
+
+            appState.allData.forEach(item => {
+                const institusi = String(item.namasekolah || "").trim();
+                const jenjang = String(item.jenjangpend || "").trim();
+                const jurusan = String(item.jurusan || "").trim();
+                const jenjangJurusan = `${jenjang} ${jurusan}`.trim();
+
+                if (institusi) institusiSet.add(institusi);
+                if (jenjangJurusan && jenjangJurusan !== " ") jurusanSet.add(jenjangJurusan);
+            });
+
+            DOM.filterInstitusi.innerHTML = '<option value="">Semua Institusi</option>';
+            Array.from(institusiSet).sort().forEach(inst => {
+                DOM.filterInstitusi.innerHTML += `<option value="${inst}">${inst}</option>`;
+            });
+
+            DOM.filterJurusan.innerHTML = '<option value="">Semua Jenjang & Jurusan</option>';
+            Array.from(jurusanSet).sort().forEach(jur => {
+                DOM.filterJurusan.innerHTML += `<option value="${jur}">${jur}</option>`;
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = String(appState.filters.search).toLowerCase();
+            const filterInst = appState.filters.institusi;
+            const filterJur = appState.filters.jurusan;
+
+            appState.filteredData = appState.allData.filter(item => {
+                const nama = String(item.nama || "").toLowerCase();
+                const nim = String(item.nim || "").toLowerCase();
+                const institusi = String(item.namasekolah || "").trim();
+                const jenjang = String(item.jenjangpend || "").trim();
+                const jurusan = String(item.jurusan || "").trim();
+                const jenjangJurusan = `${jenjang} ${jurusan}`.trim();
+
+                const matchSearch = (nama.includes(searchTerm) || nim.includes(searchTerm));
+                const matchInst = filterInst === "" || institusi === filterInst;
+                const matchJur = filterJur === "" || jenjangJurusan === filterJur;
+
+                return matchSearch && matchInst && matchJur;
+            });
+
+            renderTable();
+        }
+
+        // Render Data Tabel
+        function renderTable() {
+            if (appState.filteredData.length === 0) {
+                DOM.tableBody.innerHTML = '';
+                DOM.emptyState.classList.remove('hidden');
+                DOM.emptyState.classList.add('flex');
+                DOM.dataCountInfo.textContent = 'Menampilkan 0 data';
+                return;
+            }
+
+            DOM.emptyState.classList.add('hidden');
+            DOM.emptyState.classList.remove('flex');
+
+            let html = '';
+            appState.filteredData.forEach((item, index) => {
+                const jenjangJurusan = `${item.jenjangpend || '-'} - ${item.jurusan || '-'}`;
+                const escItem = encodeURIComponent(JSON.stringify(item));
+                
+                html += `
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="py-3 px-4 border-t border-slate-100 text-center font-medium text-slate-500">${index + 1}</td>
+                        <td class="py-3 px-4 border-t border-slate-100">
+                            <p class="font-semibold text-slate-800">${item.nama || '-'}</p>
+                            <p class="text-xs text-slate-500 font-mono mt-0.5">${item.nim || '-'}</p>
+                        </td>
+                        <td class="py-3 px-4 border-t border-slate-100 font-medium text-slate-700">${item.namasekolah || '-'}</td>
+                        <td class="py-3 px-4 border-t border-slate-100 text-sm text-slate-600">${jenjangJurusan}</td>
+                        <td class="py-3 px-4 border-t border-slate-100 text-sm">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                ${item.bagian || '-'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 border-t border-slate-100 text-center relative">
+                            <div class="inline-block relative">
+                                <button onclick="toggleActionMenu(${index}, event)" class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-full transition-colors focus:outline-none">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                
+                                <div id="menu-${index}" class="dropdown-menu absolute right-0 mt-1 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10 hidden opacity-0 scale-95 transition-all duration-200">
+                                    <div class="py-1" role="none">
+                                        <button onclick="openActionModal('${escItem}')" class="text-slate-700 hover:bg-slate-50 hover:text-primary group flex items-center w-full px-4 py-2 text-sm font-medium transition-colors text-left">
+                                            <i class="fa-solid fa-pen-to-square mr-3 text-slate-400 group-hover:text-primary w-4 text-center"></i>
+                                            Aksi Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            DOM.tableBody.innerHTML = html;
+            DOM.dataCountInfo.textContent = `Menampilkan ${appState.filteredData.length} data`;
+        }
+
+        // Action Menu (Titik 3) Logic
+        let activeMenu = null;
+        function toggleActionMenu(index, e) {
+            if(e) e.stopPropagation();
+            const menu = document.getElementById(`menu-${index}`);
+            
+            if (activeMenu && activeMenu !== menu) closeActionMenu(activeMenu);
+            
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                setTimeout(() => {
+                    menu.classList.remove('opacity-0', 'scale-95');
+                    menu.classList.add('opacity-100', 'scale-100');
+                }, 10);
+                activeMenu = menu;
+            } else {
+                closeActionMenu(menu);
+            }
+        }
+
+        function closeActionMenu(menu) {
+            if(!menu) return;
+            menu.classList.remove('opacity-100', 'scale-100');
+            menu.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                menu.classList.add('hidden');
+            }, 200); 
+            activeMenu = null;
+        }
+
+        document.addEventListener('click', () => {
+            if (activeMenu) closeActionMenu(activeMenu);
+        });
+
+        function openActionModal(encodedItem) {
+            const item = JSON.parse(decodeURIComponent(encodedItem));
+            appState.selectedUser = item;
+            
+            // Set text di modal sesuai ID HTML
+            document.getElementById('modal-nama').textContent = item.nama || '-';
+            document.getElementById('modal-nim').textContent = item.nim || '-';
+            document.getElementById('modal-institusi').textContent = item.namasekolah || '-';
+            document.getElementById('input-level').value = item.id_parent || '';
+            
+            // Tampilkan Modal
+            const modal = DOM.modal;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.querySelector('.transform').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = DOM.modal;
+            modal.querySelector('.transform').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                appState.selectedUser = null;
+                document.getElementById('btn-update-level').innerHTML = 'Simpan';
+            }, 200);
+        }
+
+        function handleEditAction() {
+            if(appState.selectedUser) {
+                const nim = encodeURIComponent(appState.selectedUser.nim);
+                const sheet = encodeURIComponent(appState.activeSession.nama_sheet);
+                
+                showToast(`Mengalihkan form untuk: ${appState.selectedUser.nama}`, 'info');
+                
+                const editUrl = `${FORM_URL}?mode=edit&nim=${nim}&targetSheet=${sheet}`;
+                window.open(editUrl, '_blank');
+                
+                closeModal();
+            }
+        }
+
+        async function handleUpdateLevel() {
+            if(!appState.selectedUser) return;
+            
+            const newLevel = document.getElementById('input-level').value.trim();
+            if(!newLevel) {
+                showToast("Level (ID Parent) tidak boleh kosong", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-update-level');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                const payload = {
+                    action: 'updateLevel',
+                    nim: appState.selectedUser.nim,
+                    sheetName: appState.activeSession.nama_sheet,
+                    newLevel: newLevel
+                };
+
+                const res = await fetchGas(payload);
+
+                if(res.success) {
+                    showToast("Level berhasil diupdate!", "success");
+                    appState.selectedUser.id_parent = newLevel;
+                    // Re-render UI table to reflect any changes if needed
+                    renderTable();
+                    closeModal();
+                } else {
+                    throw new Error(res.message);
+                }
+            } catch (error) {
+                showToast(error.message || "Gagal mengupdate level", "error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Event Listeners for Filters Input
+        DOM.searchInput.addEventListener('input', (e) => {
+            appState.filters.search = e.target.value;
+            applyFilters();
+        });
+
+        DOM.filterInstitusi.addEventListener('change', (e) => {
+            appState.filters.institusi = e.target.value;
+            applyFilters();
+        });
+
+        DOM.filterJurusan.addEventListener('change', (e) => {
+            appState.filters.jurusan = e.target.value;
+            applyFilters();
+        });
+
+        // Run On Load
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+
+    </script>
+</body>
+</html>
