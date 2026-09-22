@@ -409,7 +409,7 @@
 
 <script>
     // URL Web App GAS TERBARU
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxfyzcRd_2Rv6AwFWJ4phqpfguAmh8VG8tt_6aiyDMBRI-W7vZdh64faJVJ0ZTcmgk1/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec";
 
     async function fetchGAS(payload) {
         try {
@@ -430,42 +430,75 @@
     let base64DokumenArray = [];
     let currentEventTarget = "";
 
-    // Event Listener Tgl Lahir -> Umur
-    document.getElementById('tanggallahir').addEventListener('change', function() {
-        const dob = new Date(this.value);
-        if (!isNaN(dob.getTime())) {
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-                age--;
-            }
-            
-            const inputUmur = document.getElementById('umur');
-            inputUmur.value = age;
-            
-            if (age < 14) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Perhatian',
-                    text: 'Usia minimal untuk mendaftar adalah 14 tahun!',
-                    confirmButtonColor: '#3b82f6'
-                });
-                inputUmur.value = "";
-                this.value = "";
-            }
-        }
-    });
-
+    // Pindahkan semua pemasangan event listener ke dalam DOMContentLoaded agar aman
     document.addEventListener("DOMContentLoaded", () => {
+        
+        // 1. Event Listener Tgl Lahir -> Umur
+        const tglLahirInput = document.getElementById('tanggallahir');
+        if (tglLahirInput) {
+            tglLahirInput.addEventListener('change', function() {
+                const dob = new Date(this.value);
+                if (!isNaN(dob.getTime())) {
+                    const today = new Date();
+                    let age = today.getFullYear() - dob.getFullYear();
+                    const m = today.getMonth() - dob.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                        age--;
+                    }
+                    
+                    const inputUmur = document.getElementById('umur');
+                    if(inputUmur) inputUmur.value = age;
+                    
+                    if (age < 14) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Perhatian',
+                            text: 'Usia minimal untuk mendaftar adalah 14 tahun!',
+                            confirmButtonColor: '#3b82f6'
+                        });
+                        if(inputUmur) inputUmur.value = "";
+                        this.value = "";
+                    }
+                }
+            });
+        }
+
+        // 2. Validasi Tanggal Selesai tidak boleh sebelum Tanggal Mulai
+        const tglSelesaiInput = document.getElementById('tanggal_selesai');
+        if (tglSelesaiInput) {
+            tglSelesaiInput.addEventListener('change', function() {
+                const tglMulai = document.getElementById('tanggal_mulai') ? document.getElementById('tanggal_mulai').value : '';
+                if (tglMulai && this.value && this.value < tglMulai) {
+                    Swal.fire('Perhatian', 'Tanggal selesai tidak boleh sebelum tanggal mulai!', 'warning');
+                    this.value = '';
+                }
+            });
+        }
+
+        // 3. Validasi Tanggal Mulai jika diubah setelah Tanggal Selesai terisi
+        const tglMulaiInput = document.getElementById('tanggal_mulai');
+        if (tglMulaiInput) {
+            tglMulaiInput.addEventListener('change', function() {
+                const elTglSelesai = document.getElementById('tanggal_selesai');
+                const tglSelesai = elTglSelesai ? elTglSelesai.value : '';
+                if (tglSelesai && this.value && this.value > tglSelesai) {
+                    Swal.fire('Perhatian', 'Tanggal mulai tidak boleh melebihi tanggal selesai!', 'warning');
+                    if(elTglSelesai) elTglSelesai.value = '';
+                }
+            });
+        }
+
+        // 4. Jalankan pengambilan data awal ke Server
         fetchGAS({ action: 'getInitialData' })
             .then(response => initFormState(response))
             .catch(error => {
                 const statusBanner = document.getElementById('statusBanner');
                 const mainLoader = document.getElementById('mainLoader');
-                mainLoader.classList.add('hidden');
-                statusBanner.className = "bg-rose-50 border-l-4 border-rose-500 p-5 mb-8 shadow-md rounded-xl flex items-center";
-                document.getElementById('statusText').innerHTML = "<span class='text-rose-700 font-semibold'>Error sistem: Gagal menyambung ke server.</span>";
+                if (mainLoader) mainLoader.classList.add('hidden');
+                if (statusBanner) statusBanner.className = "bg-rose-50 border-l-4 border-rose-500 p-5 mb-8 shadow-md rounded-xl flex items-center";
+                
+                const statusText = document.getElementById('statusText');
+                if (statusText) statusText.innerHTML = "<span class='text-rose-700 font-semibold'>Error sistem: Gagal menyambung ke server.</span>";
             });
     });
 
@@ -485,6 +518,7 @@
 
         const ev = response.event;
         
+        // Pengecekan aman jika data kosong
         populateSelect('tempatlahir', response.dropdowns.kota, 'Pilih Kota...');
         populateSelect('alamatsekolahr', response.dropdowns.kota, 'Pilih Kota Institusi...');
         populateSelect('namasekolah', response.dropdowns.institusi, 'Pilih Institusi...');
@@ -497,55 +531,106 @@
         }
 
         if (ev.status === 'CLOSE') {
-            statusBanner.className = "bg-amber-50 border-l-4 border-amber-500 p-5 mb-8 shadow-md rounded-xl flex items-center";
-            statusText.innerHTML = `<span class='text-amber-800'>Pendaftaran ditutup. Terdekat: <strong>${ev.nama_acara}</strong> (${ev.waktu_mulai})</span>`;
+            statusBanner.className = "bg-amber-50 border-l-4 border-amber-500 p-5 mb-8 shadow-md rounded-xl flex items-center transition-all";
+            
+            const h3Status = statusBanner.querySelector('h3');
+            if(h3Status) {
+                h3Status.className = "font-bold text-amber-800";
+                h3Status.innerHTML = "<i class='fas fa-lock mr-1'></i> Pendaftaran Ditutup";
+            }
+
+            statusText.innerHTML = `<span class='text-amber-700'>Pendaftaran <strong>${ev.nama_acara}</strong> Sudah di tutup, Silahkan Hubungi Admin</span>`;
         } 
         else if (ev.status === 'TERJADWAL') {
             statusBanner.className = "bg-blue-50 border-l-4 border-blue-500 p-5 mb-8 shadow-md rounded-xl flex items-center";
-            statusText.innerHTML = `<span class='text-blue-800'>Acara <strong>${ev.nama_acara}</strong> akan dibuka pada ${ev.waktu_mulai}.</span>`;
+            
+            // Logika format tanggal ke teks rapi
+            let formattedDateStr = ev.waktu_mulai;
+            try {
+                const d = new Date(ev.waktu_mulai);
+                if (!isNaN(d.getTime())) {
+                    const day = d.getDate();
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                    const month = months[d.getMonth()];
+                    const year = d.getFullYear();
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    formattedDateStr = `${day} ${month} ${year} - ${hours}:${minutes}`;
+                }
+            } catch(e) {}
+
+            const h3Status = statusBanner.querySelector('h3');
+            if(h3Status) {
+                h3Status.className = "font-bold text-blue-800";
+                h3Status.innerHTML = "<i class='fas fa-calendar-alt mr-1'></i> Pendaftaran Terjadwal";
+            }
+
+            statusText.innerHTML = `<span class='text-blue-800'>Acara <strong>${ev.nama_acara}</strong> akan dibuka pada Tanggal <strong>${formattedDateStr}</strong>.</span>`;
         }
         else if (ev.status === 'OPEN') {
-            statusBanner.classList.add('hidden');
+            // Tampilkan Info Sesi Aktif (Jangan disembunyikan)
+            statusBanner.classList.remove('hidden');
+            statusBanner.className = "bg-emerald-50 border-l-4 border-emerald-500 p-5 mb-8 shadow-md rounded-xl flex items-center transition-all";
+            
+            const h3Status = statusBanner.querySelector('h3');
+            if(h3Status) {
+                h3Status.className = "font-bold text-emerald-800";
+                h3Status.innerHTML = "<i class='fas fa-door-open mr-1'></i> Pendaftaran Dibuka";
+            }
+            
+            statusText.innerHTML = `<span class='text-emerald-700'>Acara: <strong>${ev.nama_acara}</strong></span> <span class='mx-2 text-emerald-300'>|</span> <span class='text-emerald-600 text-xs font-mono bg-emerald-100 px-2 py-0.5 rounded'>Sheet: ${ev.nama_sheet}</span>`;
+            
             formContainer.classList.remove('hidden');
             document.getElementById('targetSheet').value = ev.nama_sheet;
             currentEventTarget = ev.nama_sheet;
+            
+            // PENGECEKAN PARAMETER URL UNTUK MODE EDIT
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            const urlNim = urlParams.get('nim');
+            
+            if (mode === 'edit' && urlNim) {
+                document.getElementById('nim').value = urlNim;
+                prosesCekNIM(); // Jalankan pencarian otomatis
+            }
         }
     }
 
     function populateSelect(id, arrayData, placeholder) {
         const select = document.getElementById(id);
+        if(!select) return;
         select.innerHTML = `<option value="">${placeholder}</option>`;
-        arrayData.forEach(item => {
-            select.innerHTML += `<option value="${item}">${item}</option>`;
-        });
+        
+        // Pengecekan aman jika arrayData bukan array (mencegah form hang)
+        if (Array.isArray(arrayData)) {
+            arrayData.forEach(item => {
+                select.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+        }
     }
 
     // FUNGSI RESET NIM & FORM
     function resetFormState() {
-        // Reset NIM Input
         const nimInput = document.getElementById('nim');
         nimInput.value = '';
         nimInput.readOnly = false;
         nimInput.classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
         
-        // Atur tombol
         document.getElementById('btnCekNIM').classList.remove('hidden');
         document.getElementById('btnResetNIM').classList.add('hidden');
-        
-        // Sembunyikan form bawah
         document.getElementById('fullFormSection').classList.add('hidden');
         
-        // Bersihkan Form (kecuali yang hidden terpenting)
         document.getElementById('biodataForm').reset();
-        document.getElementById('targetSheet').value = currentEventTarget; // kembalikan nilai
+        document.getElementById('targetSheet').value = currentEventTarget; 
         document.getElementById('isEdit').value = "false";
         document.getElementById('editRowNum').value = "";
         document.getElementById('catatanOtomatis').value = "";
         document.getElementById('oldUrlFoto').value = "";
         document.getElementById('oldUrlDokumen').value = "";
         
-        // Reset Visual Foto & Dokumen
         const fotoBox = document.getElementById('fotoBox');
+        fotoBox.style.borderColor = ''; 
+        fotoBox.style.backgroundColor = '';
         fotoBox.innerHTML = `
             <i class="fas fa-camera text-3xl text-slate-300 mb-2 transition-colors"></i>
             <span class="text-[11px] font-medium text-slate-500 text-center px-2">Pilih Foto<br>(Max 200kb)</span>
@@ -554,7 +639,6 @@
         document.getElementById('fotoName').innerHTML = '';
         document.getElementById('docList').innerHTML = '';
         
-        // Kembalikan requirement wajib unggah
         document.getElementById('pasfoto').required = true;
         document.getElementById('dokumen').required = true;
         document.getElementById('reqFoto').classList.remove('hidden');
@@ -562,6 +646,9 @@
 
         base64Foto = null;
         base64DokumenArray = [];
+        
+        // Hapus parameter URL agar saat reset tidak me-loop ke mode edit
+        window.history.replaceState({}, document.title, window.location.pathname);
         
         // Fokuskan ke kolom NIM lagi
         nimInput.focus();
@@ -590,7 +677,6 @@
                 nimInput.readOnly = true;
                 nimInput.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
                 
-                // Toggle Buttons
                 btn.classList.add('hidden'); 
                 document.getElementById('btnResetNIM').classList.remove('hidden');
 
@@ -630,7 +716,18 @@
         fields.forEach(f => {
             const el = document.getElementById(f);
             if(el && d[f]) {
-                if (el.tagName === 'SELECT') {
+                // Konversi format tanggal DD-MM-YYYY ke YYYY-MM-DD khusus untuk form input date (agar bisa dibaca form Edit)
+                if(el.type === 'date') {
+                    let dateStr = d[f];
+                    if(dateStr && typeof dateStr === 'string' && dateStr.indexOf('-') > 0) {
+                        let parts = dateStr.split('-');
+                        if(parts[0].length === 2) { // Asumsi format masuk DD-MM-YYYY
+                            dateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        }
+                    }
+                    el.value = dateStr;
+                }
+                else if (el.tagName === 'SELECT') {
                     let matched = false;
                     for (let i = 0; i < el.options.length; i++) {
                         if (el.options[i].value.trim().toLowerCase() === String(d[f]).trim().toLowerCase()) {
@@ -834,6 +931,8 @@
                         icon: 'success', title: 'Berhasil!', text: res.message,
                         allowOutsideClick: false, confirmButtonColor: '#3b82f6', confirmButtonText: 'Tutup & Selesai'
                     }).then(() => {
+                        // Menghapus parameter ?mode=edit dari URL sebelum reload agar tidak stuck
+                        window.history.replaceState({}, document.title, window.location.pathname);
                         window.location.reload(); 
                     });
                 } else {
