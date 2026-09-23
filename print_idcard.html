@@ -23,8 +23,6 @@
         /* ==========================================
            STYLING ELEMEN DALAM ID CARD (KALIBRASI)
            ========================================== */
-        
-        /* Container 1 Kartu = 55x85mm */
         .id-card { 
             width: 55mm; height: 85mm; 
             position: relative; overflow: hidden; 
@@ -35,7 +33,6 @@
         .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .card-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
         
-        /* FOTO: Diperbesar dan digeser kiri atas menyesuaikan lubang background */
         .c-photo { 
             position: absolute; top: 15mm; left: 2.929mm; 
             width: 25.929mm; height: 25.929mm; 
@@ -43,7 +40,6 @@
             background: #fff;
         }
         
-        /* TEKS KANAN: Ruang dilebarkan agar nama panjang bisa turun baris */
         .c-text-area { 
             position: absolute; top: 21mm; left: 32mm; right: 2mm; 
             text-align: left; 
@@ -54,19 +50,16 @@
         .c-label { font-size: 6pt; font-weight: 800; color: #111; margin-top: 1mm; line-height: 1.1;}
         .c-value { font-size: 6pt; font-weight: 500; color: #111; line-height: 1.1;}
         
-        /* LOGO INSTITUSI KIRI BAWAH */
         .c-inst-logo { 
             position: absolute; bottom: 12mm; left: 9.5mm; 
             width: 10mm; height: 10mm; object-fit: contain; 
         }
-        /* Teks Institusi auto center & warnanya akan dimanipulasi JS */
         .c-inst-name { 
             position: absolute; bottom: 4.5mm; left: 6.3mm; width: 16mm; 
             text-align: center; font-size: 4pt; font-weight: 700; line-height: 1.1; 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         
-        /* QR CODE: Pas di sudut kanan bawah menimpa area merah */
         .c-qr-container { 
             position: absolute; bottom: 9mm; right: 4mm; 
             width: 22mm; height: 22mm; 
@@ -78,54 +71,65 @@
         }
 
         /* ==========================================
-           PENGATURAN KERTAS A4 SAAT PRINT (GAP: 0)
+           PENGATURAN KERTAS A4 (VISUAL DI LAYAR)
+           ========================================== */
+        .a4-page { 
+            position: relative; 
+            width: 210mm; height: 297mm; 
+            padding-top: 21mm; padding-left: 22.5mm; 
+            display: grid; 
+            grid-template-columns: repeat(3, 55mm);
+            grid-auto-rows: 85mm;
+            gap: 0; 
+            box-sizing: border-box;
+            background-color: white;
+            overflow: hidden; 
+            margin: 0 auto 2rem auto; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            flex-shrink: 0; 
+        }
+
+        .cut-line-v { position: absolute; top: 0; bottom: 0; width: 0; border-left: 0.5pt dashed #000; z-index: 999; }
+        .cut-line-h { position: absolute; left: 0; right: 0; height: 0; border-top: 0.5pt dashed #000; z-index: 999; }
+
+        /* ==========================================
+           PENGATURAN SAAT PRINT
            ========================================== */
         @media print {
             @page { size: A4 portrait; margin: 0; } 
             body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0;}
             
-            body > div:not(#print-container) { display: none !important; }
-            #print-container { display: block !important; }
+            body > div:not(#previewUI) { display: none !important; }
+            #previewUI { display: block !important; padding: 0 !important; background: transparent !important; }
+            #previewControls { display: none !important; } 
+            #previewScrollArea { overflow: visible !important; }
             
-            .a4-page { 
-                position: relative; 
-                width: 210mm; height: 297mm; 
-                padding-top: 21mm; padding-left: 22.5mm; 
-                display: grid; 
-                grid-template-columns: repeat(3, 55mm);
-                grid-auto-rows: 85mm;
-                gap: 0; 
+            .a4-page {
+                margin: 0 !important;
+                box-shadow: none !important;
                 page-break-after: always;
-                box-sizing: border-box;
-                background-color: white;
-                overflow: hidden; 
             }
-
-            /* GARIS POTONG (CROP MARKS) ABSOLUT */
-            .cut-line-v { position: absolute; top: 0; bottom: 0; width: 0; border-left: 0.5pt dashed #000; z-index: 999; }
-            .cut-line-h { position: absolute; left: 0; right: 0; height: 0; border-top: 0.5pt dashed #000; z-index: 999; }
         }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen">
 
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    
+<!-- MAIN UI (Tabel & Filter) -->
+<div id="mainUI" class="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div>
+        <div class="text-center md:text-left">
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight"><i class="fas fa-id-badge text-blue-600 mr-2"></i>Cetak ID Card</h1>
             <p class="text-sm text-slate-500 mt-1">Pilih peserta dari berbagai gelombang untuk dicetak (Format A4 Borderless)</p>
         </div>
-        <button onclick="prepareAndPrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2">
-            <i class="fas fa-print"></i> Cetak Terpilih
+        <button onclick="prepareAndPrint()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-eye"></i> Preview Cetak
         </button>
     </div>
 
-    <!-- FILTER & SEARCH (4 Kolom) -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- FILTER & SEARCH (Grid diubah menjadi 5 kolom untuk mengakomodasi filter baru) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Gelombang</label>
-            <!-- Diubah ke handleFilterChange agar set pilihan reset -->
             <select id="filterSheet" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
                 <option value="ALL">Semua Gelombang</option>
             </select>
@@ -137,17 +141,22 @@
             </select>
         </div>
         <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Status</label>
-            <select id="filterStatus" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-                <option value="ALL">Semua Status</option>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Print</label>
+            <select id="filterPrint" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
+                <option value="ALL">-- Status Print --</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter SIMRS</label>
+            <select id="filterSimrs" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
+                <option value="ALL">-- Status SIMRS --</option>
             </select>
         </div>
         <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cari Nama / NIM</label>
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-3.5 text-slate-400"></i>
-                <!-- Pencarian hanya merender tabel, tidak mereset pilihan -->
-                <input type="text" id="searchName" onkeyup="renderTable()" placeholder="Ketik nama atau NIM..." class="w-full pl-9 rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
+                <input type="text" id="searchName" onkeyup="renderTable()" placeholder="Ketik nama / NIM..." class="w-full pl-9 rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
             </div>
         </div>
     </div>
@@ -165,13 +174,12 @@
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
                         <th class="p-4 w-12 text-center">
-                            <!-- Checkbox Select All -->
                             <input type="checkbox" id="checkAll" onchange="toggleAllCheckboxes()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
                         </th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase">Nama & NIM</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase">Institusi & Jurusan</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase">Gelombang</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase">Status / Tipe</th>
+                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Nama & NIM</th>
+                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Institusi & Jurusan</th>
+                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Gelombang</th>
+                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Status Print & SIMRS</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="divide-y divide-slate-100">
@@ -179,43 +187,69 @@
                 </tbody>
             </table>
         </div>
-        <div class="p-4 bg-slate-50 border-t border-slate-200 text-sm flex justify-between items-center">
+        <div class="p-4 bg-slate-50 border-t border-slate-200 text-sm flex flex-col sm:flex-row justify-between items-center gap-3">
             <span id="textTotal" class="text-slate-500 font-medium">Total: 0 Peserta</span>
-            <span id="textSelected" class="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">Terpilih: 0</span>
+            <span id="textSelected" class="text-blue-600 font-bold bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-100">Terpilih: 0</span>
         </div>
     </div>
 </div>
 
-<div id="print-container" class="hidden"></div>
+<!-- PREVIEW UI (Canvas Kertas A4 & Kontrol) -->
+<div id="previewUI" class="hidden bg-slate-600 min-h-screen pb-10 pt-24">
+    <div id="previewControls" class="fixed top-0 left-0 w-full bg-slate-800 text-white p-4 flex flex-col sm:flex-row justify-between items-center z-50 shadow-md gap-3">
+        <div class="text-center sm:text-left">
+            <h2 class="text-xl font-bold">Preview Cetak A4</h2>
+            <p class="text-sm text-slate-300" id="previewStats">Menampilkan ID Card</p>
+        </div>
+        <div class="flex gap-3 w-full sm:w-auto justify-center">
+            <button onclick="closePreview()" class="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 flex-1 sm:flex-none">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </button>
+            <button onclick="executePrint()" class="bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 shadow-lg flex-1 sm:flex-none">
+                <i class="fas fa-print"></i> Cetak
+            </button>
+        </div>
+    </div>
+    
+    <div id="previewScrollArea" class="w-full overflow-x-auto flex flex-col items-center px-4">
+        <div id="print-container" class="flex flex-col items-center"></div>
+    </div>
+</div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxfyzcRd_2Rv6AwFWJ4phqpfguAmh8VG8tt_6aiyDMBRI-W7vZdh64faJVJ0ZTcmgk1/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec";
     
     let allParticipants = [];
     let filteredParticipants = [];
-    let selectedNims = new Set(); // Memori yang menyimpan NIM peserta yang dipilih (persistent)
+    let selectedNims = new Set(); 
+
+    function escapeHTML(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/[&<>'"]/g, match => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[match]));
+    }
 
     function getDriveImageSrc(url) {
-        if (!url) return 'https://via.placeholder.com/150';
-        const match = url.match(/[-\w]{25,}/);
+        if (!url) return 'https://via.placeholder.com/150?text=No+Photo';
+        const match = String(url).match(/[-\w]{25,}/);
         if (match && match[0]) {
-            return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w400-h400`;
+            return `https://lh3.googleusercontent.com/d/${match[0]}=w400`;
         }
-        return url;
+        return url; 
     }
 
     function formatPrintDate(dateStr) {
         if (!dateStr) return '-';
         const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
         const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
+        if (isNaN(d.getTime())) return escapeHTML(dateStr);
         const dd = String(d.getDate()).padStart(2, '0');
         const mmm = months[d.getMonth()];
         const yy = String(d.getFullYear()).slice(-2);
         return `${dd} ${mmm} ${yy}`;
     }
 
-    // Ambil Data Pertama Kali
     document.addEventListener("DOMContentLoaded", () => {
         fetch(GAS_URL, {
             method: "POST",
@@ -232,7 +266,7 @@
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('tableContainer').classList.remove('hidden');
             } else {
-                Swal.fire('Error', res.message, 'error');
+                Swal.fire('Error', res.message || 'Gagal mengambil data', 'error');
             }
         })
         .catch(err => {
@@ -243,107 +277,137 @@
     function populateFilters() {
         const sheets = [...new Set(allParticipants.map(p => p.sheetName))].sort();
         const institusi = [...new Set(allParticipants.map(p => p.namasekolah))].sort();
-        const statuses = [...new Set(allParticipants.map(p => p.status_mahasiswa || '-'))].filter(s => s !== '-').sort();
+        
+        const printStatuses = [...new Set(allParticipants.map(p => p.print || '-'))].filter(s => s !== '-').sort();
+        const simrsStatuses = [...new Set(allParticipants.map(p => p.simrs || '-'))].filter(s => s !== '-').sort();
         
         const selSheet = document.getElementById('filterSheet');
-        sheets.forEach(s => selSheet.innerHTML += `<option value="${s}">${s}</option>`);
+        sheets.forEach(s => selSheet.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
         
         const selInst = document.getElementById('filterInstitusi');
-        institusi.forEach(i => selInst.innerHTML += `<option value="${i}">${i}</option>`);
+        institusi.forEach(i => selInst.innerHTML += `<option value="${escapeHTML(i)}">${escapeHTML(i)}</option>`);
 
-        const selStatus = document.getElementById('filterStatus');
-        statuses.forEach(s => selStatus.innerHTML += `<option value="${s}">${s}</option>`);
+        const selPrint = document.getElementById('filterPrint');
+        printStatuses.forEach(s => selPrint.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
+
+        const selSimrs = document.getElementById('filterSimrs');
+        simrsStatuses.forEach(s => selSimrs.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
     }
 
-    // Dipanggil HANYA KETIKA Dropdown Filter diubah (menghapus memori pilihan)
     function handleFilterChange() {
         selectedNims.clear();
         document.getElementById('checkAll').checked = false;
         renderTable();
     }
 
-    // Dipanggil untuk merender baris, pencarian teks tidak akan mereset selectedNims
     function renderTable() {
-        const fSheet = document.getElementById('filterSheet').value;
-        const fInst = document.getElementById('filterInstitusi').value;
-        const fStatus = document.getElementById('filterStatus').value;
-        const sQuery = document.getElementById('searchName').value.trim().toLowerCase();
-        
-        filteredParticipants = allParticipants.filter(p => {
-            const matchSheet = fSheet === "ALL" || p.sheetName === fSheet;
-            const matchInst = fInst === "ALL" || p.namasekolah === fInst;
-            const matchStatus = fStatus === "ALL" || (p.status_mahasiswa || '-') === fStatus;
-            
-            const nameStr = String(p.nama || "").toLowerCase();
-            const nimStr = String(p.nim || "").toLowerCase();
-            const matchSearch = nameStr.includes(sQuery) || nimStr.includes(sQuery);
-            
-            return matchSheet && matchInst && matchStatus && matchSearch;
-        });
+                    const fSheet = document.getElementById('filterSheet').value;
+                    const fInst = document.getElementById('filterInstitusi').value;
+                    const fPrint = document.getElementById('filterPrint').value;
+                    const fSimrs = document.getElementById('filterSimrs').value;
+                    const sQuery = document.getElementById('searchName').value.trim().toLowerCase();
+                    
+                    filteredParticipants = allParticipants.filter(p => {
+                        const matchSheet = fSheet === "ALL" || p.sheetName === fSheet;
+                        const matchInst = fInst === "ALL" || p.namasekolah === fInst;
+                        
+                        const matchPrint = fPrint === "ALL" || (p.print || '-') === fPrint;
+                        const matchSimrs = fSimrs === "ALL" || (p.simrs || '-') === fSimrs;
+                        
+                        const nameStr = String(p.nama || "").toLowerCase();
+                        const nimStr = String(p.nim || "").toLowerCase();
+                        const matchSearch = nameStr.includes(sQuery) || nimStr.includes(sQuery);
+                        
+                        return matchSheet && matchInst && matchPrint && matchSimrs && matchSearch;
+                    });
 
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        
-        let allVisibleChecked = filteredParticipants.length > 0;
+                    const tbody = document.getElementById('tableBody');
+                    tbody.innerHTML = '';
+                    
+                    if (filteredParticipants.length === 0) {
+                        tbody.innerHTML = `<tr>
+                            <td colspan="5" class="p-8 text-center text-slate-500 font-medium">
+                                <i class="fas fa-inbox text-slate-400 mb-2 text-3xl block"></i>Tidak ada data peserta yang ditemukan.
+                            </td>
+                        </tr>`;
+                    }
 
-        filteredParticipants.forEach((p) => {
-            let badgeColor = 'bg-emerald-100 text-emerald-700'; 
-            if(p.id_parent == 2) badgeColor = 'bg-yellow-100 text-yellow-700';
-            if(p.id_parent == 3) badgeColor = 'bg-red-100 text-red-700';
+                    let allVisibleChecked = filteredParticipants.length > 0;
 
-            const isChecked = selectedNims.has(p.nim);
-            if (!isChecked) allVisibleChecked = false; // Evaluasi check all header
+                    filteredParticipants.forEach((p) => {
+                        // --- LOGIKA WARNA BADGE YANG SUDAH DISESUAIKAN ---
+                        let badgeColor = 'bg-slate-100 text-slate-700'; // Default (Abu-abu)
+                        let levelText = 'Level Belum Diisi'; // Teks default jika 0 atau kosong
+                        
+                        // Cek apakah id_parent ada isinya, bukan spasi kosong, dan bukan 0
+                        if (p.id_parent !== null && p.id_parent !== undefined && String(p.id_parent).trim() !== '' && p.id_parent != 0) {
+                            levelText = `Level ${escapeHTML(p.id_parent)}`;
+                        }
 
-            const tr = document.createElement('tr');
-            tr.className = `hover:bg-slate-50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/30' : ''}`;
-            
-            // Klik baris tabel untuk mencentang
-            tr.onclick = (e) => {
-                if(e.target.tagName !== 'INPUT') toggleSelection(p.nim);
-            };
-            
-            tr.innerHTML = `
-                <td class="p-4 text-center">
-                    <input type="checkbox" class="participant-cb w-4 h-4 text-blue-600 rounded cursor-pointer" 
-                           ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelection('${p.nim}');">
-                </td>
-                <td class="p-4">
-                    <div class="font-bold text-slate-800">${p.nama}</div>
-                    <div class="text-xs text-slate-500 font-mono mt-0.5">${p.nim}</div>
-                </td>
-                <td class="p-4">
-                    <div class="font-medium text-slate-700 text-sm">${p.namasekolah}</div>
-                    <div class="text-xs text-slate-500">${p.jenjangpend} - ${p.jurusan}</div>
-                </td>
-                <td class="p-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                        <i class="fas fa-folder-open mr-1.5 text-slate-400"></i> ${p.sheetName}
-                    </span>
-                </td>
-                <td class="p-4 space-y-1">
-                    <div class="px-2 py-1 inline-block rounded text-xs font-bold ${badgeColor}">Tipe ${p.id_parent || 1}</div>
-                    ${p.status_mahasiswa ? `<div class="text-[11px] font-medium text-slate-500"><i class="fas fa-check-circle text-blue-500 mr-1"></i>${p.status_mahasiswa}</div>` : ''}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+                        if (p.id_parent == 1) badgeColor = 'bg-emerald-100 text-emerald-700'; // 1 = Hijau
+                        if (p.id_parent == 2) badgeColor = 'bg-amber-100 text-amber-700';     // 2 = Kuning
+                        if (p.id_parent == 3) badgeColor = 'bg-rose-100 text-rose-700';       // 3 = Merah
+                        if (p.id_parent == 4) badgeColor = 'bg-sky-100 text-sky-700';         // 4 = Biru
 
-        document.getElementById('textTotal').textContent = `Total: ${filteredParticipants.length} Peserta (Hasil Filter)`;
-        document.getElementById('checkAll').checked = (allVisibleChecked && filteredParticipants.length > 0);
-        updateSelectedCount();
-    }
+                        const safeNim = escapeHTML(p.nim);
+                        const isChecked = selectedNims.has(p.nim); 
+                        if (!isChecked) allVisibleChecked = false; 
 
-    // Logika ketika Checkbox Ditekan
+                        const tr = document.createElement('tr');
+                        tr.className = `hover:bg-slate-50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/30' : ''}`;
+                        
+                        tr.onclick = (e) => {
+                            if(e.target.tagName !== 'INPUT') toggleSelection(p.nim);
+                        };
+                        
+                        tr.innerHTML = `
+                            <td class="p-4 text-center">
+                                <input type="checkbox" class="participant-cb w-4 h-4 text-blue-600 rounded cursor-pointer" 
+                                    ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelection('${safeNim}');">
+                            </td>
+                            <td class="p-4">
+                                <div class="font-bold text-slate-800">${escapeHTML(p.nama)}</div>
+                                <div class="text-xs text-slate-500 font-mono mt-0.5">${safeNim}</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="font-medium text-slate-700 text-sm">${escapeHTML(p.namasekolah)}</div>
+                                <div class="text-xs text-slate-500">${escapeHTML(p.jenjangpend)} - ${escapeHTML(p.jurusan)}</div>
+                            </td>
+                            <td class="p-4">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <i class="fas fa-folder-open mr-1.5 text-slate-400"></i> ${escapeHTML(p.sheetName)}
+                                </span>
+                            </td>
+                            <td class="p-4 space-y-1">
+                                <!-- Area Badge Level (Bisa diklik untuk edit) -->
+                                <div class="px-2 py-1 inline-block rounded text-xs font-bold ${badgeColor} cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all" 
+                                     title="Klik untuk mengubah level"
+                                     onclick="event.stopPropagation(); editLevel('${safeNim}', '${p.id_parent || ''}', '${escapeHTML(p.nama)}', '${escapeHTML(p.sheetName)}')">
+                                    ${levelText} <i class="fas fa-edit ml-1 opacity-70"></i>
+                                </div>
+                                
+                                <!-- Area Indikator Print & SIMRS Baru -->
+                                ${p.print ? `<div class="text-[11px] font-medium text-slate-600 mt-1"><i class="fas fa-print text-blue-500 w-4"></i> Print: <b>${escapeHTML(p.print)}</b></div>` : ''}
+                                ${p.simrs ? `<div class="text-[11px] font-medium text-slate-600"><i class="fas fa-hospital text-emerald-500 w-4"></i> SIMRS: <b>${escapeHTML(p.simrs)}</b></div>` : ''}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    document.getElementById('textTotal').textContent = `Total: ${filteredParticipants.length} Peserta`;
+                    document.getElementById('checkAll').checked = (allVisibleChecked && filteredParticipants.length > 0);
+                    updateSelectedCount();
+                }
+
     function toggleSelection(nim) {
         if (selectedNims.has(nim)) {
             selectedNims.delete(nim);
         } else {
             selectedNims.add(nim);
         }
-        renderTable(); // Re-render untuk merubah background baris & mengecek master checkbox
+        renderTable(); 
     }
 
-    // Logika ketika Checkbox Master (Header) ditekan
     function toggleAllCheckboxes() {
         const isChecked = document.getElementById('checkAll').checked;
         filteredParticipants.forEach(p => {
@@ -360,18 +424,17 @@
         document.getElementById('textSelected').innerHTML = `<i class="fas fa-check-double mr-1"></i> Terpilih: ${selectedNims.size}`;
     }
 
-    async function prepareAndPrint() {
+    function prepareAndPrint() {
         if (selectedNims.size === 0) {
-            Swal.fire('Peringatan', 'Pilih minimal 1 peserta untuk dicetak!', 'warning');
+            Swal.fire('Peringatan', 'Pilih minimal 1 peserta untuk dipreview!', 'warning');
             return;
         }
 
-        // Ambil objek utuh dari data yang terpilih
         const selectedParticipantsList = allParticipants.filter(p => selectedNims.has(p.nim));
 
         Swal.fire({
-            title: 'Menyiapkan Dokumen...',
-            html: 'Menyusun ID Card dan mengunduh foto...',
+            title: 'Menyiapkan Preview...',
+            html: 'Menyusun halaman ID Card...',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading(); }
         });
@@ -382,10 +445,7 @@
         let cardsHTML = '';
         let qrDataList = [];
 
-        
-
         selectedParticipantsList.forEach((p, i) => {
-            // Konfigurasi Warna Dasar
             let bgImg = 'img/idcard/hijau.jpg';
             let majorColor = '#059669'; 
             let instTextColor = '#ffffff'; 
@@ -401,34 +461,38 @@
                 instTextColor = '#ffffff'; 
             }
 
-            // Title Case Konversi
-            const formattedName = p.nama.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-            const photoSrc = getDriveImageSrc(p.urlFoto);
-            const logoSrc = `img/logo_institusi/${p.namasekolah}.png`;
+            const safeName = p.nama ? String(p.nama).trim() : 'Tanpa Nama';
+            const formattedName = escapeHTML(safeName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()));
+            
+            const safeNim = p.nim ? String(p.nim).trim() : '-';
             const periodStr = `${formatPrintDate(p.tanggal_mulai)} - ${formatPrintDate(p.tanggal_selesai)}`;
+            
+            const photoSrc = escapeHTML(getDriveImageSrc(p.urlFoto));
+            const rawUrl = escapeHTML(p.urlFoto || ''); 
+            const logoSrc = `img/logo_institusi/${escapeHTML(p.namasekolah)}.png`;
             const qrId = `qr_${i}`; 
 
             const cardHTML = `
                 <div class="id-card">
-                    <img src="${bgImg}" class="card-bg" alt="bg">
+                    <img src="${escapeHTML(bgImg)}" class="card-bg" alt="bg">
                     <div class="card-content">
-                        <img src="${photoSrc}" class="c-photo" onerror="this.src='https://via.placeholder.com/100'">
+                        <img src="${photoSrc}" class="c-photo" data-raw-url="${rawUrl}" title="Klik untuk memuat ulang foto" onerror="handleGagalMuat(this)">
                         <div class="c-text-area">
                             <div class="c-name">${formattedName}</div>
-                            <div class="c-major" style="color: #dc2626">${p.jenjangpend} - ${p.jurusan}</div>
-                            <div class="c-label">NIM - <span class="c-value">${p.nim}</span></div>
+                            <div class="c-major" style="color: ${majorColor}">${escapeHTML(p.jenjangpend)} - ${escapeHTML(p.jurusan)}</div>
+                            <div class="c-label">NIM - <span class="c-value">${escapeHTML(safeNim)}</span></div>
                             <div class="c-label">PERIODE -</div>
                             <div class="c-value">${periodStr}</div>
                         </div>
                         <img src="${logoSrc}" class="c-inst-logo" onerror="this.style.display='none'">
-                        <div class="c-inst-name" style="color: ${instTextColor};"><span>${p.namasekolah}</span></div>
+                        <div class="c-inst-name" style="color: ${instTextColor};"><span>${escapeHTML(p.namasekolah)}</span></div>
                         <div id="${qrId}" class="c-qr-container"></div>
                     </div>
                 </div>
             `;
             
             cardsHTML += cardHTML;
-            qrDataList.push({ id: qrId, text: p.nim });
+            qrDataList.push({ id: qrId, text: safeNim !== '-' ? safeNim : '00000000' }); 
 
             if ((i + 1) % 9 === 0 || i === selectedParticipantsList.length - 1) {
                 const cutLines = `
@@ -450,38 +514,170 @@
             }
         });
 
-        setTimeout(async () => {
-            // 1. Gambar QRCode di DOM
+        document.getElementById('mainUI').classList.add('hidden');
+        document.getElementById('previewUI').classList.remove('hidden');
+        
+        const totalPages = Math.ceil(selectedParticipantsList.length / 9);
+        document.getElementById('previewStats').textContent = `${selectedParticipantsList.length} Peserta • ${totalPages} Halaman A4`;
+
+        setTimeout(() => {
             qrDataList.forEach(item => {
                 const qrEl = document.getElementById(item.id);
                 if(qrEl) {
-                    new QRCode(qrEl, { text: item.text, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M });
+                    new QRCode(qrEl, { 
+                        text: item.text, 
+                        width: 200, 
+                        height: 200, 
+                        colorDark : "#000000", 
+                        colorLight : "#ffffff", 
+                        correctLevel : QRCode.CorrectLevel.M 
+                    });
                 }
             });
-
-            // 2. Kumpulkan semua tag <img> yang baru digenerate
-            const images = printContainer.querySelectorAll('img');
-            const imagePromises = Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve(); // Jika dari cache sudah selesai
-                return new Promise(resolve => {
-                    // Beri resolusi (lanjut) baik saat gambar sukses load maupun saat error/gagal (agar print tidak nge-hang).
-                    img.onload = resolve;
-                    img.onerror = resolve; 
-                });
-            });
-
-            // 3. TUNGGU sampai semua foto dan background selesai dimuat!
-            await Promise.all(imagePromises);
-
-            // 4. Buka Print Dialog setelah semuanya siap
-            setTimeout(() => {
-                Swal.close();
-                printContainer.classList.remove('hidden'); // Paksa render
-                window.print();
-                setTimeout(() => { printContainer.classList.add('hidden'); }, 1000); // Sembunyikan setelah selesai
-            }, 300); // Ekstra 300ms untuk memastikan kanvas QRCode 100% tergambar
             
+            Swal.close();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 100);
+    }
+
+    function executePrint() {
+        window.print();
+    }
+
+    function closePreview() {
+        document.getElementById('previewUI').classList.add('hidden');
+        document.getElementById('mainUI').classList.remove('hidden');
+        document.getElementById('print-container').innerHTML = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- FUNGSI BARU: Edit Level ---
+    function editLevel(nim, currentLevel, nama, sheetName) {
+        Swal.fire({
+            title: `Ubah Level untuk ${nama}`,
+            html: `
+                <select id="swal-input-level" class="swal2-select" style="width: 80%; max-width: 100%;">
+                    <option value="" ${!currentLevel || currentLevel == '0' ? 'selected' : ''}>Pilih Level (Kosongkan)</option>
+                    <option value="1" ${currentLevel == '1' ? 'selected' : ''}>Level 1</option>
+                    <option value="2" ${currentLevel == '2' ? 'selected' : ''}>Level 2</option>
+                    <option value="3" ${currentLevel == '3' ? 'selected' : ''}>Level 3</option>
+                    <option value="4" ${currentLevel == '4' ? 'selected' : ''}>Level 4</option>
+                </select>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Simpan',
+            cancelButtonText: 'Batal',
+            preConfirm: () => {
+                return document.getElementById('swal-input-level').value;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newLevel = result.value;
+                if (newLevel === currentLevel) return; // Tidak ada perubahan
+
+                // Tampilkan loading
+                Swal.fire({
+                    title: 'Menyimpan...',
+                    text: 'Sedang memperbarui data ke server.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                // Kirim request ke Google Apps Script
+                fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: 'updateLevel',
+                        nim: nim,
+                        sheetName: sheetName,
+                        newLevel: newLevel
+                    })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        // PERBAIKAN: Gunakan String() agar tipe data angka dari Sheet & string dari HTML cocok
+                        const pIndex = allParticipants.findIndex(p => 
+                            String(p.nim).trim() === String(nim).trim() && 
+                            String(p.sheetName).trim() === String(sheetName).trim()
+                        );
+                        
+                        if (pIndex !== -1) {
+                            allParticipants[pIndex].id_parent = newLevel; // Update data di memori
+                        }
+                        
+                        // Render ulang tabel agar badge warnanya langsung berganti
+                        renderTable();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Level telah diperbarui.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Gagal menyimpan perubahan.', 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+                });
+            }
+        });
+    }
+
+    function handleGagalMuat(img) {
+        img.onerror = null; 
+        
+        const rawUrl = img.getAttribute('data-raw-url');
+        let fileId = null;
+        if (rawUrl) {
+            const match = rawUrl.match(/[-\w]{25,}/);
+            if (match) fileId = match[0];
+        }
+        
+        img.src = 'https://placehold.co/150x150/f87171/ffffff?text=Klik+Reload';
+        img.style.cursor = 'pointer';
+        
+        img.onclick = function() {
+            if (!fileId) {
+                Swal.fire('Format Salah', 'URL Foto bukan link Google Drive yang valid.', 'error');
+                img.src = 'https://placehold.co/150x150/f87171/ffffff?text=URL+Invalid';
+                return;
+            }
+
+            img.src = 'https://placehold.co/150x150/60a5fa/ffffff?text=Memuat...';
+            
+            let retryCount = parseInt(img.getAttribute('data-retry') || '0');
+            
+            const endpoints = [
+                `https://drive.google.com/uc?export=view&id=${fileId}`,
+                `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`,
+                `https://lh3.googleusercontent.com/d/${fileId}`
+            ];
+            
+            setTimeout(() => {
+                if (retryCount < endpoints.length) {
+                    img.src = endpoints[retryCount];
+                    img.setAttribute('data-retry', retryCount + 1);
+                    
+                    img.onerror = function() { handleGagalMuat(this); };
+                } else {
+                    img.onerror = null;
+                    img.src = 'https://placehold.co/150x150/f87171/ffffff?text=Akses+Ditolak';
+                    img.setAttribute('data-retry', '0'); 
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Foto Terblokir',
+                        text: 'Sistem Google menolak akses ke foto ini. Pastikan link file di Google Drive Anda sudah diatur menjadi "Siapa saja yang memiliki link" (Anyone with the link).',
+                    });
+                }
+            }, 300); 
+        };
     }
 </script>
 </body>
