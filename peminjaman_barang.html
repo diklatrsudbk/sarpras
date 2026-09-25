@@ -48,6 +48,13 @@
         .row-booking {
             animation: blinkRow 2s ease-in-out infinite;
         }
+
+        /* Tombol submit yang non-aktif (menunggu identitas lengkap) */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
@@ -197,10 +204,11 @@
                     <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-indigo-100 pb-2">
                         <i class="fa-solid fa-user-gear"></i> Identitas Peminjam
                     </h3>
-                    
+
+                    <!-- LANGKAH 1: Unit Peminjam -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Unit Peminjam *</label>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">1. Unit Peminjam *</label>
                             <div class="relative">
                                 <i class="fa-solid fa-building-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                 <select id="UNIT_PEMINJAM" onchange="handleUnitChange()" required class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition">
@@ -211,8 +219,9 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label id="labelNimNik" class="block text-xs font-semibold text-slate-700 mb-1.5">NIM / NIK *</label>
+                        <!-- LANGKAH 2: NIM/NIK - baru muncul setelah Unit dipilih -->
+                        <div id="nimFieldWrapper" class="hidden">
+                            <label id="labelNimNik" class="block text-xs font-semibold text-slate-700 mb-1.5">2. NIM / NIK *</label>
                             <div class="relative">
                                 <i class="fa-solid fa-id-card absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10"></i>
                                 <input type="text" id="NIM_NIK" required oninput="handleNimInput()" placeholder="Masukkan NIK / NIM..." class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
@@ -223,6 +232,7 @@
                         </div>
                     </div>
 
+                    <!-- LANGKAH 3: Data identitas lengkap - baru muncul setelah NIM valid (atau langsung untuk Karyawan) -->
                     <div id="autoFillFields" class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5 hidden">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nama Peminjam *</label>
@@ -253,116 +263,124 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Placeholder ditampilkan selama identitas belum lengkap -->
+                    <div id="identityPlaceholder" class="mt-5 p-4 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-400 italic">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Pilih Unit Peminjam untuk melanjutkan pengisian formulir.
+                    </div>
                 </div>
 
-                <div>
-                    <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-indigo-100 pb-2">
-                        <i class="fa-solid fa-box-archive"></i> Detail Barang & Waktu
-                    </h3>
+                <!-- Bagian ini terkunci sampai identitas peminjam lengkap & valid -->
+                <div id="restOfForm" class="hidden space-y-8">
+                    <div>
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-indigo-100 pb-2">
+                            <i class="fa-solid fa-box-archive"></i> Detail Barang & Waktu
+                        </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div class="md:col-span-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                            <label class="block text-xs font-semibold text-slate-700 mb-2">Daftar Barang yang Dipinjam *</label>
-                            <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                                <div class="flex-grow relative">
-                                    <i class="fa-solid fa-box absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                    <select id="NAMA_BARANG_INPUT" class="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition">
-                                        <option value="">-- Memuat Daftar Barang... --</option>
-                                    </select>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div class="md:col-span-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                <label class="block text-xs font-semibold text-slate-700 mb-2">Daftar Barang yang Dipinjam *</label>
+                                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                                    <div class="flex-grow relative">
+                                        <i class="fa-solid fa-box absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        <select id="NAMA_BARANG_INPUT" class="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition">
+                                            <option value="">-- Memuat Daftar Barang... --</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-full sm:w-32 relative">
+                                        <i class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        <input type="number" id="QTY_INPUT" min="1" value="1" placeholder="Qty" class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+                                    </div>
+                                    <button type="button" onclick="addItem()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm">
+                                        <i class="fa-solid fa-plus"></i> Tambah
+                                    </button>
                                 </div>
-                                <div class="w-full sm:w-32 relative">
-                                    <i class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                    <input type="number" id="QTY_INPUT" min="1" value="1" placeholder="Qty" class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+
+                                <div class="overflow-hidden border border-slate-200 rounded-lg shadow-sm">
+                                    <table class="w-full text-left text-xs bg-white">
+                                        <thead class="bg-indigo-50 text-indigo-800 border-b border-slate-200">
+                                            <tr>
+                                                <th class="p-2 w-10 text-center">No</th>
+                                                <th class="p-2">Nama Barang</th>
+                                                <th class="p-2 text-center w-20">Qty</th>
+                                                <th class="p-2 text-center w-16">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="selectedItemsList">
+                                            <tr><td colspan="4" class="p-5 text-center text-slate-400 italic">Belum ada barang yang ditambahkan</td></tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <button type="button" onclick="addItem()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm">
-                                    <i class="fa-solid fa-plus"></i> Tambah
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Pinjam *</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-calendar-plus absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="datetime-local" id="TGL_PINJAM" onchange="calculateDuration()" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Kembali *</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-calendar-check absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="datetime-local" id="TGL_KEMBALI" onchange="calculateDuration()" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Durasi Peminjaman</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-clock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="text" id="DURASI" readonly placeholder="Otomatis terhitung" class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-600 font-medium shadow-sm">
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Keperluan Peminjaman *</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-comment-dots absolute left-3.5 top-3.5 text-slate-400"></i>
+                                    <textarea id="KEPERLUAN" rows="2" required placeholder="Jelaskan keperluan peminjaman secara singkat..." class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Catatan Tambahan</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-note-sticky absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="text" id="CATATAN" placeholder="Catatan khusus jika ada..." class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-indigo-100 pb-2">
+                            <i class="fa-solid fa-signature"></i> Persetujuan & Tanda Tangan
+                        </h3>
+
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 shadow-sm">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" id="checkSK" onchange="toggleSignature()" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                <span class="text-xs text-slate-700 leading-relaxed font-medium">
+                                    Saya menyatakan bertanggung jawab penuh atas keamanan dan kondisi barang yang dipinjam. Apabila terjadi kerusakan atau kehilangan, saya bersedia mengganti sesuai dengan ketentuan yang berlaku.
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="signatureArea" class="opacity-50 pointer-events-none transition-all duration-300">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-xs font-semibold text-slate-700">Tanda Tangan Digital *</label>
+                                <button type="button" onclick="clearSignature()" class="text-xs text-rose-600 font-semibold hover:text-rose-800 flex items-center gap-1.5 px-2 py-1 bg-rose-50 rounded-md hover:bg-rose-100 transition">
+                                    <i class="fa-solid fa-eraser"></i> Hapus Canvas
                                 </button>
                             </div>
-
-                            <div class="overflow-hidden border border-slate-200 rounded-lg shadow-sm">
-                                <table class="w-full text-left text-xs bg-white">
-                                    <thead class="bg-indigo-50 text-indigo-800 border-b border-slate-200">
-                                        <tr>
-                                            <th class="p-2 w-10 text-center">No</th>
-                                            <th class="p-2">Nama Barang</th>
-                                            <th class="p-2 text-center w-20">Qty</th>
-                                            <th class="p-2 text-center w-16">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="selectedItemsList">
-                                        <tr><td colspan="4" class="p-5 text-center text-slate-400 italic">Belum ada barang yang ditambahkan</td></tr>
-                                    </tbody>
-                                </table>
+                            <div class="canvas-container border-2 border-dashed border-slate-300 rounded-xl bg-white shadow-inner overflow-hidden relative">
+                                <canvas id="sigCanvas" class="w-full h-40 cursor-crosshair"></canvas>
                             </div>
+                            <span class="text-[10px] text-slate-400 mt-1.5 block italic">* Gambarkan tanda tangan Anda pada area kotak di atas.</span>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Pinjam *</label>
-                            <div class="relative">
-                                <i class="fa-solid fa-calendar-plus absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="datetime-local" id="TGL_PINJAM" onchange="calculateDuration()" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Waktu Kembali *</label>
-                            <div class="relative">
-                                <i class="fa-solid fa-calendar-check absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="datetime-local" id="TGL_KEMBALI" onchange="calculateDuration()" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Durasi Peminjaman</label>
-                            <div class="relative">
-                                <i class="fa-solid fa-clock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" id="DURASI" readonly placeholder="Otomatis terhitung" class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-600 font-medium shadow-sm">
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-3">
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Keperluan Peminjaman *</label>
-                            <div class="relative">
-                                <i class="fa-solid fa-comment-dots absolute left-3.5 top-3.5 text-slate-400"></i>
-                                <textarea id="KEPERLUAN" rows="2" required placeholder="Jelaskan keperluan peminjaman secara singkat..." class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-3">
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Catatan Tambahan</label>
-                            <div class="relative">
-                                <i class="fa-solid fa-note-sticky absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" id="CATATAN" placeholder="Catatan khusus jika ada..." class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-indigo-100 pb-2">
-                        <i class="fa-solid fa-signature"></i> Persetujuan & Tanda Tangan
-                    </h3>
-
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 shadow-sm">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <input type="checkbox" id="checkSK" onchange="toggleSignature()" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                            <span class="text-xs text-slate-700 leading-relaxed font-medium">
-                                Saya menyatakan bertanggung jawab penuh atas keamanan dan kondisi barang yang dipinjam. Apabila terjadi kerusakan atau kehilangan, saya bersedia mengganti sesuai dengan ketentuan yang berlaku.
-                            </span>
-                        </label>
-                    </div>
-
-                    <div id="signatureArea" class="opacity-50 pointer-events-none transition-all duration-300">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="text-xs font-semibold text-slate-700">Tanda Tangan Digital *</label>
-                            <button type="button" onclick="clearSignature()" class="text-xs text-rose-600 font-semibold hover:text-rose-800 flex items-center gap-1.5 px-2 py-1 bg-rose-50 rounded-md hover:bg-rose-100 transition">
-                                <i class="fa-solid fa-eraser"></i> Hapus Canvas
-                            </button>
-                        </div>
-                        <div class="canvas-container border-2 border-dashed border-slate-300 rounded-xl bg-white shadow-inner overflow-hidden relative">
-                            <canvas id="sigCanvas" class="w-full h-40 cursor-crosshair"></canvas>
-                        </div>
-                        <span class="text-[10px] text-slate-400 mt-1.5 block italic">* Gambarkan tanda tangan Anda pada area kotak di atas.</span>
                     </div>
                 </div>
 
@@ -370,10 +388,10 @@
                     <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-semibold hover:bg-slate-100 text-sm transition order-3 sm:order-1">
                         Batal
                     </button>
-                    <button type="submit" onclick="setSubmitType('Request')" id="btnSubmitRequest" class="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md transition flex items-center justify-center gap-2 order-2">
+                    <button type="submit" onclick="setSubmitType('Request')" id="btnSubmitRequest" disabled class="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md transition flex items-center justify-center gap-2 order-2">
                         <i class="fa-solid fa-paper-plane"></i> Request Peminjaman
                     </button>
-                    <button type="submit" onclick="setSubmitType('Sedang Dipinjam')" id="btnSubmitBooking" class="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold shadow-md transition flex items-center justify-center gap-2 order-1">
+                    <button type="submit" onclick="setSubmitType('Sedang Dipinjam')" id="btnSubmitBooking" disabled class="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold shadow-md transition flex items-center justify-center gap-2 order-1">
                         <i class="fa-solid fa-hand-holding-hand"></i> Pinjam Langsung
                     </button>
                 </div>
@@ -508,6 +526,9 @@
         
         let pendingAdminAction = null;
         const ADMIN_PASS = "admin"; // PIN Admin
+        // PERINGATAN KEAMANAN: PIN ini tersimpan di kode HTML yang bisa dilihat siapa saja
+        // lewat "View Page Source" / DevTools. Untuk keamanan yang layak, verifikasi PIN
+        // sebaiknya dipindahkan ke Code.gs (server) dan HTML hanya mengirim PIN untuk dicek.
 
         let searchTimeout = null;
         let currentAbortController = null; // Anti-Stuck Controller
@@ -617,18 +638,59 @@
             loadTableData();
         });
 
+        // =========================================
+        // HELPER FETCH TERPUSAT + PENANGANAN ERROR YANG BENAR
+        // =========================================
+        // Sebelumnya kode ini memakai mode:"no-cors" untuk semua request POST.
+        // Konsekuensinya: respons dari server TIDAK PERNAH bisa dibaca oleh browser,
+        // sehingga blok try/catch selalu masuk ke "try" (dianggap sukses) walau
+        // sebenarnya Google Apps Script gagal / melempar error di sisi server.
+        // Sekarang kita pakai fetch biasa (tanpa no-cors) dan membaca JSON balasannya,
+        // supaya sukses/gagal yang ditampilkan ke user sesuai kondisi asli di server.
+        async function postToServer(payload) {
+            let res;
+            try {
+                res = await fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, // text/plain agar tidak memicu preflight CORS
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkErr) {
+                throw new Error("Tidak dapat menghubungi server (periksa koneksi internet / URL Web App).");
+            }
+
+            if (!res.ok) {
+                throw new Error(`Server merespons dengan status ${res.status}.`);
+            }
+
+            let result;
+            try {
+                result = await res.json();
+            } catch (parseErr) {
+                throw new Error("Respons server tidak dapat dibaca (kemungkinan Web App belum di-deploy ulang setelah update kode).");
+            }
+
+            if (result.status !== "success") {
+                throw new Error(result.message || "Server menolak permintaan tanpa pesan detail.");
+            }
+
+            return result;
+        }
+
         async function loadTableData() {
             const icon = document.getElementById('reloadIcon');
             if(icon) icon.classList.add('fa-spin');
             
             try {
                 const res = await fetch(`${GAS_WEB_APP_URL}?action=getData`);
+                if (!res.ok) throw new Error(`Status ${res.status}`);
                 const data = await res.json();
                 dummyData = (Array.isArray(data) && data.length > 0) ? data : [];
                 renderTable();
             } catch (err) {
+                console.error("loadTableData error:", err);
                 const tbody = document.getElementById('tableBody');
-                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet. (${err.message || 'Periksa koneksi / URL Web App'})</td></tr>`;
             } finally {
                 if(icon) icon.classList.remove('fa-spin');
             }
@@ -721,7 +783,7 @@
                 <tr class="${rowClass}">
                     <td class="p-3.5 text-center font-mono font-semibold text-slate-600 text-xs">${index + 1}</td>
                     
-                    <td class="p-3.5 text-slate-600 text-xs whitespace-nowrap">${item.TIMESTAMPT || item.TANGGAL}</td>
+                    <td class="p-3.5 text-slate-600 text-xs whitespace-nowrap">${item.TIMESTAMPT || item.TANGGAL || '-'}</td>
                     
                     <td class="p-3.5">
                         <span class="font-semibold text-slate-800 block">${item.NAMA_PEMINJAM || '-'}</span>
@@ -834,19 +896,17 @@
             showGlobalLoading("Memperbarui status...");
 
             try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: newStatus, CATATAN: catatan, BUKTI_FOTO: null })
-                });
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: newStatus, CATATAN: catatan, BUKTI_FOTO: null });
                 hideGlobalLoading();
                 await customAlert(`Status transaksi berhasil diubah menjadi: ${newStatus}`, "Berhasil", "success");
+                loadTableData(); // sinkronkan ulang dengan data asli di server
             } catch (err) {
                 if (index > -1) {
                     dummyData[index].STATUS = oldStatus;
                     renderTable();
                 }
                 hideGlobalLoading();
-                await customAlert("Gagal memperbarui status ke server.", "Terjadi Kesalahan", "error");
+                await customAlert(`Gagal memperbarui status ke server.\n${err.message || ''}`, "Terjadi Kesalahan", "error");
                 throw err; 
             }
         }
@@ -862,17 +922,14 @@
             showGlobalLoading("Menghapus data permanen...");
 
             try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: 'deleteRecord', ID: id })
-                });
+                await postToServer({ action: 'deleteRecord', ID: id });
                 hideGlobalLoading();
                 await customAlert(`Data berhasil dihapus!`, "Berhasil", "success");
             } catch (err) {
                 dummyData = prevData;
                 renderTable();
                 hideGlobalLoading();
-                await customAlert("Terjadi kesalahan jaringan saat menghapus data.", "Gagal", "error");
+                await customAlert(`Terjadi kesalahan saat menghapus data.\n${err.message || ''}`, "Gagal", "error");
             }
         }
 
@@ -896,7 +953,11 @@
             }
 
             closeCancelModal();
-            await updateStatus(id, 'Cancel', catatan);
+            try {
+                await updateStatus(id, 'Cancel', catatan);
+            } catch (err) {
+                // Pesan error sudah ditampilkan di updateStatus()
+            }
         }
 
         function requireAdmin(actionCallback) {
@@ -1007,27 +1068,50 @@
                 }
 
                 try {
-                    await fetch(GAS_WEB_APP_URL, {
-                        method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: status, CATATAN: catatan, BUKTI_FOTO: base64Str })
-                    });
+                    await postToServer({ action: 'updateStatus', ID: id, STATUS: status, CATATAN: catatan, BUKTI_FOTO: base64Str });
                     hideGlobalLoading();
                     await customAlert("Pengembalian dan bukti foto berhasil diproses!", "Berhasil", "success");
+                    loadTableData();
                 } catch(err) {
                     if (index > -1) {
                         dummyData[index].STATUS = oldStatus;
                         renderTable();
                     }
                     hideGlobalLoading();
-                    await customAlert("Gagal mengupload, periksa koneksi internet.", "Terjadi Kesalahan", "error");
+                    await customAlert(`Gagal mengupload, periksa koneksi internet.\n${err.message || ''}`, "Terjadi Kesalahan", "error");
                 }
+            };
+            reader.onerror = async function() {
+                hideGlobalLoading();
+                await customAlert("Gagal membaca file foto. Coba pilih ulang foto tersebut.", "Terjadi Kesalahan", "error");
             };
             reader.readAsDataURL(file);
         }
 
         // ==========================================
-        // HANDLER INPUT NIM (ANTI-STUCK ABORT CONTROLLER)
+        // ALUR BERTAHAP: UNIT -> NIM (jika Peserta Didik) -> DATA LENGKAP
         // ==========================================
+
+        // Tampilkan/sembunyikan sisa formulir & tombol submit sesuai status validasi identitas
+        function setIdentityStage(showAutoFill, showRest) {
+            const autoFillFields = document.getElementById('autoFillFields');
+            const restOfForm = document.getElementById('restOfForm');
+            const placeholder = document.getElementById('identityPlaceholder');
+
+            autoFillFields.classList.toggle('hidden', !showAutoFill);
+            restOfForm.classList.toggle('hidden', !showRest);
+            placeholder.classList.toggle('hidden', showRest);
+
+            updateSubmitButtonsState();
+        }
+
+        function updateSubmitButtonsState() {
+            const btnRequest = document.getElementById('btnSubmitRequest');
+            const btnBooking = document.getElementById('btnSubmitBooking');
+            btnRequest.disabled = !isValidNim;
+            btnBooking.disabled = !isValidNim;
+        }
+
         function handleNimInput() {
             if (document.getElementById('UNIT_PEMINJAM').value !== 'Peserta Didik') return;
             
@@ -1035,17 +1119,16 @@
             const loading = document.getElementById('nimLoading');
             const error = document.getElementById('nimError');
             const success = document.getElementById('nimSuccess');
-            const autoFillFields = document.getElementById('autoFillFields');
 
             error.classList.add('hidden');
             success.classList.add('hidden');
-            autoFillFields.classList.add('hidden');
             
             document.getElementById('NAMA_PEMINJAM').value = '';
             document.getElementById('INSTITUSI_PERUSAHAAN').value = '';
             document.getElementById('JURUSAN_DIVISI').value = '';
             document.getElementById('NO_HP').value = '';
             isValidNim = false;
+            setIdentityStage(false, false);
 
             const nim = document.getElementById('NIM_NIK').value.trim();
 
@@ -1067,11 +1150,10 @@
             const loading = document.getElementById('nimLoading');
             const error = document.getElementById('nimError');
             const success = document.getElementById('nimSuccess');
-            const autoFillFields = document.getElementById('autoFillFields');
 
             fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
             .then(res => {
-                if (!res.ok) throw new Error("Server error");
+                if (!res.ok) throw new Error(`Status server ${res.status}`);
                 return res.json();
             })
             .then(data => {
@@ -1081,26 +1163,26 @@
                     document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang || ''} ${data.jurusan || ''}`.trim();
                     document.getElementById('NO_HP').value = data.noHp || '';
                     
-                    autoFillFields.classList.remove('hidden');
                     success.classList.remove('hidden');
                     error.classList.add('hidden');
                     isValidNim = true;
+                    setIdentityStage(true, true);
                 } else {
                     error.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan! Hanya terdaftar yang bisa meminjam.';
                     error.classList.remove('hidden');
                     success.classList.add('hidden');
-                    autoFillFields.classList.add('hidden');
                     isValidNim = false;
+                    setIdentityStage(false, false);
                 }
             })
             .catch(err => {
                 if (err.name === 'AbortError') return;
                 console.error(err);
-                error.innerHTML = '<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi.';
+                error.innerHTML = `<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi. (${err.message || ''})`;
                 error.classList.remove('hidden');
                 success.classList.add('hidden');
-                autoFillFields.classList.add('hidden');
                 isValidNim = false;
+                setIdentityStage(false, false);
             })
             .finally(() => {
                 if (!signal.aborted) {
@@ -1114,7 +1196,8 @@
             const nimNikInput = document.getElementById('NIM_NIK');
             const perusahaanInput = document.getElementById('INSTITUSI_PERUSAHAAN');
             const labelNimNik = document.getElementById('labelNimNik');
-            const autoFillFields = document.getElementById('autoFillFields');
+            const nimFieldWrapper = document.getElementById('nimFieldWrapper');
+            const placeholder = document.getElementById('identityPlaceholder');
 
             document.getElementById('nimLoading').classList.add('hidden');
             document.getElementById('nimError').classList.add('hidden');
@@ -1127,30 +1210,41 @@
             if (currentAbortController) currentAbortController.abort(); // Batal pencarian jika unit diganti
 
             if (unit === 'Karyawan') {
-                labelNimNik.innerText = "NIK *";
-                nimNikInput.value = "3273";
+                // Karyawan: cukup isi NIK sendiri, tidak perlu lookup ke database NIM
+                labelNimNik.innerText = "2. NIK *";
+                nimNikInput.value = "";
+                nimNikInput.placeholder = "Masukkan NIK (16 digit)...";
                 perusahaanInput.value = "RSUDBK";
-                autoFillFields.classList.remove('hidden');
+                nimFieldWrapper.classList.remove('hidden');
                 document.getElementById('NAMA_PEMINJAM').readOnly = false;
                 document.getElementById('INSTITUSI_PERUSAHAAN').readOnly = false;
                 document.getElementById('JURUSAN_DIVISI').readOnly = false;
                 document.getElementById('NO_HP').readOnly = false;
                 isValidNim = true;
+                setIdentityStage(true, true);
             } else if (unit === 'Peserta Didik') {
-                labelNimNik.innerText = "NIM *";
+                // Peserta Didik: wajib input NIM dulu, field lain baru muncul jika NIM terdaftar
+                labelNimNik.innerText = "2. NIM *";
                 nimNikInput.value = "";
-                autoFillFields.classList.add('hidden');
+                nimNikInput.placeholder = "Masukkan NIM...";
+                nimFieldWrapper.classList.remove('hidden');
                 document.getElementById('NAMA_PEMINJAM').readOnly = true;
                 document.getElementById('INSTITUSI_PERUSAHAAN').readOnly = true;
                 document.getElementById('JURUSAN_DIVISI').readOnly = true;
                 document.getElementById('NO_HP').readOnly = true;
                 isValidNim = false;
+                setIdentityStage(false, false);
+                placeholder.innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> Masukkan NIM untuk memeriksa data Anda.';
+                setTimeout(() => nimNikInput.focus(), 50);
             } else {
-                labelNimNik.innerText = "NIM / NIK *";
+                // Belum pilih unit sama sekali
+                labelNimNik.innerText = "2. NIM / NIK *";
                 nimNikInput.value = "";
                 perusahaanInput.value = "";
-                autoFillFields.classList.add('hidden');
+                nimFieldWrapper.classList.add('hidden');
                 isValidNim = false;
+                setIdentityStage(false, false);
+                placeholder.innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> Pilih Unit Peminjam untuk melanjutkan pengisian formulir.';
             }
         }
 
@@ -1159,7 +1253,9 @@
             selectBarang.innerHTML = '<option value="">-- Sedang memuat data... --</option>';
             try {
                 const res = await fetch(`${GAS_WEB_APP_URL}?action=getBarang`);
+                if (!res.ok) throw new Error(`Status ${res.status}`);
                 availableItems = await res.json();
+                if (!Array.isArray(availableItems)) throw new Error("Format data barang tidak valid");
                 selectBarang.innerHTML = '<option value="">-- Pilih Barang --</option>';
                 availableItems.forEach(item => {
                     const opt = document.createElement('option');
@@ -1172,6 +1268,7 @@
                     selectBarang.appendChild(opt);
                 });
             } catch (err) {
+                console.error("loadBarangDropdown error:", err);
                 selectBarang.innerHTML = '<option value="">-- Gagal memuat barang --</option>';
             }
         }
@@ -1267,16 +1364,38 @@
         async function submitForm(e) {
             e.preventDefault();
 
+            if (!document.getElementById('UNIT_PEMINJAM').value) {
+                await customAlert("Silakan pilih Unit Peminjam terlebih dahulu.", "Peringatan", "warning");
+                return;
+            }
             if (document.getElementById('UNIT_PEMINJAM').value === 'Peserta Didik' && !isValidNim) {
                 await customAlert("Pengajuan ditolak! Hanya NIM yang terdaftar yang diperbolehkan meminjam barang.", "Akses Ditolak", "error");
+                return;
+            }
+            if (!isValidNim) {
+                await customAlert("Lengkapi dan validasi identitas peminjam terlebih dahulu.", "Peringatan", "warning");
                 return;
             }
             if (selectedItemsList.length === 0) {
                 await customAlert("Silakan tambahkan minimal satu barang untuk dipinjam.", "Peringatan", "warning");
                 return;
             }
+            if (!document.getElementById('TGL_PINJAM').value || !document.getElementById('TGL_KEMBALI').value) {
+                await customAlert("Silakan lengkapi Waktu Pinjam dan Waktu Kembali.", "Peringatan", "warning");
+                return;
+            }
+            if (!document.getElementById('KEPERLUAN').value.trim()) {
+                await customAlert("Silakan isi Keperluan Peminjaman.", "Peringatan", "warning");
+                return;
+            }
             if (!document.getElementById('checkSK').checked) {
                 await customAlert("Anda harus menyetujui Syarat & Ketentuan Peminjaman.", "Peringatan", "warning");
+                return;
+            }
+
+            const canvasObj = document.getElementById('sigCanvas');
+            if (canvasObj.getContext('2d').getImageData(0, 0, canvasObj.width, canvasObj.height).data.every((v, i) => i % 4 === 3 ? true : v === 0)) {
+                await customAlert("Silakan gambarkan tanda tangan Anda terlebih dahulu.", "Peringatan", "warning");
                 return;
             }
 
@@ -1287,7 +1406,6 @@
 
             showGlobalLoading("Mengirim pengajuan peminjaman...");
 
-            const canvasObj = document.getElementById('sigCanvas');
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             tempCanvas.width = canvasObj.width / 2; 
@@ -1349,12 +1467,7 @@
             };
 
             try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload)
-                });
+                await postToServer(payload);
                 
                 dummyData.unshift(payload);
                 renderTable();
@@ -1363,9 +1476,10 @@
                 closeModal();
                 hideGlobalLoading();
                 await customAlert(`Pengajuan peminjaman barang berhasil dikirim!`, "Berhasil Terkirim", "success");
+                loadTableData();
             } catch (err) {
                 hideGlobalLoading();
-                await customAlert("Terjadi kesalahan saat menyimpan data. Periksa koneksi internet.", "Gagal Terkirim", "error");
+                await customAlert(`Terjadi kesalahan saat menyimpan data.\n${err.message || 'Periksa koneksi internet.'}`, "Gagal Terkirim", "error");
             }
         }
 
@@ -1450,6 +1564,12 @@
             toggleSignature();
             selectedItemsList = [];
             renderSelectedItems();
+
+            // Reset alur bertahap identitas ke kondisi awal
+            isValidNim = false;
+            document.getElementById('nimFieldWrapper').classList.add('hidden');
+            document.getElementById('identityPlaceholder').innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> Pilih Unit Peminjam untuk melanjutkan pengisian formulir.';
+            setIdentityStage(false, false);
         }
     </script>
 </body>
