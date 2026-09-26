@@ -349,14 +349,41 @@
     <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customConfirmContent"><div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customConfirmIcon" class="fa-solid fa-circle-question"></i></div><h3 id="customConfirmTitle" class="text-lg font-bold mb-2 text-slate-800">Konfirmasi</h3><p id="customConfirmMessage" class="text-sm text-slate-600 mb-6">Pesan</p><div class="flex gap-3"><button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button><button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya</button></div></div></div>
 
     <script>
-        // MASUKKAN URL NEW DEPLOYMENT ANDA DI SINI
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxYDQi-ySkvcZq1OfOSXezHYsyUjhjVFhSGMX1dqedtodEa0Tvs2xvgNvcA0Sr8GCz_OA/exec";
-        
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const TIPE_MODUL = 'ruangan';
+
         let canvas, ctx, isDrawing = false;
         let currentAbortController = null;
         let dummyData = [], dbRuangan = []; 
         let isValidNim = false, nimTimeout = null, searchTimeout = null;
         const ADMIN_PASS = "admin";
+
+        // =========================================
+        // HELPER FETCH TERPUSAT (menggantikan mode:"no-cors" yang tidak bisa
+        // membaca respons error dari server)
+        // =========================================
+        async function postToServer(payload) {
+            payload.TIPE = payload.TIPE || TIPE_MODUL;
+            let res;
+            try {
+                res = await fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkErr) {
+                throw new Error("Tidak dapat menghubungi server (periksa koneksi internet / URL Web App).");
+            }
+            if (!res.ok) throw new Error(`Server merespons dengan status ${res.status}.`);
+            let result;
+            try {
+                result = await res.json();
+            } catch (parseErr) {
+                throw new Error("Respons server tidak dapat dibaca (kemungkinan Web App belum di-deploy ulang).");
+            }
+            if (result.status !== "success") throw new Error(result.message || "Server menolak permintaan tanpa pesan detail.");
+            return result;
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             initCanvas();
@@ -487,25 +514,20 @@
             let btns = ''; const s = String(item.STATUS).trim(); const id = item.ID;
             
             if (s === 'Request') {
-                // Terima Booking dan Tolak TETAP BUTUH ADMIN
                 btns += `<button onclick="prepareAdminAction('plot', '${id}', 'Booking')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-check"></i> Terima Request</button>`;
                 btns += `<button onclick="prepareAdminAction('cancel', '${id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Tolak / Cancel</button>`;
                 
             } else if (s === 'Booking') {
-                // BERUBAH: Mulai Pakai LANGSUNG BUKA MODAL tanpa PIN
                 btns += `<button onclick="openMulaiModal('${id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-door-open"></i> Mulai Pakai</button>`;
-                // Cancel masih butuh admin
                 btns += `<button onclick="prepareAdminAction('cancel', '${id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-ban"></i> Cancel</button>`;
                 
             } else if (s === 'Sedang Dipinjam') {
-                // BERUBAH: Selesai Dipakai LANGSUNG BUKA MODAL tanpa PIN
                 btns += `<button onclick="openSelesaiModal('${id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition"><i class="fa-solid fa-flag-checkered"></i> Selesai Dipakai</button>`;
                 
             } else {
                 btns += `<span class="text-slate-400 text-[11px] italic text-center block mb-1">Done (${s})</span>`;
             }
             
-            // Hapus Record TETAP BUTUH ADMIN
             btns += `<button onclick="prepareAdminAction('delete', '${id}')" class="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1.5 rounded flex items-center justify-center gap-1 text-[10px] font-semibold transition mt-1 hover:bg-rose-100"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
             
             return btns;
@@ -531,7 +553,6 @@
             if (pass === ADMIN_PASS) {
                 document.getElementById('modalAdminAuth').classList.add('hidden');
                 
-                // Meneruskan perintah (Routing) ke Modal Masing-masing setelah PIN sukses
                 if (tempAdminAction === 'plot') openPlotModal(...tempAdminArgs);
                 else if (tempAdminAction === 'cancel') openCancelModal(...tempAdminArgs);
                 else if (tempAdminAction === 'mulai') openMulaiModal(...tempAdminArgs);
@@ -596,10 +617,7 @@
             showGlobalLoading("Menyimpan penetapan ruangan...");
 
             try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_ITEM: assignedRoom, TIPE: 'ruangan' })
-                });
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_ITEM: assignedRoom, TIPE: 'ruangan' });
 
                 const index = dummyData.findIndex(d => String(d.ID) === String(id));
                 if(index > -1) { 
@@ -614,7 +632,7 @@
                 await customAlert(`Ruangan ${assignedRoom} berhasil diplot.`, "Berhasil", "success");
             } catch(err) { 
                 hideGlobalLoading();
-                await customAlert("Gagal menyimpan data ke server. Periksa koneksi internet.", "Error", "error"); 
+                await customAlert("Gagal menyimpan data ke server. Periksa koneksi internet.\n" + (err.message || ""), "Error", "error"); 
             }
         }
 
@@ -640,10 +658,7 @@
             const reader = new FileReader();
             reader.onload = async function(ev) {
                 try {
-                    await fetch(GAS_WEB_APP_URL, {
-                        method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: 'Sedang Dipinjam', CATATAN: "", BUKTI_FOTO: ev.target.result, TIPE: 'ruangan' })
-                    });
+                    await postToServer({ action: 'updateStatus', ID: id, STATUS: 'Sedang Dipinjam', CATATAN: "", BUKTI_FOTO: ev.target.result, TIPE: 'ruangan' });
 
                     const index = dummyData.findIndex(d => String(d.ID) === String(id));
                     if(index > -1) { 
@@ -656,7 +671,7 @@
                     await customAlert("Ruangan resmi mulai digunakan.", "Berhasil", "success");
                 } catch(err) {
                     hideGlobalLoading();
-                    await customAlert("Gagal mengupload foto dan update data.", "Error", "error");
+                    await customAlert("Gagal mengupload foto dan update data.\n" + (err.message || ""), "Error", "error");
                 }
             };
             reader.readAsDataURL(fileInput.files[0]);
@@ -691,15 +706,12 @@
             const reader = new FileReader();
             reader.onload = async function(ev) {
                 try {
-                    await fetch(GAS_WEB_APP_URL, {
-                        method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: 'Selesai', CATATAN: finalCatatan, BUKTI_FOTO: ev.target.result, TIPE: 'ruangan' })
-                    });
+                    await postToServer({ action: 'updateStatus', ID: id, STATUS: 'Selesai', CATATAN: finalCatatan, BUKTI_FOTO: ev.target.result, TIPE: 'ruangan' });
 
                     const index = dummyData.findIndex(d => String(d.ID) === String(id));
                     if(index > -1) { 
                         dummyData[index].STATUS = 'Selesai'; 
-                        syncLocalRoomStatus(dummyData[index].NAMA_RUANGAN); // Bebaskan ruangan
+                        syncLocalRoomStatus(dummyData[index].NAMA_RUANGAN);
                         renderTable(); 
                     }
                     closeSelesaiModal(); 
@@ -707,7 +719,7 @@
                     await customAlert("Ruangan selesai dipakai.", "Berhasil", "success");
                 } catch (err) {
                     hideGlobalLoading();
-                    await customAlert("Gagal mengupload foto dan update data.", "Error", "error");
+                    await customAlert("Gagal mengupload foto dan update data.\n" + (err.message || ""), "Error", "error");
                 }
             };
             reader.readAsDataURL(fileInput.files[0]);
@@ -726,15 +738,12 @@
             showGlobalLoading("Membatalkan peminjaman...");
             
             try {
-                await fetch(GAS_WEB_APP_URL, { 
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: 'Cancel', CATATAN: cat, ASSIGNED_ITEM: "", TIPE: 'ruangan' }) 
-                });
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: 'Cancel', CATATAN: cat, ASSIGNED_ITEM: "", TIPE: 'ruangan' });
                 
                 const index = dummyData.findIndex(d => String(d.ID) === String(id)); 
                 if(index > -1) { 
                     dummyData[index].STATUS = "Cancel"; 
-                    syncLocalRoomStatus(dummyData[index].NAMA_RUANGAN); // Bebaskan ruangan
+                    syncLocalRoomStatus(dummyData[index].NAMA_RUANGAN);
                     renderTable(); 
                 }
                 closeCancelModal(); 
@@ -742,7 +751,7 @@
                 await customAlert(`Peminjaman dibatalkan/ditolak.`, "Berhasil", "success");
             } catch(err) {
                 hideGlobalLoading();
-                await customAlert("Gagal membatalkan transaksi.", "Error", "error");
+                await customAlert("Gagal membatalkan transaksi.\n" + (err.message || ""), "Error", "error");
             }
         }
 
@@ -756,20 +765,17 @@
             const roomName = deletedItem ? deletedItem.NAMA_RUANGAN : null;
             
             try {
-                await fetch(GAS_WEB_APP_URL, { 
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: 'deleteRecord', ID: id, TIPE: 'ruangan' }) 
-                });
+                await postToServer({ action: 'deleteRecord', ID: id, TIPE: 'ruangan' });
                 
                 dummyData = dummyData.filter(d => String(d.ID).trim() !== String(id).trim()); 
-                if(roomName) syncLocalRoomStatus(roomName); // Bebaskan ruangan
+                if(roomName) syncLocalRoomStatus(roomName);
                 renderTable();
                 
                 hideGlobalLoading();
                 await customAlert("Data berhasil dihapus selamanya.", "Berhasil", "success");
             } catch (err) {
                 hideGlobalLoading();
-                await customAlert("Gagal menghapus data.", "Error", "error");
+                await customAlert("Gagal menghapus data.\n" + (err.message || ""), "Error", "error");
             }
         }
 
@@ -821,9 +827,6 @@
             }
         }
 
-        // Tambahkan variabel global ini di bagian atas script (bersama let canvas, dll)
-
-
 function handleNimInput() {
     clearTimeout(nimTimeout);
     document.getElementById('nimError').classList.add('hidden'); 
@@ -842,21 +845,23 @@ function handleNimInput() {
             cekNIM(nim); 
         } else { 
             document.getElementById('nimLoading').classList.add('hidden'); 
-            // Batalkan pencarian yang sedang berjalan jika input dihapus / kurang dari 3 karakter
             if (currentAbortController) currentAbortController.abort();
         }
     }, 600);
 }
 
 function cekNIM(nim) {
-    // Batalkan request sebelumnya jika user mengetik lagi sebelum request pertama selesai
     if (currentAbortController) {
         currentAbortController.abort();
     }
     
-    // Buat controller baru untuk request yang baru ini
     currentAbortController = new AbortController();
     const signal = currentAbortController.signal;
+
+    // Tampilkan indikator loading (asumsi ada elemen nimLoading)
+    document.getElementById('nimLoading').classList.remove('hidden');
+    document.getElementById('nimError').classList.add('hidden');
+    document.getElementById('nimSuccess').classList.add('hidden');
 
     fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
     .then(res => {
@@ -874,7 +879,6 @@ function cekNIM(nim) {
             document.getElementById('nimSuccess').classList.remove('hidden'); 
             isValidNim = true;
         } else { 
-            // Ubah pesan teks menjadi NIM tidak ditemukan
             document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan.';
             document.getElementById('nimError').classList.remove('hidden'); 
             document.getElementById('nimSuccess').classList.add('hidden'); 
@@ -882,18 +886,22 @@ function cekNIM(nim) {
         }
     })
     .catch(err => {
-        // Jika error karena di-abort (dibatalkan oleh sistem sendiri), abaikan saja
         if (err.name === 'AbortError') return;
         
-        // Jika error jaringan (putus internet / server sibuk)
         console.error("Fetch Error:", err);
-        document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi.';
+        
+        // MENAMBAHKAN TOMBOL COBA LAGI (RETRY) DI SINI
+        document.getElementById('nimError').innerHTML = `
+            <i class="fa-solid fa-wifi"></i> Gagal menghubungi server. 
+            <button type="button" onclick="cekNIM('${nim}')" style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 5px; font-weight: bold;">
+                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+            </button>
+        `;
         document.getElementById('nimError').classList.remove('hidden'); 
         document.getElementById('nimSuccess').classList.add('hidden'); 
         isValidNim = false;
     })
     .finally(() => { 
-        // Sembunyikan loading HANYA JIKA request ini tidak dibatalkan oleh request baru
         if (!signal.aborted) {
             document.getElementById('nimLoading').classList.add('hidden'); 
         }
@@ -946,7 +954,7 @@ function cekNIM(nim) {
             };
             
             try {
-                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: {"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
+                await postToServer(payload);
                 
                 dummyData.unshift(payload); 
                 renderTable(); 
@@ -956,7 +964,7 @@ function cekNIM(nim) {
                 await customAlert("Booking ruangan berhasil diajukan! Menunggu persetujuan admin.","Berhasil","success");
             } catch(err) { 
                 hideGlobalLoading();
-                await customAlert("Gagal terhubung dengan server. Periksa koneksi internet Anda.","Error","error"); 
+                await customAlert("Gagal terhubung dengan server. Periksa koneksi internet Anda.\n" + (err.message || ""),"Error","error"); 
             }
         }
     </script>
