@@ -515,6 +515,7 @@
     <script>
         // URL Google Apps Script Web App (TOLONG GANTI DENGAN URL TERBARU ANDA)
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const TIPE_MODUL = 'barang';
 
         let canvas, ctx, isDrawing = false;
         let dummyData = [];
@@ -641,13 +642,8 @@
         // =========================================
         // HELPER FETCH TERPUSAT + PENANGANAN ERROR YANG BENAR
         // =========================================
-        // Sebelumnya kode ini memakai mode:"no-cors" untuk semua request POST.
-        // Konsekuensinya: respons dari server TIDAK PERNAH bisa dibaca oleh browser,
-        // sehingga blok try/catch selalu masuk ke "try" (dianggap sukses) walau
-        // sebenarnya Google Apps Script gagal / melempar error di sisi server.
-        // Sekarang kita pakai fetch biasa (tanpa no-cors) dan membaca JSON balasannya,
-        // supaya sukses/gagal yang ditampilkan ke user sesuai kondisi asli di server.
         async function postToServer(payload) {
+            payload.TIPE = payload.TIPE || TIPE_MODUL;
             let res;
             try {
                 res = await fetch(GAS_WEB_APP_URL, {
@@ -682,7 +678,7 @@
             if(icon) icon.classList.add('fa-spin');
             
             try {
-                const res = await fetch(`${GAS_WEB_APP_URL}?action=getData`);
+                const res = await fetch(`${GAS_WEB_APP_URL}?action=getData&tipe=${TIPE_MODUL}`);
                 if (!res.ok) throw new Error(`Status ${res.status}`);
                 const data = await res.json();
                 dummyData = (Array.isArray(data) && data.length > 0) ? data : [];
@@ -1092,7 +1088,6 @@
         // ALUR BERTAHAP: UNIT -> NIM (jika Peserta Didik) -> DATA LENGKAP
         // ==========================================
 
-        // Tampilkan/sembunyikan sisa formulir & tombol submit sesuai status validasi identitas
         function setIdentityStage(showAutoFill, showRest) {
             const autoFillFields = document.getElementById('autoFillFields');
             const restOfForm = document.getElementById('restOfForm');
@@ -1113,83 +1108,98 @@
         }
 
         function handleNimInput() {
-            if (document.getElementById('UNIT_PEMINJAM').value !== 'Peserta Didik') return;
-            
-            clearTimeout(nimTimeout);
-            const loading = document.getElementById('nimLoading');
-            const error = document.getElementById('nimError');
-            const success = document.getElementById('nimSuccess');
+    if (document.getElementById('UNIT_PEMINJAM').value !== 'Peserta Didik') return;
+    
+    clearTimeout(nimTimeout);
+    const loading = document.getElementById('nimLoading');
+    const error = document.getElementById('nimError');
+    const success = document.getElementById('nimSuccess');
 
-            error.classList.add('hidden');
-            success.classList.add('hidden');
+    error.classList.add('hidden');
+    success.classList.add('hidden');
+    
+    document.getElementById('NAMA_PEMINJAM').value = '';
+    document.getElementById('INSTITUSI_PERUSAHAAN').value = '';
+    document.getElementById('JURUSAN_DIVISI').value = '';
+    document.getElementById('NO_HP').value = '';
+    isValidNim = false;
+    setIdentityStage(false, false);
+
+    const nim = document.getElementById('NIM_NIK').value.trim();
+
+    if (nim.length < 3) {
+        loading.classList.add('hidden');
+        if (currentAbortController) currentAbortController.abort();
+        return;
+    }
+
+    loading.classList.remove('hidden');
+    nimTimeout = setTimeout(() => cekNIM(nim), 600);
+}
+
+function cekNIM(nim) {
+    if (currentAbortController) currentAbortController.abort();
+    currentAbortController = new AbortController();
+    const signal = currentAbortController.signal;
+
+    const loading = document.getElementById('nimLoading');
+    const error = document.getElementById('nimError');
+    const success = document.getElementById('nimSuccess');
+
+    // Pastikan status loading muncul kembali saat fungsi dipanggil oleh tombol "Coba Lagi"
+    loading.classList.remove('hidden');
+    error.classList.add('hidden');
+    success.classList.add('hidden');
+
+    fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
+    .then(res => {
+        if (!res.ok) throw new Error(`Status server ${res.status}`);
+        return res.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('NAMA_PEMINJAM').value = data.nama || '';
+            document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi || '';
+            document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang || ''} ${data.jurusan || ''}`.trim();
+            document.getElementById('NO_HP').value = data.noHp || '';
             
-            document.getElementById('NAMA_PEMINJAM').value = '';
-            document.getElementById('INSTITUSI_PERUSAHAAN').value = '';
-            document.getElementById('JURUSAN_DIVISI').value = '';
-            document.getElementById('NO_HP').value = '';
+            success.classList.remove('hidden');
+            error.classList.add('hidden');
+            isValidNim = true;
+            setIdentityStage(true, true);
+        } else {
+            error.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan! Hanya terdaftar yang bisa meminjam.';
+            error.classList.remove('hidden');
+            success.classList.add('hidden');
             isValidNim = false;
             setIdentityStage(false, false);
-
-            const nim = document.getElementById('NIM_NIK').value.trim();
-
-            if (nim.length < 3) {
-                loading.classList.add('hidden');
-                if (currentAbortController) currentAbortController.abort();
-                return;
-            }
-
-            loading.classList.remove('hidden');
-            nimTimeout = setTimeout(() => cekNIM(nim), 600);
         }
-
-        function cekNIM(nim) {
-            if (currentAbortController) currentAbortController.abort();
-            currentAbortController = new AbortController();
-            const signal = currentAbortController.signal;
-
-            const loading = document.getElementById('nimLoading');
-            const error = document.getElementById('nimError');
-            const success = document.getElementById('nimSuccess');
-
-            fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
-            .then(res => {
-                if (!res.ok) throw new Error(`Status server ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('NAMA_PEMINJAM').value = data.nama || '';
-                    document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi || '';
-                    document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang || ''} ${data.jurusan || ''}`.trim();
-                    document.getElementById('NO_HP').value = data.noHp || '';
-                    
-                    success.classList.remove('hidden');
-                    error.classList.add('hidden');
-                    isValidNim = true;
-                    setIdentityStage(true, true);
-                } else {
-                    error.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan! Hanya terdaftar yang bisa meminjam.';
-                    error.classList.remove('hidden');
-                    success.classList.add('hidden');
-                    isValidNim = false;
-                    setIdentityStage(false, false);
-                }
-            })
-            .catch(err => {
-                if (err.name === 'AbortError') return;
-                console.error(err);
-                error.innerHTML = `<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi. (${err.message || ''})`;
-                error.classList.remove('hidden');
-                success.classList.add('hidden');
-                isValidNim = false;
-                setIdentityStage(false, false);
-            })
-            .finally(() => {
-                if (!signal.aborted) {
-                    loading.classList.add('hidden');
-                }
-            });
+    })
+    .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error(err);
+        
+        // MODIFIKASI: Menambahkan tombol "Coba Lagi" yang interaktif
+        error.innerHTML = `
+            <i class="fa-solid fa-wifi"></i> Gagal menghubungi server. 
+            <button type="button" onclick="cekNIM('${nim}')" style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 5px; font-weight: bold;">
+                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+            </button> 
+            <span style="font-size: 0.8em; color: #666; margin-left: 3px;">(${err.message || ''})</span>
+        `;
+        error.classList.remove('hidden');
+        success.classList.add('hidden');
+        isValidNim = false;
+        
+        // Tetap kunci form jika terjadi error
+        setIdentityStage(false, false);
+    })
+    .finally(() => {
+        if (!signal.aborted) {
+            loading.classList.add('hidden');
         }
+    });
+}
 
         function handleUnitChange() {
             const unit = document.getElementById('UNIT_PEMINJAM').value;
@@ -1207,10 +1217,9 @@
             document.getElementById('JURUSAN_DIVISI').value = '';
             document.getElementById('NO_HP').value = '';
 
-            if (currentAbortController) currentAbortController.abort(); // Batal pencarian jika unit diganti
+            if (currentAbortController) currentAbortController.abort();
 
             if (unit === 'Karyawan') {
-                // Karyawan: cukup isi NIK sendiri, tidak perlu lookup ke database NIM
                 labelNimNik.innerText = "2. NIK *";
                 nimNikInput.value = "";
                 nimNikInput.placeholder = "Masukkan NIK (16 digit)...";
@@ -1223,7 +1232,6 @@
                 isValidNim = true;
                 setIdentityStage(true, true);
             } else if (unit === 'Peserta Didik') {
-                // Peserta Didik: wajib input NIM dulu, field lain baru muncul jika NIM terdaftar
                 labelNimNik.innerText = "2. NIM *";
                 nimNikInput.value = "";
                 nimNikInput.placeholder = "Masukkan NIM...";
@@ -1237,7 +1245,6 @@
                 placeholder.innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> Masukkan NIM untuk memeriksa data Anda.';
                 setTimeout(() => nimNikInput.focus(), 50);
             } else {
-                // Belum pilih unit sama sekali
                 labelNimNik.innerText = "2. NIM / NIK *";
                 nimNikInput.value = "";
                 perusahaanInput.value = "";
@@ -1252,7 +1259,7 @@
             const selectBarang = document.getElementById('NAMA_BARANG_INPUT');
             selectBarang.innerHTML = '<option value="">-- Sedang memuat data... --</option>';
             try {
-                const res = await fetch(`${GAS_WEB_APP_URL}?action=getBarang`);
+                const res = await fetch(`${GAS_WEB_APP_URL}?action=getBarang&tipe=${TIPE_MODUL}`);
                 if (!res.ok) throw new Error(`Status ${res.status}`);
                 availableItems = await res.json();
                 if (!Array.isArray(availableItems)) throw new Error("Format data barang tidak valid");
@@ -1446,6 +1453,7 @@
             if (!noHpVal.startsWith("'")) { noHpVal = "'" + noHpVal; }
 
             const payload = {
+                TIPE: TIPE_MODUL,
                 ID: idStr,
                 TIMESTAMPT: timeStamp,
                 TANGGAL: tanggal,
@@ -1565,7 +1573,6 @@
             selectedItemsList = [];
             renderSelectedItems();
 
-            // Reset alur bertahap identitas ke kondisi awal
             isValidNim = false;
             document.getElementById('nimFieldWrapper').classList.add('hidden');
             document.getElementById('identityPlaceholder').innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> Pilih Unit Peminjam untuk melanjutkan pengisian formulir.';
