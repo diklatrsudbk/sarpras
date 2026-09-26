@@ -212,9 +212,6 @@
                         <button type="submit" onclick="submitActionType='Request'" class="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg transition flex items-center justify-center gap-2 w-full sm:w-auto">
                             <i class="fa-solid fa-paper-plane"></i> Submit Request
                         </button>
-                        <button type="submit" onclick="submitActionType='Sedang Dipinjam'" class="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-lg transition flex items-center justify-center gap-2 w-full sm:w-auto">
-                            <i class="fa-solid fa-hand-holding-hand"></i> Pinjam Langsung
-                        </button>
                     </div>
                 </form>
             </div>
@@ -233,6 +230,11 @@
                 <input type="hidden" id="plotId"><input type="hidden" id="plotTargetStatus"><input type="hidden" id="plotReqQty">
                 
                 <div id="plotKeysContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2 border border-slate-200 rounded-xl bg-slate-50 mb-6"></div>
+               
+                <div id="plotCatatanContainer" class="mb-6 hidden">
+                    <label class="block text-xs font-semibold text-rose-600 mb-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Alasan Jumlah Kunci Kurang (Wajib)</label>
+                    <textarea id="plotCatatan" rows="2" placeholder="Contoh: Stok tidak cukup, hanya sisa 2..." class="w-full p-2.5 border border-rose-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-rose-500 bg-rose-50"></textarea>
+                </div>
 
                 <div class="flex gap-3 justify-end">
                     <button type="button" onclick="closePlotModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs">Batal</button>
@@ -310,9 +312,9 @@
     <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customConfirmContent"><div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customConfirmIcon" class="fa-solid fa-circle-question"></i></div><h3 id="customConfirmTitle" class="text-lg font-bold mb-2 text-slate-800">Konfirmasi</h3><p id="customConfirmMessage" class="text-sm text-slate-600 mb-6">Pesan</p><div class="flex gap-3"><button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button><button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya</button></div></div></div>
 
     <script>
-        // GANTI URL INI DENGAN DEPLOY TERBARU ANDA
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxYDQi-ySkvcZq1OfOSXezHYsyUjhjVFhSGMX1dqedtodEa0Tvs2xvgNvcA0Sr8GCz_OA/exec";
-        
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const TIPE_MODUL = 'kunci';
+
         let canvas, ctx, isDrawing = false;
         let dummyData = [], dbKunci = []; 
         let submitActionType = 'Request';
@@ -320,6 +322,33 @@
         let currentAbortController = null;
         
         const ADMIN_PASS = "admin";
+
+        // =========================================
+        // HELPER FETCH TERPUSAT (menggantikan mode:"no-cors" yang tidak bisa
+        // membaca respons error dari server)
+        // =========================================
+        async function postToServer(payload) {
+            payload.TIPE = payload.TIPE || TIPE_MODUL;
+            let res;
+            try {
+                res = await fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkErr) {
+                throw new Error("Tidak dapat menghubungi server (periksa koneksi internet / URL Web App).");
+            }
+            if (!res.ok) throw new Error(`Server merespons dengan status ${res.status}.`);
+            let result;
+            try {
+                result = await res.json();
+            } catch (parseErr) {
+                throw new Error("Respons server tidak dapat dibaca (kemungkinan Web App belum di-deploy ulang).");
+            }
+            if (result.status !== "success") throw new Error(result.message || "Server menolak permintaan tanpa pesan detail.");
+            return result;
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             initCanvas();
@@ -555,75 +584,121 @@
         }
 
         // ==========================================
-        // 1. PLOTTING KUNCI (ADMIN)
-        // ==========================================
-        function openPlotModal(id, jenis, qty, targetStatus) {
-            document.getElementById('modalPlotKunci').classList.remove('hidden');
-            document.getElementById('plotId').value = id;
-            document.getElementById('plotTargetStatus').value = targetStatus;
-            document.getElementById('plotReqQty').value = qty;
-            
-            const labelJenis = jenis === 'P' ? 'Perempuan' : 'Laki-laki';
-            document.getElementById('plotSubtitle').innerHTML = `Pilih <b>${qty}</b> kunci Loker <b>${labelJenis}</b> yang diserahkan.`;
-            
-            const container = document.getElementById('plotKeysContainer');
-            container.innerHTML = "";
+// 1. PLOTTING KUNCI (ADMIN)
+// ==========================================
+function openPlotModal(id, jenis, qty, targetStatus) {
+    document.getElementById('modalPlotKunci').classList.remove('hidden');
+    document.getElementById('plotId').value = id;
+    document.getElementById('plotTargetStatus').value = targetStatus;
+    document.getElementById('plotReqQty').value = qty;
+    
+    // Reset dan sembunyikan catatan di awal
+    document.getElementById('plotCatatan').value = "";
+    document.getElementById('plotCatatanContainer').classList.add('hidden');
+    
+    const labelJenis = jenis === 'P' ? 'Perempuan' : 'Laki-laki';
+    document.getElementById('plotSubtitle').innerHTML = `Permintaan awal: <b>${qty}</b> kunci Loker <b>${labelJenis}</b>.`;
+    
+    const container = document.getElementById('plotKeysContainer');
+    container.innerHTML = "";
 
-            const available = dbKunci.filter(k => k.jenis === jenis && String(k.status).toUpperCase() === 'TERSEDIA');
-            if (available.length < qty) {
-                container.innerHTML = `<div class="col-span-full text-center p-4 text-rose-500 text-xs font-semibold">Stok Kunci Loker ${labelJenis} tidak mencukupi (Sisa: ${available.length}). Mohon Cancel request ini.</div>`;
-                return;
+    const available = dbKunci.filter(k => k.jenis === jenis && String(k.status).toUpperCase() === 'TERSEDIA');
+    if (available.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center p-4 text-rose-500 text-xs font-semibold">Stok Kunci Loker habis. Silakan Cancel request ini.</div>`;
+        return;
+    }
+    
+    available.forEach(k => {
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2 bg-white border border-slate-200 p-2 rounded-lg hover:border-indigo-300 transition cursor-pointer";
+        div.innerHTML = `<input type="checkbox" name="plotKey" value="${k.nomor}" class="w-4 h-4 text-indigo-600 key-checkbox" onchange="checkPlotLimit(${qty})">
+                         <span class="text-xs font-semibold text-slate-700">Loker ${k.nomor}</span>`;
+        div.onclick = (e) => { if(e.target.tagName !== 'INPUT') div.querySelector('input').click(); }
+        container.appendChild(div);
+    });
+}
+
+function closePlotModal() {
+    document.getElementById('modalPlotKunci').classList.add('hidden');
+}
+
+function checkPlotLimit(max) {
+    const boxes = document.querySelectorAll('.key-checkbox');
+    const checked = document.querySelectorAll('.key-checkbox:checked').length;
+    
+    // Mencegah user menceklis melebihi permintaan awal
+    boxes.forEach(b => { if(!b.checked) b.disabled = (checked >= max); });
+    
+    // Jika user mengubah pikiran dan menggenapkan kunci sesuai request, sembunyikan lagi form alasannya
+    if (checked === max) {
+        document.getElementById('plotCatatanContainer').classList.add('hidden');
+        document.getElementById('plotCatatan').value = "";
+    }
+}
+
+async function processPlot(e) {
+    e.preventDefault();
+    const reqQty = parseInt(document.getElementById('plotReqQty').value);
+    const checked = Array.from(document.querySelectorAll('.key-checkbox:checked')).map(b => b.value);
+    const selectedQty = checked.length;
+    
+    if (selectedQty === 0) { 
+        await customAlert("Pilih minimal 1 kunci terlebih dahulu!", "Peringatan", "warning"); 
+        return; 
+    }
+
+    const catContainer = document.getElementById('plotCatatanContainer');
+    const catInput = document.getElementById('plotCatatan');
+    let cat = catInput.value.trim();
+
+    // Skenario jika jumlah yang dipilih kurang dari yang direquest
+    if (selectedQty < reqQty) {
+        // Jika kotak catatan belum muncul, tanyakan konfirmasi terlebih dahulu
+        if (catContainer.classList.contains('hidden')) {
+            const isConfirmed = await customConfirm(`Anda hanya memilih ${selectedQty} dari ${reqQty} kunci yang diminta.\n\nApakah Anda yakin ingin melanjutkan dengan jumlah yang lebih sedikit?`, "Kunci Kurang dari Request", "warning");
+            
+            if (isConfirmed) {
+                // Tampilkan kotak alasan dan suruh user mengisinya
+                catContainer.classList.remove('hidden');
+                catInput.focus();
             }
-            
-            available.forEach(k => {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-2 bg-white border border-slate-200 p-2 rounded-lg hover:border-indigo-300 transition cursor-pointer";
-                div.innerHTML = `<input type="checkbox" name="plotKey" value="${k.nomor}" class="w-4 h-4 text-indigo-600 key-checkbox" onchange="checkPlotLimit(${qty})">
-                                 <span class="text-xs font-semibold text-slate-700">Loker ${k.nomor}</span>`;
-                div.onclick = (e) => { if(e.target.tagName !== 'INPUT') div.querySelector('input').click(); }
-                container.appendChild(div);
-            });
-        }
-        function closePlotModal() { document.getElementById('modalPlotKunci').classList.add('hidden'); }
-        function checkPlotLimit(max) {
-            const boxes = document.querySelectorAll('.key-checkbox');
-            const checked = document.querySelectorAll('.key-checkbox:checked').length;
-            boxes.forEach(b => { if(!b.checked) b.disabled = (checked >= max); });
-        }
-        
-        async function processPlot(e) {
-            e.preventDefault();
-            const reqQty = parseInt(document.getElementById('plotReqQty').value);
-            const checked = Array.from(document.querySelectorAll('.key-checkbox:checked')).map(b => b.value);
-            if (checked.length !== reqQty) { await customAlert(`Pilih tepat ${reqQty} kunci!`, "Pilih Kunci", "warning"); return; }
-
-            const id = document.getElementById('plotId').value;
-            const targetStatus = document.getElementById('plotTargetStatus').value;
-            const assignedKeysStr = checked.join(', '); 
-            
-            closePlotModal();
-            showGlobalLoading("Menyimpan plot kunci...");
-
-            try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: assignedKeysStr, TIPE: 'kunci' })
-                });
-
-                const index = dummyData.findIndex(d => String(d.ID) === String(id));
-                if(index > -1) { 
-                    dummyData[index].STATUS = targetStatus; 
-                    dummyData[index].NOMOR_KUNCI = assignedKeysStr;
-                    renderTable(); 
-                }
-
-                hideGlobalLoading();
-                await customAlert(`Kunci berhasil di-plot dan Status diubah menjadi: ${targetStatus}`, "Berhasil", "success");
-            } catch(e) {
-                hideGlobalLoading();
-                await customAlert("Gagal menyimpan data ke server.", "Error", "error");
+            return; // Hentikan script di sini, tunggu user klik tombol Simpan & Acc lagi
+        } 
+        // Jika kotak catatan sudah muncul (artinya ini adalah klik kedua)
+        else {
+            if (cat === "") {
+                await customAlert("Alasan wajib diisi jika kunci yang diberikan kurang dari permintaan!", "Catatan Wajib", "warning"); 
+                catInput.focus();
+                return; 
             }
         }
+    }
+
+    // --- Jika semua validasi lolos, lanjutkan pengiriman ke Server ---
+    const assignedKeysStr = checked.join(', '); 
+    const id = document.getElementById('plotId').value;
+    const targetStatus = document.getElementById('plotTargetStatus').value;
+    
+    closePlotModal();
+    showGlobalLoading("Menyimpan plot kunci...");
+
+    try {
+        await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: cat, ASSIGNED_KEYS: assignedKeysStr, QTY: selectedQty, TIPE: 'kunci' });
+
+        const index = dummyData.findIndex(d => String(d.ID) === String(id));
+        if(index > -1) { 
+            dummyData[index].STATUS = targetStatus; 
+            dummyData[index].NOMOR_KUNCI = assignedKeysStr;
+            dummyData[index].QTY = selectedQty; // Update QTY di tampilan tabel juga
+            renderTable(); 
+        }
+        hideGlobalLoading();
+        await customAlert(`Berhasil! ${selectedQty} Kunci diserahkan dan Status diubah menjadi: ${targetStatus}`, "Berhasil", "success");
+    } catch(err) {
+        hideGlobalLoading();
+        await customAlert("Gagal menyimpan data ke server.\n" + (err.message || ""), "Error", "error");
+    }
+}
 
         // ==========================================
         // 2. UPDATE STATUS (Tanpa Admin - Serahkan Kunci)
@@ -634,13 +709,13 @@
             let oldStatus = ""; if(index > -1) { oldStatus = dummyData[index].STATUS; dummyData[index].STATUS = targetStatus; renderTable(); }
             
             try {
-                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: "", TIPE: 'kunci' }) });
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: "", TIPE: 'kunci' });
                 hideGlobalLoading();
                 await customAlert(`Status berhasil diubah menjadi: ${targetStatus}`, "Berhasil", "success");
             } catch(e) {
                 if (index > -1) { dummyData[index].STATUS = oldStatus; renderTable(); }
                 hideGlobalLoading();
-                await customAlert("Gagal memperbarui status ke server.", "Error", "error");
+                await customAlert("Gagal memperbarui status ke server.\n" + (e.message || ""), "Error", "error");
             }
         }
 
@@ -657,13 +732,13 @@
             closeCancelModal();
             showGlobalLoading("Membatalkan peminjaman...");
             try {
-                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: 'Cancel', CATATAN: cat, ASSIGNED_KEYS: "", TIPE: 'kunci' }) });
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: 'Cancel', CATATAN: cat, ASSIGNED_KEYS: "", TIPE: 'kunci' });
                 const index = dummyData.findIndex(d => String(d.ID) === String(id)); if(index > -1) { dummyData[index].STATUS = "Cancel"; renderTable(); }
                 hideGlobalLoading();
                 await customAlert(`Transaksi dibatalkan.`, "Berhasil", "success");
             } catch(e) { 
                 hideGlobalLoading();
-                await customAlert("Gagal membatalkan transaksi.", "Error", "error");
+                await customAlert("Gagal membatalkan transaksi.\n" + (e.message || ""), "Error", "error");
             }
         }
 
@@ -678,13 +753,13 @@
             const prevData = [...dummyData]; dummyData = dummyData.filter(d => String(d.ID).trim() !== String(id).trim()); renderTable();
             
             try {
-                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'deleteRecord', ID: id, TIPE: 'kunci' }) });
+                await postToServer({ action: 'deleteRecord', ID: id, TIPE: 'kunci' });
                 hideGlobalLoading();
                 await customAlert("Data berhasil dihapus selamanya.", "Berhasil", "success");
             } catch (err) { 
                 dummyData = prevData; renderTable(); 
                 hideGlobalLoading();
-                await customAlert("Gagal menghapus data.", "Error", "error"); 
+                await customAlert("Gagal menghapus data.\n" + (err.message || ""), "Error", "error"); 
             }
         }
 
@@ -716,16 +791,13 @@
                 if (index > -1) { oldStatus = dummyData[index].STATUS; dummyData[index].STATUS = st; renderTable(); }
 
                 try {
-                    await fetch(GAS_WEB_APP_URL, {
-                        method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: 'updateStatus', ID: id, STATUS: st, CATATAN: cat, BUKTI_FOTO: base64Str, TIPE: 'kunci' })
-                    });
+                    await postToServer({ action: 'updateStatus', ID: id, STATUS: st, CATATAN: cat, BUKTI_FOTO: base64Str, TIPE: 'kunci' });
                     hideGlobalLoading();
                     await customAlert("Proses Pengembalian Selesai", "Berhasil", "success");
                 } catch(err){
                     if (index > -1) { dummyData[index].STATUS = oldStatus; renderTable(); }
                     hideGlobalLoading();
-                    await customAlert("Gagal melakukan pengembalian. Periksa koneksi internet.", "Error", "error");
+                    await customAlert("Gagal melakukan pengembalian. Periksa koneksi internet.\n" + (err.message || ""), "Error", "error");
                 }
             }; 
             reader.readAsDataURL(file);
@@ -758,94 +830,112 @@
         }
         
         function cekNIM(nim) {
-            if (currentAbortController) currentAbortController.abort();
-            currentAbortController = new AbortController();
-            const signal = currentAbortController.signal;
+    if (currentAbortController) {
+        currentAbortController.abort();
+    }
+    
+    currentAbortController = new AbortController();
+    const signal = currentAbortController.signal;
 
-            fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
-            .then(res => {
-                if (!res.ok) throw new Error("Gagal mengambil data dari server");
-                return res.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('NAMA_PEMINJAM').value = data.nama||'';
-                    document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi||'';
-                    document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang||''} ${data.jurusan||''}`.trim();
-                    document.getElementById('NO_HP').value = data.noHp||'';
-                    
-                    document.getElementById('nimError').classList.add('hidden');
-                    document.getElementById('nimSuccess').classList.remove('hidden');
-                    document.getElementById('loanForm').classList.remove('hidden');
-                    isValidNim = true;
-                } else { 
-                    document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan atau tidak terdaftar!';
-                    document.getElementById('nimError').classList.remove('hidden'); 
-                    document.getElementById('nimSuccess').classList.add('hidden'); 
-                    document.getElementById('loanForm').classList.add('hidden');
-                    isValidNim = false; 
-                }
-            })
-            .catch(err => {
-                if (err.name === 'AbortError') return;
-                document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-wifi"></i> Gagal menghubungi server. Coba lagi.';
-                document.getElementById('nimError').classList.remove('hidden'); 
-                document.getElementById('nimSuccess').classList.add('hidden'); 
-                document.getElementById('loanForm').classList.add('hidden');
-                isValidNim = false;
-            })
-            .finally(() => { 
-                if (!signal.aborted) {
-                    document.getElementById('nimLoading').classList.add('hidden'); 
-                }
-            });
+    // Tampilkan indikator loading saat mulai/mencoba lagi
+    document.getElementById('nimLoading').classList.remove('hidden');
+    document.getElementById('nimError').classList.add('hidden');
+    document.getElementById('nimSuccess').classList.add('hidden');
+
+    fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
+    .then(res => {
+        if (!res.ok) throw new Error("Gagal mengambil data dari server");
+        return res.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('NAMA_PEMINJAM').value = data.nama || '';
+            document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi || '';
+            document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang||''} ${data.jurusan||''}`.trim();
+            document.getElementById('NO_HP').value = data.noHp || '';
+            
+            document.getElementById('nimError').classList.add('hidden');
+            document.getElementById('nimSuccess').classList.remove('hidden');
+            document.getElementById('loanForm').classList.remove('hidden');
+            isValidNim = true;
+        } else { 
+            document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan atau tidak terdaftar!';
+            document.getElementById('nimError').classList.remove('hidden'); 
+            document.getElementById('nimSuccess').classList.add('hidden'); 
+            document.getElementById('loanForm').classList.add('hidden');
+            isValidNim = false; 
         }
+    })
+    .catch(err => {
+        if (err.name === 'AbortError') return;
+        
+        console.error("Fetch Error:", err);
+        
+        // MODIFIKASI: Menambahkan tombol "Coba Lagi" (Retry)
+        document.getElementById('nimError').innerHTML = `
+            <i class="fa-solid fa-wifi"></i> Gagal menghubungi server. 
+            <button type="button" onclick="cekNIM('${nim}')" style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 5px; font-weight: bold;">
+                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+            </button>
+        `;
+        document.getElementById('nimError').classList.remove('hidden'); 
+        document.getElementById('nimSuccess').classList.add('hidden'); 
+        document.getElementById('loanForm').classList.add('hidden');
+        isValidNim = false;
+    })
+    .finally(() => { 
+        if (!signal.aborted) {
+            document.getElementById('nimLoading').classList.add('hidden'); 
+        }
+    });
+}
 
         async function submitForm(e) {
-            e.preventDefault();
-            if(!isValidNim) { await customAlert("NIM tidak valid!","Error","error"); return; }
-            if(!document.getElementById('checkSK').checked) { await customAlert("Setujui persyaratan peminjaman!","Peringatan","warning"); return; }
-            
-            if (submitActionType === 'Sedang Dipinjam') {
-                const isConfirmed = await customConfirm("Pastikan sudah mengetahui / atas izin petugas dan kunci sudah diserahkan / sudah di ambil.", "Konfirmasi Pinjam Langsung", "info");
-                if (!isConfirmed) return;
-            }
+    e.preventDefault();
+    if(!isValidNim) { await customAlert("NIM tidak valid!","Error","error"); return; }
+    if(!document.getElementById('checkSK').checked) { await customAlert("Setujui persyaratan peminjaman!","Peringatan","warning"); return; }
+    
+    // 1. TAMPILKAN LOADING
+    showGlobalLoading("Mengajukan peminjaman kunci...");
 
-            closeModal();
-            showGlobalLoading("Mengajukan peminjaman kunci...");
+    // 2. AMBIL DATA CANVAS TTD
+    const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width/2; tempCanvas.height = canvas.height/2; 
+    tempCtx.fillStyle='#fff'; tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height); 
+    tempCtx.drawImage(canvas,0,0,tempCanvas.width,tempCanvas.height);
+    const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
 
-            const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = canvas.width/2; tempCanvas.height = canvas.height/2; 
-            tempCtx.fillStyle='#fff'; tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height); 
-            tempCtx.drawImage(canvas,0,0,tempCanvas.width,tempCanvas.height);
-            const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
+    // 3. BUAT PAYLOAD DARI FORM
+    const now = new Date(); const pad = (n) => String(n).padStart(2,'0');
+    const tStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const bId = `PK_${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const idStr = bId + String(dummyData.filter(d=>String(d.ID).startsWith(bId)).length+1).padStart(3,'0');
 
-            const now = new Date(); const pad = (n) => String(n).padStart(2,'0');
-            const tStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            const bId = `PK_${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}`;
-            const idStr = bId + String(dummyData.filter(d=>String(d.ID).startsWith(bId)).length+1).padStart(3,'0');
-
-            const payload = {
-                action: "requestKunci", TIPE: "kunci", ID: idStr, TIMESTAMPT: tStr, TANGGAL: now.toLocaleDateString('id-ID'),
-                NAMA_BARANG: document.getElementById('JENIS_LOKER').value, QTY: document.getElementById('QTY_INPUT').value,
-                NOMOR_KUNCI: "", STATUS: submitActionType, NIM_NIK: document.getElementById('NIM_NIK').value,
-                NAMA_PEMINJAM: document.getElementById('NAMA_PEMINJAM').value, INSTITUSI_PERUSAHAAN: document.getElementById('INSTITUSI_PERUSAHAAN').value,
-                JURUSAN_DIVISI: document.getElementById('JURUSAN_DIVISI').value, NO_HP: "'"+document.getElementById('NO_HP').value,
-                TGL_PINJAM: document.getElementById('TGL_PINJAM').value, TGL_KEMBALI: document.getElementById('TGL_KEMBALI').value,
-                DURASI: document.getElementById('DURASI').value, TANDA_TANGAN: sigData
-            };
-            
-            try {
-                await fetch(GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", headers: {"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
-                dummyData.unshift(payload);
-                renderTable();
-                hideGlobalLoading();
-                await customAlert("Pengajuan kunci berhasil dikirim! Menunggu persetujuan admin.","Berhasil","success");
-            } catch(err) { 
-                hideGlobalLoading();
-                await customAlert("Gagal terhubung ke server. Periksa koneksi internet.","Error","error"); 
-            }
-        }
+    const payload = {
+        action: "requestKunci", TIPE: "kunci", ID: idStr, TIMESTAMPT: tStr, TANGGAL: now.toLocaleDateString('id-ID'),
+        NAMA_BARANG: document.getElementById('JENIS_LOKER').value, QTY: document.getElementById('QTY_INPUT').value,
+        NOMOR_KUNCI: "", STATUS: "Request", NIM_NIK: document.getElementById('NIM_NIK').value,
+        NAMA_PEMINJAM: document.getElementById('NAMA_PEMINJAM').value, INSTITUSI_PERUSAHAAN: document.getElementById('INSTITUSI_PERUSAHAAN').value,
+        JURUSAN_DIVISI: document.getElementById('JURUSAN_DIVISI').value, NO_HP: "'"+document.getElementById('NO_HP').value,
+        TGL_PINJAM: document.getElementById('TGL_PINJAM').value, TGL_KEMBALI: document.getElementById('TGL_KEMBALI').value,
+        DURASI: document.getElementById('DURASI').value, TANDA_TANGAN: sigData
+    };
+    
+    // 4. TUTUP MODAL SETELAH PAYLOAD DIAMANKAN
+    closeModal();
+    
+    // 5. KIRIM DATA KE SERVER
+    try {
+        await postToServer(payload);
+        dummyData.unshift(payload);
+        renderTable();
+        hideGlobalLoading();
+        await customAlert("Pengajuan kunci berhasil dikirim! Menunggu persetujuan admin.","Berhasil","success");
+    } catch(err) { 
+        hideGlobalLoading();
+        await customAlert("Gagal terhubung ke server. Periksa koneksi internet.\n" + (err.message || ""),"Error","error"); 
+    }
+}
 
         // ==========================================
         // SISTEM KOORDINAT CANVAS & DURASI
