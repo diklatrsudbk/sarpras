@@ -35,36 +35,6 @@
             z-index:100;
         }
 
-        .navbar{
-            max-width:1200px;
-            margin:auto;
-            padding:15px 20px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
-
-        .logo{
-            color:#714B67;
-            font-weight: 700;
-        }
-
-        .menu{
-            display:flex;
-            gap:20px;
-        }
-
-        .menu a{
-            text-decoration:none;
-            color:#444;
-            font-weight:500;
-            transition:.3s;
-        }
-
-        .menu a:hover{
-            color:#714B67;
-        }
-
         /* Hero */
         .hero{
             max-width:900px;
@@ -102,7 +72,7 @@
 
         /* Cards & Grid System */
         .menu-section{
-            max-width:1400px; /* Diperlebar sedikit agar 6 kolom lebih lega */
+            max-width:1100px;
             margin:auto;
             padding:40px 20px 70px;
         }
@@ -110,37 +80,20 @@
         .cards{
             display:grid;
             gap:20px;
-            
-            /* Default: HP Portrait (1 Kolom / 6x1) */
             grid-template-columns: 1fr;
         }
 
-        /* HP Landscape (2 Kolom / 2x2(3)) */
-        @media (max-width: 767px) and (orientation: landscape) {
-            .cards { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* Tablet Portrait (2 Kolom / 2x2(3)) */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            .cards { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* Tablet Landscape (6 Kolom / 1x6) */
-        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-            .cards { grid-template-columns: repeat(6, 1fr); }
-        }
-
-        /* Desktop (6 Kolom / 1x6) */
-        @media (min-width: 1025px) {
-            .cards { grid-template-columns: repeat(6, 1fr); }
-        }
+        @media (max-width: 767px) and (orientation: landscape) { .cards { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 768px) and (max-width: 1024px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) { .cards { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1025px) { .cards { grid-template-columns: repeat(3, 1fr); } }
 
         /* Card Styling */
         .card{
             background:#fff;
             border-radius:20px;
-            padding:25px 15px; /* Disesuaikan agar muat saat 6 kolom */
-            text-align: center; /* Dibuat center agar lebih rapi */
+            padding:25px 15px; 
+            text-align: center; 
             text-decoration:none;
             color:#333;
             box-shadow:0 8px 30px rgba(0,0,0,.06);
@@ -149,6 +102,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            cursor: pointer;
         }
 
         .card:hover{
@@ -180,44 +134,159 @@
             font-size:14px;
         }
 
-        .text-center {
-            text-align: center;
+        /* =========================================
+           STYLING MODAL PIN (Mengadaptasi Tailwind)
+           ========================================= */
+        
+        /* fixed inset-0, z-index tinggi, bg-slate-50 */
+        .pin-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .mb-6 {
+
+        /* SVG Pattern background transparant */
+        .pin-modal-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="2" fill="%23cbd5e1"/></svg>');
+            background-size: 24px 24px;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* Card putih, rounded-3xl, shadow-xl */
+        .pin-card {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            padding: 40px 30px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            position: relative;
+            border: 1px solid #f1f5f9;
+        }
+
+        /* Ikon gembok (biru di box biru muda) */
+        .pin-icon-box {
+            background-color: #e0f2fe;
+            width: 72px;
+            height: 72px;
+            border-radius: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .pin-icon-box svg {
+            width: 36px;
+            height: 36px;
+            color: #2563eb;
+        }
+
+        .pin-card h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .pin-card p {
+            font-size: 14px;
+            color: #64748b;
             margin-bottom: 24px;
         }
 
-        /* Mobile specific styling overriding header/hero */
+        /* Input PIN: font-mono, text-center, teks besar, tracking lebar, rounded */
+        .pin-input {
+            width: 100%;
+            text-align: center;
+            font-family: monospace;
+            font-size: 32px;
+            letter-spacing: 0.5em; /* tracking-[0.5em] */
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            outline: none;
+            color: #1e293b;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .pin-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
+        }
+
+        /* Pesan Error */
+        .pin-error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: -5px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        /* Tombol Buka Akses: bg-blue-600, glow shadow saat hover */
+        .btn-submit-pin {
+            width: 100%;
+            background-color: #2563eb;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 14px;
+            border: none;
+            border-radius: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-submit-pin:hover {
+            background-color: #1d4ed8;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); /* Shadow biru menyala */
+            transform: translateY(-2px);
+        }
+
+        .btn-cancel-pin {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-cancel-pin:hover {
+            color: #0f172a;
+        }
+
+        /* Copyright Footer Modal */
+        .pin-copyright {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Mobile Adjustments */
         @media(max-width:768px){
-            .navbar{
-                flex-direction:column;
-                gap:15px;
-            }
-
-            .menu{
-                flex-wrap:wrap;
-                justify-content:center;
-            }
-
-            .hero{
-                padding:40px 20px;
-            }
-
-            .hero-logo{
-                width:120px;
-            }
-
-            .hero h1{
-                font-size:34px;
-            }
-
-            .hero h2{
-                font-size:18px;
-            }
+            .hero h1{ font-size:34px; }
+            .hero h2{ font-size:18px; }
         }
     </style>
 </head>
-<body>
+
+<!-- Alpine.js State: Menyimpan status modal PIN, nilai input, dan URL tujuan -->
+<body x-data="{ showModal: false, pin: '', targetUrl: '', error: '' }">
 
     <section class="hero">
         <img src="img/rsudbk.png" alt="RSUDBK" class="hero-logo">
@@ -260,18 +329,39 @@
                 <p>Ajukan request peminjaman fasilitas atau dokumen di sini.</p>
             </a>
 
-            <!-- Menu 5 (Baru - Target _blank) -->
+            <!-- Menu 5 -->
             <a href="survey_menu.html" target="_blank" class="card">
                 <div class="icon">🗒️</div>
                 <h3>Survey & Evaluasi</h3>
                 <p>Isi kuesioner, survey, dan evaluasi terkait kegiatan diklat.</p>
             </a>
 
-            <!-- Menu 6 (Baru - Target _blank) -->
+            <!-- Menu 6 -->
             <a href="sarpras_menu.html" target="_blank" class="card">
                 <div class="icon">🏢</div>
                 <h3>Sarana Prasarana</h3>
                 <p>Kelola dan cek ketersediaan data fasilitas atau sarpras diklat.</p>
+            </a>
+
+            <!-- Menu 7: Print IDCard (Akses Terkunci via Modal PIN) -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'print_idcard.html'; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+                <div class="icon">🪪</div>
+                <h3>Print IDCard</h3>
+                <p>Cetak ID Card untuk peserta didik dan keperluan identitas diklat.</p>
+            </a>
+
+            <!-- Menu 8: Maintenance (Akses Terkunci via Modal PIN) -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'maintenance.html'; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+                <div class="icon">🛠️</div>
+                <h3>Maintenance</h3>
+                <p>Pemeliharaan, pemantauan, dan perbaikan sistem aplikasi.</p>
+            </a>
+
+            <!-- Menu 9 -->
+            <a href="setting.html" class="card">
+                <div class="icon">⚙️</div>
+                <h3>Pengaturan</h3>
+                <p>Konfigurasi sistem, manajemen pengguna, dan pengaturan aplikasi.</p>
             </a>
         </div>
     </section>
@@ -279,6 +369,60 @@
     <footer>
         © 2026 Form Sarana dan Prasarana Diklat RSUDBK. All rights reserved.
     </footer>
+
+    <!-- ================= MODAL PIN ================= -->
+    <div class="pin-modal-overlay" x-show="showModal" x-cloak x-transition.opacity>
+        
+        <div class="pin-card" @click.outside="showModal = false" x-show="showModal" x-transition.scale.origin.bottom>
+            
+            <!-- Ikon Gembok -->
+            <div class="pin-icon-box">
+                <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+
+            <h3>Akses Terkunci</h3>
+            <p>Menu ini membutuhkan akses khusus. Silakan masukkan PIN administrator.</p>
+
+            <!-- Form Logika PIN -->
+            <form @submit.prevent="
+                if(pin === 'diklat') { 
+                    window.location.href = targetUrl; 
+                } else { 
+                    error = 'PIN yang Anda masukkan salah!'; 
+                    pin = ''; 
+                    $refs.pinInput.focus();
+                }
+            ">
+                <input 
+                    type="password" 
+                    x-model="pin" 
+                    x-ref="pinInput"
+                    class="pin-input" 
+                    placeholder="••••••" 
+                    maxlength="6"
+                    required
+                >
+                
+                <!-- Pesan Error Dinamis -->
+                <div class="pin-error" x-show="error" x-text="error" x-transition></div>
+
+                <button type="submit" class="btn-submit-pin">
+                    Buka Akses
+                </button>
+
+                <button type="button" class="btn-cancel-pin" @click="showModal = false">
+                    Batal Kembali
+                </button>
+            </form>
+
+        </div>
+
+        <div class="pin-copyright">
+            © 2026 RSUDBK DIKLAT Support System.
+        </div>
+    </div>
 
 </body>
 </html>
