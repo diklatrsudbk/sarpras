@@ -94,21 +94,47 @@ const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwj7A96_iATZ13TJTzoP
 const LOGO_BASE = 'img/logo_institusi/';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const APP_PIN = 'diklat'; // <-- ganti PIN di sini
+const APP_PIN = '1234'; // <-- ganti PIN di sini
 
-/* ---- API + cache di browser ---- */
-const CACHE = {};  // data terakhir per menu
-let GEN = 0;       // naik setiap ada perubahan data, supaya hasil lama tidak menimpa cache
-function api(fn, ...args) {
-  if (fn.indexOf('list') !== 0) { GEN++; for (const k in CACHE) delete CACHE[k]; } // ada perubahan -> buang cache
-  return new Promise((res, rej) => {
-    const done = r => r.ok ? res(r.data) : rej(new Error(r.error));
-    if (window.google && google.script && google.script.run)
-      google.script.run.withSuccessHandler(done).withFailureHandler(e => rej(new Error(e.message))).rpc(fn, args);
-    else fetch(WEBAPP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ fn, args }) })
-      .then(r => r.json()).then(done).catch(() => rej(new Error('Tidak dapat terhubung ke server.')));
-  });
+/* ---- API: timeout, retry (hanya baca data), dedup, cache browser ---- */
+const CACHE = {};      // data terakhir per menu
+const PEND = {};       // permintaan baca yang sedang berjalan (cegah panggilan ganda)
+let GEN = 0, FG = 0;   // GEN naik tiap ada perubahan data; FG = jumlah permintaan prioritas yang sedang berjalan
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isList = fn => fn.indexOf('list') === 0;
+const E = (msg, retry) => Object.assign(new Error(msg), { retry }); // retry: true = gangguan koneksi/server, false = galat aplikasi
+const withTimeout = (p, ms) => new Promise((res, rej) => { const t = setTimeout(() => rej(E('Server tidak merespons (timeout).', true)), ms); p.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); }); });
+const unwrap = r => { if (!r || typeof r.ok !== 'boolean') throw E('Respons server tidak valid.', true); if (!r.ok) throw E(r.error, false); return r.data; };
+
+function once(fn, args, ms) { // satu kali percobaan
+  if (window.google && google.script && google.script.run)
+    return withTimeout(new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(E((e && e.message) || 'Gagal terhubung ke server.', true))).rpc(fn, args)), ms).then(unwrap);
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  return fetch(WEBAPP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ fn, args }), signal: ctl.signal, cache: 'no-store' })
+    .then(r => r.text())
+    .then(txt => { let j; try { j = JSON.parse(txt); } catch (_) { throw E('Respons server tidak valid.', true); } return unwrap(j); })
+    .catch(e => { if (e.retry !== undefined) throw e; throw E(e.name === 'AbortError' ? 'Server tidak merespons (timeout).' : 'Tidak dapat terhubung ke server.', true); })
+    .finally(() => clearTimeout(t));
 }
+function send(fn, args, opt = {}) {
+  const list = isList(fn);
+  if (!list) { GEN++; for (const k in CACHE) delete CACHE[k]; } // ada perubahan -> buang cache
+  const key = list ? fn + JSON.stringify(args) : null;
+  if (key && PEND[key]) return PEND[key];
+  const tries = list ? 3 : 1, ms = list ? 20000 : 90000; // baca: coba ulang otomatis; tulis: TIDAK diulang (hindari data ganda)
+  const job = (async () => {
+    for (let i = 0; ; i++) {
+      try { return await once(fn, args, ms); }
+      catch (e) { if (!e.retry || i >= tries - 1) throw e; await sleep(700 * (i + 1) + Math.random() * 300); }
+    }
+  })();
+  if (!opt.bg) FG++;
+  if (key) PEND[key] = job;
+  const done = () => { if (!opt.bg) FG--; if (key) delete PEND[key]; };
+  job.then(done, done);
+  return job;
+}
+const api = (fn, ...args) => send(fn, args);
 
 /* ---- Kunci / PIN ---- */
 const unlock = () => { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); warm(); };
@@ -124,7 +150,7 @@ $('pf').onsubmit = e => {
 /* ---- Notifikasi ---- */
 const busy = m => Swal.fire({ title: 'Memproses...', text: m || 'Mohon tunggu', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 const good = m => Swal.fire({ icon: 'success', title: '✓ Berhasil', text: m, timer: 1400, showConfirmButton: false });
-const fail = e => { if (e.message === 'SESSION') { Swal.close(); return lockApp(); } Swal.fire({ icon: 'error', title: '✕ Terjadi kesalahan', text: e.message || String(e), confirmButtonColor: '#2563eb' }); };
+const fail = e => { if (e.message === 'SESSION') { Swal.close(); return lockApp(); } Swal.fire({ icon: 'error', title: '✕ Terjadi kesalahan', text: (e.message || String(e)) + (e.retry ? ' Jika Anda baru menyimpan perubahan, tekan tombol reload untuk memeriksa hasilnya.' : ''), confirmButtonColor: '#2563eb' }); };
 const ask = (o) => Swal.fire({ showCancelButton: true, cancelButtonText: 'Batal', ...o }).then(r => r.isConfirmed);
 async function run(msg, fn, okMsg) { busy(msg); try { const r = await fn(); if (okMsg) await good(okMsg); else Swal.close(); return r; } catch (e) { fail(e); throw e; } }
 const nowIso = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16).replace(' ', 'T');
@@ -172,7 +198,7 @@ $('grid').innerHTML = Object.entries(M).map(([k, m]) => `<div data-k="${k}" clas
 
 let cur, data = [], T = { cols: [], rows: [], q: '', s: -1, d: 1, p: 1 };
 $('grid').onclick = e => { const c = e.target.closest('.menu'); if (!c) return; cur = c.dataset.k; T.q = ''; T.s = -1; T.p = 1; $('home').classList.add('hidden'); $('view').classList.remove('hidden'); $('vt').textContent = M[cur].t; $('q').value = ''; load(); };
-$('back').onclick = () => { $('view').classList.add('hidden'); $('home').classList.remove('hidden'); };
+$('back').onclick = () => { SEQ++; $('view').classList.add('hidden'); $('home').classList.remove('hidden'); };
 $('reload').onclick = () => load(true); // tombol reload: lewati cache browser dan cache server
 $('add').onclick = () => M[cur].k === 'm' ? masterForm() : addForm();
 $('q').oninput = e => { T.q = e.target.value.toLowerCase(); T.p = 1; drawT(); };
@@ -190,21 +216,38 @@ function drawT() {
 }
 const ib = (a, id, ic, cl) => `<button data-a="${a}" data-id="${id}" class="w-8 h-8 rounded-lg ${cl}"><i class="fa-solid ${ic}"></i></button>`;
 
-/* ---- Muat data: cache dulu, lalu segarkan di latar belakang; force = tombol reload ---- */
+/* ---- Muat data: cache dulu, segarkan di latar belakang; force = tombol reload ---- */
 const fnOf = k => M[k].k === 'm' ? 'listMaster' : 'listSetting';
-function warm() { // pemanasan: ambil semua menu di latar belakang setelah dibuka
-  const g = GEN;
-  Object.keys(M).forEach(k => api(fnOf(k), k).then(d => { if (g === GEN && !CACHE[k]) CACHE[k] = d; }).catch(() => { }));
+const goHome = () => $('back').onclick();
+let SEQ = 0, WARMED = false;
+async function warm() { // pemanasan satu per satu, hanya saat tidak ada permintaan prioritas
+  if (WARMED) return; WARMED = true;
+  const g = GEN; await sleep(1500);
+  for (const k of Object.keys(M)) {
+    while (FG > 0) await sleep(400);
+    if (g !== GEN) return;
+    if (CACHE[k]) continue;
+    try { const d = await send(fnOf(k), [k, false], { bg: true }); if (g === GEN && !CACHE[k]) CACHE[k] = d; } catch (e) { }
+  }
 }
 async function load(force) {
-  const k = cur, g = GEN;
-  const hasCache = !force && CACHE[k];
+  const k = cur, my = ++SEQ, g = GEN, hasCache = !force && !!CACHE[k];
   if (hasCache) { data = CACHE[k]; render(); } // tampil instan dari cache
+  else Swal.fire({ title: 'Mengambil data...', text: 'Mohon tunggu', allowOutsideClick: false, showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', didOpen: () => Swal.showLoading() })
+    .then(r => { if (r.dismiss === Swal.DismissReason.cancel && my === SEQ) { SEQ++; goHome(); } });
   try {
-    const fresh = hasCache ? await api(fnOf(k), k) : await run('Mengambil data...', () => api(fnOf(k), k, !!force));
+    const fresh = await send(fnOf(k), [k, !!force]);
+    if (my !== SEQ) return; // pengguna sudah pindah menu
     if (g === GEN) CACHE[k] = fresh;
-    if (cur === k) { data = fresh; render(); }
-  } catch (e) { /* gagal saat di latar belakang: biarkan data lama */ }
+    data = fresh; render();
+    if (!hasCache) Swal.close();
+  } catch (e) {
+    if (my !== SEQ) return;
+    if (hasCache) return Swal.fire({ toast: true, position: 'top', icon: 'warning', title: 'Gagal memperbarui, menampilkan data tersimpan', timer: 2500, showConfirmButton: false });
+    const r = await Swal.fire({ icon: 'error', title: 'Gagal memuat data', text: e.message, showCancelButton: true, confirmButtonText: 'Coba lagi', cancelButtonText: 'Kembali', confirmButtonColor: '#2563eb' });
+    if (my !== SEQ) return;
+    if (r.isConfirmed) load(true); else goHome();
+  }
 }
 function render() {
   const m = M[cur];
