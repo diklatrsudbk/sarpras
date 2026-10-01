@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setting PD &amp; Daftar Hadir</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<style>
+:root{--ink:#0f2a33;--teal:#0b6e6e;--teal2:#084f55;--bg:#f4f7f9;--line:#e3eaee}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.top{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;position:sticky;top:0;z-index:100}
+.top img{height:40px;background:#fff;border-radius:10px;padding:3px}
+.menu{border:1px solid var(--line);border-radius:14px;cursor:pointer;background:#fff;transition:border-color .15s,box-shadow .15s}
+.menu:hover{border-color:var(--teal);box-shadow:0 6px 16px rgba(11,110,110,.12)}
+.menu .ic{width:52px;height:52px;border-radius:12px;background:#e6f2f2;color:var(--teal);display:grid;place-items:center;font-size:1.5rem;flex:none}
+.card,.modal-content{border:1px solid var(--line);border-radius:14px}
+.card.shadow-sm{box-shadow:0 1px 3px rgba(15,42,51,.06)!important}
+.btn{border-radius:10px;font-weight:500}.form-control,.form-select{border-radius:0 10px 10px 0}
+.table thead th{background:#f0f5f7;color:#4a6670;font-size:.82rem;font-weight:600;border-bottom:1px solid var(--line)}
+.table>:not(caption)>*>*{padding:.7rem .75rem}
+.input-group-text{background:#e6f2f2;color:var(--teal);min-width:42px;justify-content:center;border-radius:10px 0 0 10px}
+.pv{max-height:110px;max-width:100%}.lg{height:36px;max-width:90px;object-fit:contain}
+.form-switch .form-check-input{width:2.6em;height:1.3em;cursor:pointer}
+.form-switch .form-check-input:checked{background-color:var(--teal);border-color:var(--teal)}
+.badge{font-weight:600;border-radius:8px}
+.dataTables_wrapper .form-control,.dataTables_wrapper .form-select{border-radius:10px}
+.logobox{background:#f7fafb;border:1px dashed #b9cbd2;border-radius:12px;padding:12px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top py-2"><div class="container d-flex align-items-center gap-3">
+  <img src="img/rsudbk.png" alt="RSUDBK" onerror="this.style.display='none'">
+  <div><div class="fw-bold">Setting Input Peserta Didik &amp; Daftar Hadir</div><small class="opacity-75">Kelola master data dan jadwal buka/tutup form</small></div>
+</div></header>
+
+<main class="container py-4">
+  <section id="home" class="row g-3"></section>
+  <section id="view" class="d-none">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <button class="btn btn-outline-secondary" id="back"><i class="bi bi-arrow-left"></i></button>
+      <h5 class="mb-0 me-auto" id="vt"></h5>
+      <button class="btn btn-outline-primary" id="reload" title="Reload data"><i class="bi bi-arrow-clockwise"></i></button>
+      <button class="btn btn-success" id="add"><i class="bi bi-plus-lg"></i> Add</button>
+    </div>
+    <div class="card shadow-sm"><div class="card-body"><div class="table-responsive"><table id="tb" class="table table-hover align-middle w-100"></table></div></div></div>
+  </section>
+</main>
+
+<div class="modal fade" id="fm" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title" id="fmT"></h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="fmB"></div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" id="fmS"></button></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw1-TPzgHjmjwEI8mt6ci57Z-0BP53mvi7N5ukn2GDO0Zt3JJZd6HqHB2U_cX7IMmVb/exec'; // isi URL Web App (…/exec) bila halaman ini di-host di GitHub Pages
+const LOGO_BASE = 'img/logo_institusi/';
+
+/* ---- API: google.script.run bila di Apps Script, fetch bila di GitHub ---- */
+function api(fn, ...args) {
+  return new Promise((res, rej) => {
+    const done = r => r.ok ? res(r.data) : rej(new Error(r.error));
+    if (window.google && google.script && google.script.run)
+      google.script.run.withSuccessHandler(done).withFailureHandler(e => rej(new Error(e.message))).rpc(fn, args);
+    else fetch(WEBAPP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ fn, args }) })
+      .then(r => r.json()).then(done).catch(() => rej(new Error('Tidak dapat terhubung ke server.')));
+  });
+}
+
+/* ---- Util ---- */
+const $ = jQuery, esc = s => $('<i>').text(s == null ? '' : s).html();
+const busy = m => Swal.fire({ title: 'Memproses...', text: m || 'Mohon tunggu', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+const good = m => Swal.fire({ icon: 'success', title: '✓ Berhasil', text: m, timer: 1400, showConfirmButton: false });
+const fail = e => Swal.fire({ icon: 'error', title: '✕ Terjadi kesalahan', text: e.message || String(e) });
+const sure = (html, btn) => Swal.fire({ icon: 'warning', title: 'Apakah Anda yakin?', html, showCancelButton: true, confirmButtonText: btn || 'Hapus', cancelButtonText: 'Batal', confirmButtonColor: '#dc3545' }).then(r => r.isConfirmed);
+const nowIso = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16).replace(' ', 'T');
+const endIso = (m, d, u) => { if (!m || !(d > 0)) return ''; const t = new Date(m + ':00Z'); t.setTime(t.getTime() + d * (u === 'Hari' ? 864e5 : 36e5)); return t.toISOString().slice(0, 16); };
+async function run(msg, fn, okMsg) { busy(msg); try { const r = await fn(); if (okMsg) await good(okMsg); else Swal.close(); return r; } catch (e) { fail(e); throw e; } }
+
+/* ---- Modal form generik ---- */
+const fm = new bootstrap.Modal('#fm');
+function form({ title, fields, ok = 'Simpan', onSave, onInput, after }) {
+  $('#fmT').text(title); $('#fmS').text(ok);
+  $('#fmB').html(fields.map(f => {
+    if (f.html) return f.html;
+    const c = 'form-control', a = `id="f_${f.id}" ${f.ro ? 'readonly' : ''} ${f.min ? 'min="' + f.min + '"' : ''}`;
+    const inp = f.opts ? `<select class="form-select" ${a}>${f.opts.map(o => `<option ${o === f.value ? 'selected' : ''}>${o}</option>`).join('')}</select>`
+      : `<input class="${c}" type="${f.type || 'text'}" ${a} value="${esc(f.value)}" ${f.step ? 'step=' + f.step : ''}>`;
+    return `<label class="form-label mb-1 small fw-semibold">${f.label}</label><div class="input-group mb-3"><span class="input-group-text"><i class="bi ${f.icon}"></i></span>${inp}</div>`;
+  }).join(''));
+  $('#fmB').off('input change').on('input change', () => onInput && onInput(vals()));
+  const vals = () => Object.fromEntries(fields.filter(f => f.id).map(f => [f.id, $('#f_' + f.id).val()]));
+  $('#fmS').off('click').on('click', async () => {
+    try { await onSave(vals()); fm.hide(); } catch (e) { /* sudah ditampilkan oleh run() */ }
+  });
+  after && after();
+  fm.show();
+}
+const durFields = (d = 1, u = 'Jam') => [
+  { id: 'durasi', label: 'Durasi', icon: 'bi-hourglass-split', type: 'number', value: d, min: 1 },
+  { id: 'satuan', label: 'Satuan', icon: 'bi-clock', opts: ['Jam', 'Hari'], value: u },
+  { id: 'selesai', label: 'Waktu Selesai (otomatis)', icon: 'bi-calendar-check', ro: true }];
+const calcEnd = v => $('#f_selesai').val(endIso(v.mulai, +v.durasi, v.satuan).replace(/(\d{4})-(\d\d)-(\d\d)T(.*)/, '$3/$2/$1 $4'));
+
+/* ---- Menu ---- */
+const M = {
+  kota: { t: 'Update Daftar Kota', i: 'bi-geo-alt-fill', d: 'Kelola daftar kota asal', k: 'm', lbl: 'Nama Kota', ic: 'bi-geo-alt' },
+  institusi: { t: 'Update Daftar Institusi', i: 'bi-building-fill', d: 'Nama dan logo institusi', k: 'm', lbl: 'Nama Institusi', ic: 'bi-building', logo: 1 },
+  jurusan: { t: 'Update Daftar Jurusan', i: 'bi-mortarboard-fill', d: 'Kelola daftar jurusan', k: 'm', lbl: 'Nama Jurusan', ic: 'bi-mortarboard' },
+  divisi: { t: 'Update Daftar Divisi', i: 'bi-diagram-3-fill', d: 'Kelola daftar divisi', k: 'm', lbl: 'Nama Divisi', ic: 'bi-diagram-3' },
+  PD: { t: 'Setting Input Peserta Didik', i: 'bi-person-lines-fill', d: 'Atur buka/tutup form input peserta didik', k: 's', lbl: 'Peserta Didik' },
+  DH: { t: 'Setting Input Daftar Hadir', i: 'bi-clipboard2-check-fill', d: 'Atur buka/tutup daftar hadir', k: 's', lbl: 'Daftar Hadir' }
+};
+let cur, data = [], dt;
+$('#home').html(Object.entries(M).map(([k, m]) => `<div class="col-12 col-sm-6 col-lg-4"><div class="card menu shadow-sm h-100" data-k="${k}"><div class="card-body d-flex gap-3 align-items-center"><i class="bi ${m.i} ic"></i><div><div class="fw-semibold">${m.t}</div><small class="text-muted">${m.d}</small></div></div></div></div>`).join(''));
+$('#home').on('click', '.menu', function () { cur = $(this).data('k'); $('#home').addClass('d-none'); $('#view').removeClass('d-none'); $('#vt').html(`<i class="bi ${M[cur].i} text-success me-2"></i>${M[cur].t}`); load(); });
+$('#back').on('click', () => { $('#view').addClass('d-none'); $('#home').removeClass('d-none'); });
+$('#reload').on('click', () => load());
+$('#add').on('click', () => M[cur].k === 'm' ? masterForm() : addForm());
+
+async function load() {
+  const m = M[cur];
+  try { data = await run('Mengambil data...', () => m.k === 'm' ? api('listMaster', cur) : api('listSetting', cur)); } catch (e) { return; }
+  if (dt) { dt.destroy(); $('#tb').empty(); }
+  const act = id => `<button class="btn btn-sm btn-outline-primary ed" data-id="${id}"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger dl" data-id="${id}"><i class="bi bi-trash"></i></button>`;
+  let head, rows;
+  if (m.k === 'm') {
+    head = ['No', m.lbl].concat(m.logo ? ['Logo'] : [], ['Aksi']);
+    rows = data.map(o => [o.no, esc(o.nama)].concat(m.logo ? [o.logo ? `<img class="lg" src="${esc(o.logo)}" onerror="this.replaceWith('-')">` : '-'] : [], [act(o.row)]));
+  } else {
+    head = ['No'].concat(cur === 'DH' ? ['Template'] : [], ['Nama Sheet', 'Nama Acara', 'Waktu Mulai', 'Waktu Selesai', 'Status', 'Aksi']);
+    rows = data.map(o => {
+      const open = o.STATUS === 'OPEN';
+      return [o.NO].concat(cur === 'DH' ? [esc(o.TEMPLATE)] : [], [esc(o.NAMA_SHEET), esc(o.NAMA_ACARA), o.WAKTU_MULAI, o.WAKTU_SELESAI,
+        `<div class="form-check form-switch d-flex align-items-center gap-2"><input class="form-check-input tg" type="checkbox" data-id="${o._row}" ${open ? 'checked' : ''}><span class="badge ${open ? 'text-bg-success' : 'text-bg-secondary'}">${open ? 'OPEN' : 'CLOSE'}</span></div>`,
+        `<div class="dropdown"><button class="btn btn-sm btn-light" data-bs-toggle="dropdown" data-bs-strategy="fixed"><i class="bi bi-three-dots-vertical"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item ed" href="#" data-id="${o._row}"><i class="bi bi-pencil me-2"></i>Edit</a></li><li><a class="dropdown-item text-danger dl" href="#" data-id="${o._row}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul></div>`]);
+    });
+  }
+  $('#tb').html(`<thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead>`);
+  dt = $('#tb').DataTable({ data: rows, columns: head.map(() => ({})), columnDefs: [{ targets: -1, orderable: false }], language: { search: 'Cari:', lengthMenu: '_MENU_ data', info: '_START_–_END_ dari _TOTAL_', emptyTable: 'Belum ada data. Klik Add untuk menambah.', paginate: { previous: '‹', next: '›' } } });
+}
+const rowOf = id => data.find(o => (o.row || o._row) == id);
+$('#tb').on('click', '.ed', e => { e.preventDefault(); const o = rowOf($(e.currentTarget).data('id')); M[cur].k === 'm' ? masterForm(o) : editForm(o); });
+$('#tb').on('click', '.dl', async e => { e.preventDefault(); const o = rowOf($(e.currentTarget).data('id')); await del(o); });
+$('#tb').on('change', '.tg', async function () {
+  const o = rowOf($(this).data('id')), turnOn = this.checked; this.checked = !turnOn; // ikuti status aktual
+  if (turnOn) openForm(o);
+  else if (await sure('Waktu selesai akan diubah menjadi waktu sekarang.', 'Ya, Tutup').then(x => x)) {
+    try { await run('Menutup...', () => api('closeNow', cur, o._row), 'Ditutup'); load(); } catch (e) { }
+  }
+});
+// sure() merah untuk hapus; untuk "Tutup" tetap valid.
+async function del(o) {
+  const html = M[cur].k === 'm' ? 'Data yang dihapus tidak dapat dikembalikan.' : `Nama Acara:<br><b>${esc(o.NAMA_ACARA)}</b><br>Nama Sheet:<br><b>${esc(o.NAMA_SHEET)}</b><br><br>Data sheet tujuan juga akan dihapus.`;
+  if (!await sure(html)) return;
+  try { await run('Menghapus...', () => M[cur].k === 'm' ? api('deleteMaster', cur, o.row) : api('deleteSetting', cur, o._row), 'Terhapus'); load(); } catch (e) { }
+}
+
+/* ---- Master form (kota/institusi/jurusan/divisi) ---- */
+function masterForm(o) {
+  const m = M[cur]; let file = null;
+  const lg = o ? (o.logo || (window.google ? '' : LOGO_BASE + encodeURIComponent(o.nama) + '.png')) : '';
+  const fields = [{ id: 'nama', label: m.lbl, icon: m.ic, value: o ? o.nama : '' }];
+  if (m.logo) fields.push({ html: `<label class="form-label mb-1 small fw-semibold">Logo Institusi (PNG)</label><div class="btn-group w-100 mb-2"><button type="button" class="btn btn-outline-secondary" id="bC"><i class="bi bi-camera"></i> Kamera</button><button type="button" class="btn btn-outline-secondary" id="bG"><i class="bi bi-images"></i> Gallery</button></div><input type="file" id="fC" accept="image/png" capture="environment" hidden><input type="file" id="fG" accept="image/png" hidden><div class="logobox"><img id="pv" class="pv" src="${esc(lg)}" ${lg ? '' : 'hidden'}><span id="pvT" class="text-muted small" ${lg ? 'hidden' : ''}>Preview logo</span></div>` });
+  form({
+    title: (o ? 'Edit ' : 'Tambah ') + m.t.replace('Update ', ''), fields,
+    after: () => {
+      $('#pv').on('error',function(){$(this).prop('hidden',true);$('#pvT').text('Logo belum ada di GitHub').prop('hidden',false);});
+      $('#bC').on('click', () => $('#fC').click()); $('#bG').on('click', () => $('#fG').click());
+      $('#fC,#fG').on('change', function () {
+        const f = this.files[0]; if (!f) return;
+        if (f.type !== 'image/png') { this.value = ''; return fail(new Error('Logo harus berformat PNG.')); }
+        if (f.size > 2e6) { this.value = ''; return fail(new Error('Ukuran logo maksimal 2 MB.')); }
+        file = f; const r = new FileReader(); r.onload = () => { $('#pv').attr('src', r.result).prop('hidden', false); $('#pvT').prop('hidden', true); }; r.readAsDataURL(f);
+      });
+    },
+    onSave: async v => {
+      if (!v.nama.trim()) { fail(new Error(m.lbl + ' wajib diisi.')); throw 0; }
+      await run('Menyimpan...', async () => {
+        const p = { row: o && o.row, nama: v.nama };
+        if (m.logo && file) { const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(file); }); p.logo = await api('uploadLogo', v.nama, b64); }
+        await api('saveMaster', cur, p);
+      }, 'Data tersimpan'); load();
+    }
+  });
+}
+
+/* ---- Setting: Add / Edit / Open ---- */
+function addForm() {
+  const f = [];
+  if (cur === 'DH') f.push({ id: 'template', label: 'Template / Jenis Acara', icon: 'bi-file-earmark-text', opts: ['Peserta Didik', 'Peserta Pelatihan', 'Karyawan'] });
+  f.push({ id: 'nama', label: 'Nama Sheet', icon: 'bi-table' }, { id: 'acara', label: 'Nama Acara', icon: 'bi-calendar-event' },
+    { id: 'tempat', label: 'Tempat (opsional)', icon: 'bi-geo-alt' },
+    { id: 'mulai', label: 'Waktu Mulai', icon: 'bi-calendar-plus', type: 'datetime-local', value: nowIso() }, ...durFields());
+  form({
+    title: 'Tambah ' + M[cur].t.replace('Setting Input ', ''), fields: f, onInput: calcEnd, after: () => calcEnd({ mulai: nowIso(), durasi: 1, satuan: 'Jam' }),
+    onSave: async v => {
+      if (!v.nama.trim() || !v.acara.trim() || !v.mulai || !(+v.durasi > 0)) { fail(new Error('Lengkapi nama sheet, nama acara, waktu mulai, dan durasi (> 0).')); throw 0; }
+      await run('Membuat sheet dan menyalin template...', () => api('addSetting', cur, v), 'Setting tersimpan'); load();
+    }
+  });
+}
+function editForm(o) {
+  const f = [{ id: 'nama', label: 'Nama Sheet', icon: 'bi-table', value: o.NAMA_SHEET }, { id: 'acara', label: 'Nama Acara', icon: 'bi-calendar-event', value: o.NAMA_ACARA },
+    { id: 'tempat', label: 'Tempat', icon: 'bi-geo-alt', value: o.TEMPAT },
+    { id: 'mulai', label: 'Waktu Mulai', icon: 'bi-calendar-plus', type: 'datetime-local', value: o.MULAI_I },
+    { id: 'selesai', label: 'Waktu Selesai', icon: 'bi-calendar-check', type: 'datetime-local', value: o.SELESAI_I }];
+  const ex = cur === 'DH' ? [['pimpinan', 'NAMA_PIMPINAN', 'Nama Pimpinan', 'bi-person-badge'], ['jabatan', 'JABATAN', 'Jabatan', 'bi-briefcase'], ['nip', 'NIP', 'NIP', 'bi-123'], ['ttd', 'LINK TTD', 'Link TTD', 'bi-link-45deg']] : [];
+  ex.forEach(([id, k, l, ic]) => f.push({ id, label: l, icon: ic, value: o[k] }));
+  form({
+    title: 'Edit Setting', fields: f,
+    onSave: async v => {
+      if (!v.nama.trim() || !v.mulai || !v.selesai) { fail(new Error('Nama sheet, waktu mulai, dan waktu selesai wajib diisi.')); throw 0; }
+      const extra = { NAMA_ACARA: v.acara, TEMPAT: v.tempat }; ex.forEach(([id, k]) => extra[k] = v[id]);
+      await run('Menyimpan...', () => api('editSetting', cur, o._row, { nama: v.nama, mulai: v.mulai, selesai: v.selesai, extra }), 'Perubahan tersimpan'); load();
+    }
+  });
+}
+function openForm(o) {
+  const f = [{ id: 'mulai', label: 'Waktu Mulai', icon: 'bi-calendar-plus', type: 'datetime-local', value: nowIso(), min: nowIso() }, ...durFields()];
+  form({
+    title: 'Buka ' + M[cur].t.replace('Setting ', ''), ok: 'Buka', fields: f, onInput: calcEnd, after: () => calcEnd({ mulai: nowIso(), durasi: 1, satuan: 'Jam' }),
+    onSave: async v => {
+      if (!v.mulai || v.mulai < nowIso()) { fail(new Error('Waktu mulai tidak boleh menggunakan waktu yang sudah lewat.')); throw 0; }
+      if (!(+v.durasi > 0)) { fail(new Error('Durasi harus lebih dari 0.')); throw 0; }
+      await run('Membuka...', () => api('setOpen', cur, o._row, v.mulai, v.durasi, v.satuan), 'Jadwal tersimpan'); load();
+    }
+  });
+}
+</script>
+</body>
+</html>
