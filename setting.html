@@ -94,7 +94,7 @@ const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw1-TPzgHjmjwEI8mt6c
 const LOGO_BASE = 'img/logo_institusi/';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const APP_PIN = '1234'; // <-- ganti PIN di sini
+const APP_PIN = 'diklat'; // <-- ganti PIN di sini
 
 /* ---- API ---- */
 function api(fn, ...args) {
@@ -194,8 +194,10 @@ async function load() {
   const st = o => `<label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" class="tg sr-only peer" data-id="${o._row}" ${o.STATUS === 'OPEN' ? 'checked' : ''}><span class="relative w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-500 transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></span><span class="text-xs font-semibold ${o.STATUS === 'OPEN' ? 'text-emerald-600' : 'text-slate-500'}">${o.STATUS}</span></label>`;
   if (m.k === 'm') {
     T.cols = [{ t: 'No', v: o => o.no }, { t: m.lbl, v: o => o.nama }];
-    if (m.logo) T.cols.push({ t: 'Logo', v: o => o.logo, x: 1, h: o => o.logo ? `<img class="h-9 max-w-[90px] object-contain" src="${esc(o.logo)}" onerror="this.replaceWith('-')">` : '-' });
-    T.cols.push({ t: 'Aksi', x: 1, v: () => '', h: acts });
+    if (m.logo) T.cols.push({ t: 'Logo', v: o => o.logo, x: 1, h: o => {
+  const u = o.logo || (window.google ? '' : LOGO_BASE + encodeURIComponent(o.nama) + '.png');
+  return u ? `<img class="h-9 max-w-[90px] object-contain" src="${esc(u)}" onerror="this.replaceWith('-')">` : '-';
+} });
   } else {
     T.cols = [{ t: 'No', v: o => o.NO }];
     if (cur === 'DH') T.cols.push({ t: 'Template', v: o => o.TEMPLATE });
@@ -242,12 +244,13 @@ function masterForm(o) {
       if (!m.logo) return;
       $('pv').onerror = () => { $('pv').hidden = true; $('pvT').textContent = 'Logo belum ada di GitHub'; $('pvT').hidden = false; };
       $('bC').onclick = () => $('fC').click(); $('bG').onclick = () => $('fG').click();
-      [$('fC'), $('fG')].forEach(inp => inp.onchange = () => {
-        const f = inp.files[0]; if (!f) return;
-        if (f.type !== 'image/png') { inp.value = ''; return fail(new Error('Logo harus berformat PNG.')); }
-        if (f.size > 2e6) { inp.value = ''; return fail(new Error('Ukuran logo maksimal 2 MB.')); }
-        file = f; const r = new FileReader(); r.onload = () => { $('pv').src = r.result; $('pv').hidden = false; $('pvT').hidden = true; }; r.readAsDataURL(f);
-      });
+      [$('fC'), $('fG')].forEach(inp => inp.onchange = async () => {
+  const f = inp.files[0]; if (!f) return;
+  const s = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+  if (!(s[0] === 0x89 && s[1] === 0x50 && s[2] === 0x4E && s[3] === 0x47)) { inp.value = ''; return fail(new Error('Logo harus berformat PNG.')); }
+  if (f.size > 2e6) { inp.value = ''; return fail(new Error('Ukuran logo maksimal 2 MB.')); }
+  file = f; const r = new FileReader(); r.onload = () => { $('pv').src = r.result; $('pv').hidden = false; $('pvT').hidden = true; }; r.readAsDataURL(f);
+});
     },
     onSave: async v => {
       if (!v.nama.trim()) { fail(new Error(m.lbl + ' wajib diisi.')); throw 0; }
