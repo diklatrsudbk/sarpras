@@ -94,10 +94,13 @@ const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw1-TPzgHjmjwEI8mt6c
 const LOGO_BASE = 'img/logo_institusi/';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const APP_PIN = 'diklat'; // <-- ganti PIN di sini
+const APP_PIN = '1234'; // <-- ganti PIN di sini
 
-/* ---- API ---- */
+/* ---- API + cache di browser ---- */
+const CACHE = {};  // data terakhir per menu
+let GEN = 0;       // naik setiap ada perubahan data, supaya hasil lama tidak menimpa cache
 function api(fn, ...args) {
+  if (fn.indexOf('list') !== 0) { GEN++; for (const k in CACHE) delete CACHE[k]; } // ada perubahan -> buang cache
   return new Promise((res, rej) => {
     const done = r => r.ok ? res(r.data) : rej(new Error(r.error));
     if (window.google && google.script && google.script.run)
@@ -108,7 +111,7 @@ function api(fn, ...args) {
 }
 
 /* ---- Kunci / PIN ---- */
-const unlock = () => { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); };
+const unlock = () => { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); warm(); };
 function lockApp() { sessionStorage.removeItem('ok'); $('app').classList.add('hidden'); $('lock').classList.remove('hidden'); $('pin').value = ''; $('pin').focus(); }
 $('kunci').onclick = lockApp;
 $('pf').onsubmit = e => {
@@ -117,7 +120,6 @@ $('pf').onsubmit = e => {
   $('lc').classList.remove('shake'); void $('lc').offsetWidth; $('lc').classList.add('shake'); $('pin').value = '';
   Swal.fire({ toast: true, position: 'top', icon: 'error', title: 'PIN salah', timer: 1800, showConfirmButton: false });
 };
-if (sessionStorage.getItem('ok')) unlock();
 
 /* ---- Notifikasi ---- */
 const busy = m => Swal.fire({ title: 'Memproses...', text: m || 'Mohon tunggu', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
@@ -169,9 +171,9 @@ $('grid').innerHTML = Object.entries(M).map(([k, m]) => `<div data-k="${k}" clas
 <h3 class="relative font-semibold text-slate-800 text-sm sm:text-base">${m.t}</h3><p class="relative text-xs text-slate-500 mt-1">${m.d}</p></div>`).join('');
 
 let cur, data = [], T = { cols: [], rows: [], q: '', s: -1, d: 1, p: 1 };
-$('grid').onclick = e => { const c = e.target.closest('.menu'); if (!c) return; cur = c.dataset.k; $('home').classList.add('hidden'); $('view').classList.remove('hidden'); $('vt').textContent = M[cur].t; $('q').value = ''; load(); };
+$('grid').onclick = e => { const c = e.target.closest('.menu'); if (!c) return; cur = c.dataset.k; T.q = ''; T.s = -1; T.p = 1; $('home').classList.add('hidden'); $('view').classList.remove('hidden'); $('vt').textContent = M[cur].t; $('q').value = ''; load(); };
 $('back').onclick = () => { $('view').classList.add('hidden'); $('home').classList.remove('hidden'); };
-$('reload').onclick = () => load();
+$('reload').onclick = () => load(true); // tombol reload: lewati cache browser dan cache server
 $('add').onclick = () => M[cur].k === 'm' ? masterForm() : addForm();
 $('q').oninput = e => { T.q = e.target.value.toLowerCase(); T.p = 1; drawT(); };
 
@@ -187,9 +189,25 @@ function drawT() {
   $('pg').innerHTML = `<div class="flex items-center justify-between text-xs text-slate-500 px-4 py-3 border-t border-slate-100"><span>${r.length} data</span><div class="flex items-center gap-2"><button class="${BTN}" data-p="${T.p - 1}" ${T.p <= 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button><span>Hal ${T.p} / ${pages}</span><button class="${BTN}" data-p="${T.p + 1}" ${T.p >= pages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button></div></div>`;
 }
 const ib = (a, id, ic, cl) => `<button data-a="${a}" data-id="${id}" class="w-8 h-8 rounded-lg ${cl}"><i class="fa-solid ${ic}"></i></button>`;
-async function load() {
+
+/* ---- Muat data: cache dulu, lalu segarkan di latar belakang; force = tombol reload ---- */
+const fnOf = k => M[k].k === 'm' ? 'listMaster' : 'listSetting';
+function warm() { // pemanasan: ambil semua menu di latar belakang setelah dibuka
+  const g = GEN;
+  Object.keys(M).forEach(k => api(fnOf(k), k).then(d => { if (g === GEN && !CACHE[k]) CACHE[k] = d; }).catch(() => { }));
+}
+async function load(force) {
+  const k = cur, g = GEN;
+  const hasCache = !force && CACHE[k];
+  if (hasCache) { data = CACHE[k]; render(); } // tampil instan dari cache
+  try {
+    const fresh = hasCache ? await api(fnOf(k), k) : await run('Mengambil data...', () => api(fnOf(k), k, !!force));
+    if (g === GEN) CACHE[k] = fresh;
+    if (cur === k) { data = fresh; render(); }
+  } catch (e) { /* gagal saat di latar belakang: biarkan data lama */ }
+}
+function render() {
   const m = M[cur];
-  try { data = await run('Mengambil data...', () => m.k === 'm' ? api('listMaster', cur) : api('listSetting', cur)); } catch (e) { return; }
   const acts = o => `<div class="flex gap-1">${ib('ed', o.row, 'fa-pen', 'bg-blue-50 text-blue-600 hover:bg-blue-100')}${ib('dl', o.row, 'fa-trash', 'bg-red-50 text-red-600 hover:bg-red-100')}</div>`;
   const st = o => `<label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" class="tg sr-only peer" data-id="${o._row}" ${o.STATUS === 'OPEN' ? 'checked' : ''}><span class="relative w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-500 transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></span><span class="text-xs font-semibold ${o.STATUS === 'OPEN' ? 'text-emerald-600' : 'text-slate-500'}">${o.STATUS}</span></label>`;
   if (m.k === 'm') {
@@ -205,7 +223,7 @@ async function load() {
     T.cols.push({ t: 'Nama Sheet', v: o => o.NAMA_SHEET }, { t: 'Nama Acara', v: o => o.NAMA_ACARA }, { t: 'Waktu Mulai', nw: 1, v: o => o.MULAI_I, h: o => o.WAKTU_MULAI }, { t: 'Waktu Selesai', nw: 1, v: o => o.SELESAI_I, h: o => o.WAKTU_SELESAI },
       { t: 'Status', v: o => o.STATUS, h: st }, { t: 'Aksi', x: 1, v: () => '', h: o => ib('mn', o._row, 'fa-ellipsis-vertical', 'hover:bg-slate-100 text-slate-500') });
   }
-  T.rows = data; T.p = 1; drawT();
+  T.rows = data; drawT();
 }
 const rowOf = id => data.find(o => (o.row || o._row) == id);
 const act = (a, id) => { const o = rowOf(id); if (a === 'dl') return del(o); M[cur].k === 'm' ? masterForm(o) : editForm(o); };
@@ -246,12 +264,12 @@ function masterForm(o) {
       $('pv').onerror = () => { $('pv').hidden = true; $('pvT').textContent = 'Logo belum ada di GitHub'; $('pvT').hidden = false; };
       $('bC').onclick = () => $('fC').click(); $('bG').onclick = () => $('fG').click();
       [$('fC'), $('fG')].forEach(inp => inp.onchange = async () => {
-  const f = inp.files[0]; if (!f) return;
-  const s = new Uint8Array(await f.slice(0, 4).arrayBuffer());
-  if (!(s[0] === 0x89 && s[1] === 0x50 && s[2] === 0x4E && s[3] === 0x47)) { inp.value = ''; return fail(new Error('Logo harus berformat PNG.')); }
-  if (f.size > 2e6) { inp.value = ''; return fail(new Error('Ukuran logo maksimal 2 MB.')); }
-  file = f; const r = new FileReader(); r.onload = () => { $('pv').src = r.result; $('pv').hidden = false; $('pvT').hidden = true; }; r.readAsDataURL(f);
-});
+        const f = inp.files[0]; if (!f) return;
+        const s = new Uint8Array(await f.slice(0, 4).arrayBuffer()); // cek signature PNG, bukan f.type
+        if (!(s[0] === 0x89 && s[1] === 0x50 && s[2] === 0x4E && s[3] === 0x47)) { inp.value = ''; return fail(new Error('Logo harus berformat PNG.')); }
+        if (f.size > 2e6) { inp.value = ''; return fail(new Error('Ukuran logo maksimal 2 MB.')); }
+        file = f; const r = new FileReader(); r.onload = () => { $('pv').src = r.result; $('pv').hidden = false; $('pvT').hidden = true; }; r.readAsDataURL(f);
+      });
     },
     onSave: async v => {
       if (!v.nama.trim()) { fail(new Error(m.lbl + ' wajib diisi.')); throw 0; }
@@ -305,6 +323,9 @@ function openForm(o) {
     }
   });
 }
+
+/* ---- Mulai: dijalankan paling akhir, setelah semua fungsi dan konstanta siap ---- */
+if (sessionStorage.getItem('ok')) unlock();
 </script>
 </body>
 </html>
