@@ -195,9 +195,10 @@ async function load() {
   if (m.k === 'm') {
     T.cols = [{ t: 'No', v: o => o.no }, { t: m.lbl, v: o => o.nama }];
     if (m.logo) T.cols.push({ t: 'Logo', v: o => o.logo, x: 1, h: o => {
-  const u = o.logo || (window.google ? '' : LOGO_BASE + encodeURIComponent(o.nama) + '.png');
-  return u ? `<img class="h-9 max-w-[90px] object-contain" src="${esc(u)}" onerror="this.replaceWith('-')">` : '-';
-} });
+      const u = o.logo || (window.google ? '' : LOGO_BASE + encodeURIComponent(o.nama) + '.png');
+      return u ? `<img class="h-9 max-w-[90px] object-contain" src="${esc(u)}" onerror="this.replaceWith('-')">` : '-';
+    } });
+    T.cols.push({ t: 'Aksi', x: 1, v: () => '', h: acts });
   } else {
     T.cols = [{ t: 'No', v: o => o.NO }];
     if (cur === 'DH') T.cols.push({ t: 'Template', v: o => o.TEMPLATE });
