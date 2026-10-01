@@ -350,6 +350,7 @@ function editForm(o) {
     title: 'Edit Setting', fields: f,
     onSave: async v => {
       if (!v.nama.trim() || !v.mulai || !v.selesai) { fail(new Error('Nama sheet, waktu mulai, dan waktu selesai wajib diisi.')); throw 0; }
+      if (v.selesai <= v.mulai) { fail(new Error('Waktu selesai harus setelah waktu mulai.')); throw 0; }
       const extra = { NAMA_ACARA: v.acara, TEMPAT: v.tempat }; ex.forEach(([id, k]) => extra[k] = v[id]);
       await run('Menyimpan...', () => api('editSetting', cur, o._row, { nama: v.nama, mulai: v.mulai, selesai: v.selesai, extra }), 'Perubahan tersimpan'); load();
     }
