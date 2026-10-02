@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daftar Hadir - RSUD Bandung Kiwari</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root { --brand: #714B67; --ink: #1e293b; }
+    body { background: linear-gradient(160deg, #eef2ff 0%, #f8fafc 45%, #fdf2f8 100%) fixed; min-height: 100vh; font-family: "Bookman Old Style", Bookman, serif; padding: 16px 0 110px; color: var(--ink); }
+    .ui { font-family: 'Poppins', sans-serif; }
+
+    /* ---------- Toolbar atas ---------- */
+    .toolbar { max-width: 950px; margin: 0 auto 12px; padding: 0 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-family: 'Poppins', sans-serif; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: #ecfdf5; color: #047857; font-weight: 600; font-size: 13px; border: 1px solid #a7f3d0; }
+    .pill .dot { width: 9px; height: 9px; border-radius: 50%; background: #10b981; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); } 70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+    .tb-btn { border-radius: 999px; font-size: 13px; font-weight: 500; padding: 7px 16px; }
+
+    /* ---------- Kertas dokumen ---------- */
+    .document-paper { background: #fff; max-width: 950px; margin: 0 auto; padding: 36px clamp(18px, 5vw, 2.54cm); border-radius: 18px; box-shadow: 0 20px 45px -15px rgba(15, 23, 42, .18); font-size: 11pt; }
+    @media (min-width: 768px) { .document-paper { min-height: 297mm; } }
+
+    .kop-surat { border-bottom: 4px double #000; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center; }
+    .kop-logo-container { width: 140px; flex-shrink: 0; text-align: left; }
+    .kop-logo-container img { width: 120px; height: auto; }
+    .kop-text-container { flex-grow: 1; text-align: center; padding-right: 140px; }
+    .kop-title-1 { font-size: 14pt; margin: 0; line-height: 1.1; }
+    .kop-title-2 { font-size: 14pt; font-weight: bold; margin: 0; line-height: 1.1; }
+    .kop-title-3 { font-size: 14pt; font-weight: bold; margin-bottom: 4px; line-height: 1.1; }
+    .kop-address { font-size: 9pt; margin: 0; line-height: 1.2; }
+    @media (max-width: 576px) {
+      .kop-logo-container { width: 64px; } .kop-logo-container img { width: 56px; }
+      .kop-text-container { padding-right: 64px; }
+      .kop-title-1, .kop-title-2, .kop-title-3 { font-size: 10.5pt; } .kop-address { font-size: 7pt; }
+    }
+    .judul-dokumen { font-size: 14pt; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 22px; }
+
+    .info-acara { font-size: 11pt; margin-bottom: 20px; width: 100%; }
+    .info-acara td { padding: 4px 8px; vertical-align: top; }
+    .info-acara td:first-child { width: 140px; white-space: nowrap; }
+    .info-acara td:nth-child(2) { width: 10px; text-align: center; }
+    @media (max-width: 576px) { .info-acara td:first-child { width: 105px; font-size: 10pt; } .info-acara { font-size: 10pt; } }
+
+    .table-hadir { font-size: 11pt; border-color: #000; }
+    .table-hadir th { background-color: #f1f5f9 !important; border-bottom: 2px solid #000; text-align: center; vertical-align: middle; }
+    .table-hadir td { vertical-align: middle; border-color: #000; }
+    .ttd-thumbnail { height: 50px; max-width: 120px; object-fit: contain; mix-blend-mode: multiply; }
+
+    .admin-box { font-family: 'Poppins', sans-serif; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; }
+
+    .pimpinan-box { float: right; width: 300px; max-width: 100%; text-align: center; font-size: 11pt; display: none; margin-top: 40px; }
+    .area-ttd-pimpinan { height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; cursor: pointer; transition: .3s; border-radius: 8px; }
+    .area-ttd-pimpinan:hover { background-color: #f8f9fa; outline: 1px dotted #ccc; }
+    .area-ttd-pimpinan img { max-height: 100px; max-width: 100%; }
+
+    /* ---------- Tombol isi kehadiran (melayang) ---------- */
+    .fab { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1030; display: none; align-items: center; gap: 10px; padding: 15px 30px; border: 0; border-radius: 999px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; font: 600 15px 'Poppins', sans-serif; box-shadow: 0 14px 30px -8px rgba(37, 99, 235, .6); transition: .2s; }
+    .fab:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 18px 34px -8px rgba(37, 99, 235, .7); color: #fff; }
+    .fab i { font-size: 18px; }
+
+    /* ---------- Kartu: tidak ada acara aktif ---------- */
+    .state-card { display: none; max-width: 480px; margin: 9vh auto 0; background: #fff; border-radius: 26px; padding: 40px 28px 34px; text-align: center; box-shadow: 0 25px 55px -18px rgba(15, 23, 42, .22); font-family: 'Poppins', sans-serif; }
+    .state-card .logo { height: 64px; margin-bottom: 18px; }
+    .state-card .ico { width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 26px; display: grid; place-items: center; font-size: 38px; background: #fef3c7; color: #d97706; }
+    .state-card.err .ico { background: #fee2e2; color: #dc2626; }
+    .state-card h1 { font-size: 21px; font-weight: 700; margin-bottom: 8px; }
+    .state-card p { color: #64748b; font-size: 14px; margin-bottom: 22px; }
+    .state-foot { text-align: center; font: 12px 'Poppins', sans-serif; color: #94a3b8; margin-top: 22px; }
+
+    /* ---------- Modal ---------- */
+    .modal-content { font-family: 'Poppins', sans-serif !important; font-size: 14px; border-radius: 18px; }
+    .modal-title { font-weight: 600; }
+    .modern-group { margin-bottom: 1.4rem; text-align: left; }
+    .modern-label { display: block; font-weight: 500; color: #344054; margin-bottom: 8px; font-size: 14px; }
+    .modern-input-wrap { position: relative; display: flex; align-items: center; }
+    .modern-icon { position: absolute; left: 14px; font-size: 1.2rem; color: #667085; z-index: 10; }
+    .modern-input { width: 100%; border: 1px solid #D0D5DD; border-radius: 10px; padding: 12px 14px 12px 42px; font-size: 14px; outline: none; transition: .2s; box-shadow: 0 1px 2px rgba(16,24,40,.05); font-family: 'Poppins', sans-serif; }
+    .modern-input:focus { border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, .15); }
+    .modern-input:disabled, .modern-input[readonly] { background-color: #F2F4F7; color: #475467; cursor: not-allowed; }
+    .modern-support { font-size: 12px; color: #667085; margin-top: 6px; display: block; }
+    .pin-input { font-size: 2rem !important; letter-spacing: 5px; -webkit-text-security: disc; padding-left: 14px !important; }
+    .canvas-container { border: 1px solid #D0D5DD; border-radius: 12px; background: #fff; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,.05); }
+    canvas { width: 100%; height: 200px; touch-action: none; }
+
+    .spinner-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(3px); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; font-family: 'Poppins', sans-serif; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .document-paper { box-shadow: none; padding: 0; margin: 0; max-width: 100%; border-radius: 0; min-height: 0; }
+      .d-print-none, .toolbar, .fab { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="spinner-overlay" id="loading">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+    <h6 class="mt-3 text-muted fw-semibold" id="loading-text">Memproses...</h6>
+  </div>
+
+  <!-- ===== Kartu: tidak ada acara aktif / gagal memuat ===== -->
+  <div class="state-card" id="state-none">
+    <img class="logo" src="img/rsudbk.png" alt="RSUD Bandung Kiwari" onerror="this.style.display='none'">
+    <div class="ico"><i class="bi" id="state-ico"></i></div>
+    <h1 id="state-title">Tidak Ada Acara Aktif</h1>
+    <p id="state-text">Daftar hadir sedang ditutup.</p>
+    <button class="btn btn-primary rounded-pill px-4" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-1"></i>Muat Ulang</button>
+    <div class="mt-4 pt-3 border-top small text-muted">RSUD Bandung Kiwari</div>
+  </div>
+
+  <!-- ===== Toolbar + dokumen ===== -->
+  <div class="toolbar d-print-none" id="toolbar" style="display:none;">
+    <span class="pill"><span class="dot"></span><span id="pill-text">Daftar hadir dibuka</span></span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-warning shadow-sm tb-btn" id="btn-edit-acara" onclick="mintaPIN('editEvent')"><i class="bi bi-gear me-1"></i>Edit Acara</button>
+      <button class="btn btn-dark shadow-sm tb-btn" onclick="window.print()"><i class="bi bi-printer me-1"></i>Cetak</button>
+    </div>
+  </div>
+
+  <div class="document-paper position-relative" id="doc" style="display:none;">
+    <div class="kop-surat">
+      <div class="kop-logo-container"><img src="img/rsudbk.png" alt="Logo" onerror="this.style.display='none'"></div>
+      <div class="kop-text-container">
+        <div class="kop-title-1">PEMERINTAH KOTA BANDUNG</div>
+        <div class="kop-title-2">RUMAH SAKIT UMUM DAERAH</div>
+        <div class="kop-title-3">BANDUNG KIWARI</div>
+        <div class="kop-address">Jl. Raya Kopo No.311, RT.3/RW.5, Situsaeur, Kec. Bojongloa Kidul,</div>
+        <div class="kop-address">Kota Bandung, Jawa Barat 40234 | Telepon: (022) 86037777</div>
+      </div>
+    </div>
+
+    <div class="judul-dokumen" id="judul-daftar-hadir">DAFTAR HADIR</div>
+
+    <table class="info-acara">
+      <tr><td>Nama Acara</td><td>:</td><td class="fw-bold" id="info-acara">Memuat...</td></tr>
+      <tr><td>Hari / Tanggal</td><td>:</td><td id="info-tanggal">-</td></tr>
+      <tr><td>Waktu</td><td>:</td><td id="info-waktu">-</td></tr>
+      <tr><td>Tempat</td><td>:</td><td id="info-tempat">-</td></tr>
+    </table>
+
+    <div class="d-print-none mb-3 admin-box">
+      <div class="form-check form-switch m-0">
+        <input class="form-check-input" type="checkbox" id="chk-pimpinan">
+        <label class="form-check-label fw-semibold text-secondary ms-2" for="chk-pimpinan"><i class="bi bi-person-badge me-1"></i>Aktifkan Kolom Pimpinan (Admin)</label>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hadir table-bordered mt-2">
+        <thead id="tabel-head"></thead>
+        <tbody id="tabel-body"></tbody>
+      </table>
+    </div>
+
+    <div class="pimpinan-box" id="pimpinan-box">
+      <p class="mb-1">Bandung, <span id="lbl-tanggal-ttd">.....</span></p>
+      <p class="mb-1 fw-bold" id="lbl-jabatan">JABATAN</p>
+      <div class="area-ttd-pimpinan" onclick="bukaModalTTDPimpinan()">
+        <span class="text-muted small d-print-none ui" id="ttd-placeholder"><i class="bi bi-pen"></i> Klik untuk TTD Pimpinan</span>
+        <img id="img-ttd-pimpinan" src="" style="display:none;">
+      </div>
+      <p class="mb-0 fw-bold text-decoration-underline" id="lbl-nama-pimpinan">NAMA PIMPINAN</p>
+      <p class="mb-0">NIP. <span id="lbl-nip"></span></p>
+    </div>
+    <div class="clearfix"></div>
+  </div>
+
+  <div class="state-foot d-print-none" id="foot" style="display:none;">© <span id="yr"></span> RSUD Bandung Kiwari</div>
+
+  <!-- Tombol melayang -->
+  <button class="fab d-print-none" id="btn-input-kehadiran" data-bs-toggle="modal" data-bs-target="#modalKehadiran"><i class="bi bi-pencil-square"></i>Isi Kehadiran</button>
+
+  <!-- ================= MODAL KEHADIRAN ================= -->
+  <div class="modal fade" id="modalKehadiran" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light border-bottom-0 pb-0">
+          <h5 class="modal-title text-dark"><i class="bi bi-pencil-square me-2 text-primary"></i>Form Kehadiran</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <form id="form-kehadiran" onsubmit="return false;">
+            <div id="dynamic-fields"></div>
+            <div id="signature-section" class="modern-group mt-4" style="display:none;">
+              <label class="modern-label">Tanda Tangan Kehadiran</label>
+              <div class="canvas-container"><canvas id="signature-pad"></canvas></div>
+              <div class="text-end mt-2"><button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="padPeserta.clear()"><i class="bi bi-eraser"></i> Bersihkan TTD</button></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer bg-light border-top-0 pt-3 pb-3">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary fw-semibold rounded-pill px-4" id="btn-submit" style="display:none;">Simpan Kehadiran</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL ADMIN PIN ================= -->
+  <div class="modal fade" id="modalPIN" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content shadow border-0">
+        <div class="modal-body text-center p-4">
+          <i class="bi bi-shield-lock-fill text-primary" style="font-size: 3rem;"></i>
+          <h5 class="fw-bold mt-2 mb-3">Akses Admin</h5>
+          <input type="text" id="admin-pin" class="form-control text-center modern-input pin-input" placeholder="••••••" maxlength="6" autocomplete="off" spellcheck="false">
+          <small class="text-danger mt-2 d-block" id="pin-error"></small>
+          <div class="mt-4">
+            <button class="btn btn-outline-secondary w-100 mb-2 rounded-pill" data-bs-dismiss="modal">Batal</button>
+            <button class="btn btn-primary w-100 rounded-pill" id="btn-verify-pin">Verifikasi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL EDIT ACARA ================= -->
+  <div class="modal fade" id="modalEditAcara" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-header bg-dark text-white"><h5 class="modal-title">Edit Info Acara</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="modern-group">
+            <label class="modern-label">Nama Acara</label>
+            <div class="modern-input-wrap"><i class="bi bi-card-heading modern-icon"></i><input type="text" id="ea-nama" class="modern-input"></div>
+          </div>
+          <div class="modern-group">
+            <label class="modern-label">Tempat / Lokasi</label>
+            <div class="modern-input-wrap"><i class="bi bi-geo-alt modern-icon"></i><input type="text" id="ea-tempat" class="modern-input"></div>
+          </div>
+          <div class="row">
+            <div class="col-12 col-md-6 modern-group">
+              <label class="modern-label">Waktu Mulai</label>
+              <div class="modern-input-wrap"><i class="bi bi-calendar2-check modern-icon"></i><input type="datetime-local" id="ea-mulai" class="modern-input" style="padding-left:35px;"></div>
+            </div>
+            <div class="col-12 col-md-6 modern-group">
+              <label class="modern-label">Waktu Selesai</label>
+              <div class="modern-input-wrap"><i class="bi bi-calendar2-x modern-icon"></i><input type="datetime-local" id="ea-selesai" class="modern-input" style="padding-left:35px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary w-100 fw-semibold rounded-pill" onclick="simpanEditAcara()">Update Data Acara</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PIMPINAN ================= -->
+  <div class="modal fade" id="modalPimpinan" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-header bg-dark text-white"><h5 class="modal-title">Data Pimpinan</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="modern-group"><label class="modern-label">Nama Pimpinan</label><div class="modern-input-wrap"><i class="bi bi-person-vcard modern-icon"></i><input type="text" id="p-nama" class="modern-input"></div></div>
+          <div class="modern-group"><label class="modern-label">Jabatan</label><div class="modern-input-wrap"><i class="bi bi-briefcase modern-icon"></i><input type="text" id="p-jabatan" class="modern-input"></div></div>
+          <div class="modern-group"><label class="modern-label">NIP</label><div class="modern-input-wrap"><i class="bi bi-upc-scan modern-icon"></i><input type="text" id="p-nip" class="modern-input"></div></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary w-100 fw-semibold rounded-pill" onclick="simpanDataPimpinan()">Simpan Pengaturan</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal TTD Pimpinan -->
+  <div class="modal fade" id="modalTTDPimpinan" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-header"><h5 class="modal-title">Tanda Tangan Pimpinan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="canvas-container"><canvas id="signature-pad-pimpinan"></canvas></div>
+          <div class="text-end mt-2"><button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="padPimpinan.clear()">Hapus</button></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-success w-100 fw-semibold rounded-pill" onclick="simpanTTDPimpinan()">Terapkan Tanda Tangan</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+
+  <script>
+    // ==========================================
+    // KONFIGURASI SISTEM
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbzgHS8tq8E09pDblIH_SIxjTEj4hZXavlHouWWYQq21uXG48ZonNdKCRfgjpk-leqhK/exec";
+    const PIN_ADMIN = "diklat"; // PIN Default Keamanan
+
+    let activeEvent = null;
+    let padPeserta, padPimpinan;
+    let currentTableData = [];
+    let pinActionTarget = "";
+    let closeTimer = null;
+
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const show = (id, v, d = 'block') => { $(id).style.display = v ? d : 'none'; };
+
+    // ---------- Waktu (selalu WIB) ----------
+    const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu'];
+    const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const jkt = v => { const d = new Date(v); return isNaN(d) ? '' : d.toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16).replace(' ', 'T'); }; // "YYYY-MM-DDTHH:mm"
+    const tglIndo = iso => { if (!iso) return '-'; const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return HARI[new Date(y, m - 1, d).getDay()] + ', ' + d + ' ' + BULAN[m - 1] + ' ' + y; };
+    const jamIndo = iso => iso ? iso.slice(11, 16) : '-';
+
+    // Acara dianggap aktif hanya bila berstatus OPEN dan waktu selesai belum lewat (tidak bergantung waktu mulai)
+    function isOpen(e) {
+      if (!e) return false;
+      if (e.status && String(e.status).toUpperCase() !== 'OPEN') return false;
+      const end = new Date(e.waktu_selesai);
+      if (!isNaN(end) && end <= new Date()) return false;
+      return true;
+    }
+
+    function showLoading(on, text = "Memproses...") {
+      $('loading').style.display = on ? 'flex' : 'none';
+      $('loading-text').innerText = text;
+    }
+
+    // Tampilan "tidak ada acara aktif" (mode 'none') atau "gagal memuat" (mode 'err')
+    function showNone(mode = 'none') {
+      clearTimeout(closeTimer);
+      ['toolbar', 'doc', 'foot'].forEach(i => show(i, false));
+      $('btn-input-kehadiran').style.display = 'none';
+      document.querySelectorAll('.modal.show').forEach(m => bootstrap.Modal.getInstance(m)?.hide());
+      const err = mode === 'err';
+      $('state-none').classList.toggle('err', err);
+      $('state-ico').className = 'bi ' + (err ? 'bi-wifi-off' : 'bi-calendar-x');
+      $('state-title').innerText = err ? 'Gagal Memuat Data' : 'Tidak Ada Acara Aktif';
+      $('state-text').innerText = err ? 'Periksa koneksi internet Anda, lalu muat ulang halaman.' : 'Daftar hadir sedang ditutup. Silakan scan kembali QR code saat acara dibuka.';
+      $('state-none').style.display = 'block';
+      showLoading(false);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      $('yr').innerText = new Date().getFullYear();
+      showLoading(true, "Menghubungkan ke Sistem...");
+
+      const c1 = $('signature-pad'), c2 = $('signature-pad-pimpinan');
+      padPeserta = new SignaturePad(c1, { backgroundColor: 'rgb(255, 255, 255)' });
+      padPimpinan = new SignaturePad(c2, { backgroundColor: 'rgb(255, 255, 255)' });
+
+      $('modalKehadiran').addEventListener('shown.bs.modal', () => resizeCanvas(c1));
+      $('modalKehadiran').addEventListener('hidden.bs.modal', resetFormPeserta);
+      $('modalTTDPimpinan').addEventListener('shown.bs.modal', () => { resizeCanvas(c2); padPimpinan.clear(); });
+      // jika kolom pimpinan batal diisi, kembalikan saklar ke posisi mati
+      $('modalPimpinan').addEventListener('hidden.bs.modal', () => { if ($('pimpinan-box').style.display !== 'block') $('chk-pimpinan').checked = false; });
+      $('admin-pin').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-verify-pin').click(); });
+
+      window.addEventListener("resize", () => { if ($('modalKehadiran').classList.contains('show')) resizeCanvas(c1); });
+
+      fetch(`${API_URL}?action=getActiveEvent`).then(res => res.json()).then(response => {
+        if (response.status === 'success') initPage(response.data);
+        else showNone('err');
+      }).catch(() => showNone('err'));
+    });
+
+    function resizeCanvas(canvas) {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+    }
+
+    function initPage(eventData) {
+      if (!isOpen(eventData)) return showNone('none'); // tidak ada acara berstatus OPEN
+      activeEvent = eventData;
+      activeEvent.pimpinan = activeEvent.pimpinan || activeEvent.nama_pimpinan || ''; // samakan nama field dari server
+      let title = "", thead = "";
+
+      if (eventData.template === 'TEMPLATE_DHPD') {
+        title = "DAFTAR HADIR PESERTA DIDIK";
+        thead = "<tr><th width='5%'>No</th><th width='30%'>Nama</th><th width='25%'>Institusi</th><th width='25%'>Jurusan</th><th width='15%'>Tanda Tangan</th></tr>";
+        buildFormDHPD();
+      } else if (eventData.template === 'TEMPLATE_DH') {
+        title = "DAFTAR HADIR";
+        thead = "<tr><th width='5%'>No</th><th width='30%'>Nama</th><th width='25%'>Bagian</th><th width='25%'>Jabatan</th><th width='15%'>Tanda Tangan</th></tr>";
+        buildFormDH();
+      } else if (eventData.template === 'TEMPLATE_DHPL') {
+        title = "DAFTAR HADIR PESERTA PELATIHAN";
+        thead = "<tr><th width='5%'>No</th><th width='30%'>Nama</th><th width='25%'>Profesi</th><th width='25%'>No HP</th><th width='15%'>Tanda Tangan</th></tr>";
+        buildFormDHPL();
+      } else return showNone('none');
+
+      const a = jkt(eventData.waktu_mulai), b = jkt(eventData.waktu_selesai);
+      $('judul-daftar-hadir').innerText = title;
+      $('info-acara').innerText = eventData.nama_acara || '-';
+      $('info-tempat').innerText = eventData.tempat || '-';
+      if (a && b && a.slice(0, 10) !== b.slice(0, 10)) {
+        $('info-tanggal').innerText = tglIndo(a) + ' s/d ' + tglIndo(b);
+        $('info-waktu').innerText = jamIndo(a) + ' - ' + jamIndo(b) + ' WIB';
+      } else {
+        $('info-tanggal').innerText = tglIndo(a);
+        $('info-waktu').innerText = a && b ? jamIndo(a) + ' - ' + jamIndo(b) + ' WIB' : '-';
+      }
+      $('pill-text').innerText = b ? 'Dibuka sampai ' + jamIndo(b) + ' WIB' : 'Daftar hadir dibuka';
+      $('tabel-head').innerHTML = thead;
+
+      $('state-none').style.display = 'none';
+      show('toolbar', true, 'flex'); show('doc', true); show('foot', true);
+      $('btn-input-kehadiran').style.display = 'inline-flex';
+
+      // tutup tampilan otomatis begitu waktu selesai terlewati saat halaman masih terbuka
+      const ms = new Date(eventData.waktu_selesai) - new Date();
+      if (ms > 0 && ms < 2147483647) closeTimer = setTimeout(() => showNone('none'), ms);
+
+      if (activeEvent.pimpinan) { $('chk-pimpinan').checked = true; renderBoxPimpinan(); }
+      loadTableData();
+    }
+
+    function loadTableData() {
+      fetch(`${API_URL}?action=getAttendanceData&sheetName=${encodeURIComponent(activeEvent.nama_sheet)}&template=${encodeURIComponent(activeEvent.template)}`)
+        .then(res => res.json()).then(response => { if (response.status === 'success') { currentTableData = response.data; renderTable(currentTableData); } else showLoading(false); })
+        .catch(() => showLoading(false));
+    }
+
+    function renderTable(data) {
+      let tbody = "";
+      data.forEach((row, index) => {
+        let ttdHtml = '-';
+        if (row[6]) {
+          const link = String(row[6]);
+          const idMatch = link.match(/id=([a-zA-Z0-9_-]+)/) || link.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (idMatch && idMatch[1]) {
+            const thumbUrl = `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w200`;
+            ttdHtml = `<a href="${esc(link)}" target="_blank" rel="noopener"><img src="${thumbUrl}" class="ttd-thumbnail" alt="TTD"></a>`;
+          } else ttdHtml = `<a href="${esc(link)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Lihat</a>`;
+        }
+        tbody += `<tr><td class="text-center">${index + 1}</td><td class="fw-bold">${esc(row[2])}</td><td>${esc(row[3])}</td><td>${esc(row[4])}</td><td class="text-center p-1">${ttdHtml}</td></tr>`;
+      });
+      $('tabel-body').innerHTML = tbody || `<tr><td colspan="5" class="text-center text-muted py-4 ui">Belum ada yang mengisi daftar hadir.</td></tr>`;
+      showLoading(false);
+    }
+
+    // --- FORM PESERTA ---
+    function buildFormDHPD() {
+      $('dynamic-fields').innerHTML = `
+        <div class="modern-group mb-4">
+          <label class="modern-label">Nomor Induk Mahasiswa / Siswa</label>
+          <div class="modern-input-wrap">
+            <i class="bi bi-upc-scan modern-icon"></i>
+            <input type="text" id="nim" class="modern-input border-primary" placeholder="Masukkan NIM lalu klik diluar area..." onblur="cariNIM()">
+          </div>
+          <span class="modern-support" id="nim-msg">Sistem akan otomatis memverifikasi NIM Anda.</span>
+        </div>
+        <div id="dhpd-fields" style="display:none; margin-top:20px;">
+          <div class="modern-group">
+            <label class="modern-label">Nama Lengkap</label>
+            <div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" readonly></div>
+          </div>
+          <div class="modern-group">
+            <label class="modern-label">Institusi Pendidikan</label>
+            <div class="modern-input-wrap"><i class="bi bi-building modern-icon"></i><input type="text" id="f-institusi" class="modern-input" readonly></div>
+          </div>
+          <div class="modern-group">
+            <label class="modern-label">Program Studi</label>
+            <div class="modern-input-wrap"><i class="bi bi-mortarboard modern-icon"></i><input type="text" id="f-jurusan" class="modern-input" readonly></div>
+          </div>
+        </div>`;
+    }
+
+    function buildFormDH() {
+      $('dynamic-fields').innerHTML = `
+        <div class="modern-group"><label class="modern-label">Nama Lengkap</label><div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" placeholder="Masukkan nama..." required onblur="checkEditDH()"></div></div>
+        <div class="modern-group"><label class="modern-label">Unit/Bagian</label><div class="modern-input-wrap"><i class="bi bi-diagram-3 modern-icon"></i><input type="text" id="f-bagian" class="modern-input" placeholder="Unit kerja..." required onblur="checkEditDH()"></div></div>
+        <div class="modern-group"><label class="modern-label">Jabatan</label><div class="modern-input-wrap"><i class="bi bi-briefcase modern-icon"></i><input type="text" id="f-jabatan" class="modern-input" placeholder="Posisi/Jabatan..." required></div></div>`;
+      $('signature-section').style.display = 'block';
+      $('btn-submit').style.display = 'block';
+    }
+
+    function buildFormDHPL() {
+      $('dynamic-fields').innerHTML = `
+        <div class="modern-group"><label class="modern-label">Nama Lengkap</label><div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" placeholder="Masukkan nama..." required onblur="checkEditDH()"></div></div>
+        <div class="modern-group"><label class="modern-label">Profesi / Keahlian</label><div class="modern-input-wrap"><i class="bi bi-award modern-icon"></i><input type="text" id="f-profesi" class="modern-input" placeholder="Profesi saat ini..." required onblur="checkEditDH()"></div></div>
+        <div class="modern-group"><label class="modern-label">Nomor Handphone</label><div class="modern-input-wrap"><i class="bi bi-telephone modern-icon"></i><input type="text" id="f-nohp" class="modern-input" placeholder="Contoh: 0812..." required></div></div>`;
+      $('signature-section').style.display = 'block';
+      $('btn-submit').style.display = 'block';
+    }
+
+    function cariNIM() {
+      const nimInput = $('nim'), nimValue = nimInput.value.trim();
+      $('nim-msg').innerHTML = "";
+      if (nimValue.length < 2) return;
+      nimInput.disabled = true;
+      $('nim-msg').innerHTML = '<span class="text-warning"><i class="bi bi-hourglass-split"></i> Memverifikasi data...</span>';
+
+      fetch(`${API_URL}?action=checkNIM&nim=${encodeURIComponent(nimValue)}`).then(res => res.json()).then(response => {
+        nimInput.disabled = false;
+        if (response.data.found) {
+          $('dhpd-fields').style.display = 'block';
+          $('signature-section').style.display = 'block';
+          $('btn-submit').style.display = 'block';
+          $('nim-msg').innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> NIM Terverifikasi!</span>';
+          $('f-nama').value = response.data.nama;
+          $('f-institusi').value = response.data.institusi;
+          $('f-jurusan').value = response.data.jurusan;
+          cekModeEdit(response.data.nama, '', '');
+          resizeCanvas($('signature-pad')); // ukuran canvas dihitung ulang setelah tampil
+          padPeserta.clear();
+        } else {
+          $('nim-msg').innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NIM tidak ditemukan.</span>';
+          $('dhpd-fields').style.display = 'none';
+          $('signature-section').style.display = 'none';
+          $('btn-submit').style.display = 'none';
+        }
+      }).catch(() => { nimInput.disabled = false; $('nim-msg').innerHTML = '<span class="text-danger">Gagal terhubung. Coba lagi.</span>'; });
+    }
+
+    function checkEditDH() {
+      const nama = $('f-nama').value;
+      if (!nama) return;
+      if (activeEvent.template === 'TEMPLATE_DH') cekModeEdit(nama, $('f-bagian').value, '');
+      else if (activeEvent.template === 'TEMPLATE_DHPL') cekModeEdit(nama, $('f-profesi').value, '');
+    }
+
+    function cekModeEdit(valNama, valCol3) {
+      const same = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+      let isEdit = false;
+      currentTableData.forEach(row => {
+        if (activeEvent.template === 'TEMPLATE_DHPD') { if (same(row[2], valNama)) isEdit = true; }
+        else if (same(row[2], valNama) && same(row[3], valCol3)) isEdit = true;
+      });
+      const btn = $('btn-submit');
+      if (isEdit) { btn.innerHTML = "<i class='bi bi-pencil-square'></i> Perbarui Data (Mode Edit)"; btn.classList.replace('btn-primary', 'btn-warning'); }
+      else { btn.innerHTML = "Simpan Kehadiran"; btn.classList.replace('btn-warning', 'btn-primary'); }
+    }
+
+    // RESET FORM KE AWAL KETIKA DI-CANCEL ATAU X
+    function resetFormPeserta() {
+      $('form-kehadiran').reset();
+      padPeserta.clear();
+      const btn = $('btn-submit');
+      if (btn) { btn.innerHTML = "Simpan Kehadiran"; btn.classList.replace('btn-warning', 'btn-primary'); }
+      if (activeEvent && activeEvent.template === 'TEMPLATE_DHPD') {
+        if ($('nim')) $('nim').disabled = false;
+        if ($('nim-msg')) $('nim-msg').innerHTML = "Sistem akan otomatis memverifikasi NIM Anda.";
+        if ($('dhpd-fields')) $('dhpd-fields').style.display = 'none';
+        $('signature-section').style.display = 'none';
+        btn.style.display = 'none';
+      }
+    }
+
+    $('btn-submit').addEventListener('click', function () {
+      if (!isOpen(activeEvent)) { alert("Daftar hadir sudah ditutup."); return showNone('none'); }
+      if (padPeserta.isEmpty()) { alert("⚠️ Mohon isi tanda tangan terlebih dahulu."); return; }
+      const payload = { template: activeEvent.template, nama_sheet: activeEvent.nama_sheet, ttd: padPeserta.toDataURL() };
+      try {
+        if (activeEvent.template === 'TEMPLATE_DHPD') { payload.nama = $('f-nama').value; payload.institusi = $('f-institusi').value; payload.jurusan = $('f-jurusan').value; }
+        else if (activeEvent.template === 'TEMPLATE_DH') { payload.nama = $('f-nama').value; payload.bagian = $('f-bagian').value; payload.jabatan = $('f-jabatan').value; }
+        else if (activeEvent.template === 'TEMPLATE_DHPL') { payload.nama = $('f-nama').value; payload.profesi = $('f-profesi').value; payload.nohp = $('f-nohp').value; }
+      } catch (err) { return; }
+
+      if (!payload.nama) { alert("Nama wajib terisi."); return; }
+      showLoading(true, "Menyimpan Kehadiran...");
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'submitAttendance', data: payload }) })
+        .then(res => res.json()).then(res => {
+          if (res.status === 'success') {
+            bootstrap.Modal.getInstance($('modalKehadiran')).hide(); // memicu event "hidden" untuk reset
+            loadTableData();
+          } else { alert("Gagal: " + res.message); showLoading(false); }
+        }).catch(() => { alert("Error Jaringan"); showLoading(false); });
+    });
+
+    // --- LOGIKA ADMIN PIN ---
+    $('chk-pimpinan').addEventListener('click', function (e) {
+      if (e.target.checked) { e.preventDefault(); mintaPIN('pimpinanOn'); }
+      else { $('pimpinan-box').style.display = 'none'; }
+    });
+
+    function mintaPIN(action) {
+      pinActionTarget = action;
+      $('admin-pin').value = '';
+      $('pin-error').innerText = '';
+      const m = bootstrap.Modal.getOrCreateInstance($('modalPIN'));
+      m.show();
+      setTimeout(() => $('admin-pin').focus(), 400);
+    }
+
+    $('btn-verify-pin').addEventListener('click', function () {
+      if ($('admin-pin').value !== PIN_ADMIN) { $('pin-error').innerText = "PIN Salah! Akses Ditolak."; return; }
+      bootstrap.Modal.getInstance($('modalPIN')).hide();
+      if (pinActionTarget === 'pimpinanOn') {
+        $('chk-pimpinan').checked = true;
+        $('p-nama').value = activeEvent.pimpinan || '';
+        $('p-jabatan').value = activeEvent.jabatan || '';
+        $('p-nip').value = activeEvent.nip || '';
+        bootstrap.Modal.getOrCreateInstance($('modalPimpinan')).show();
+      } else if (pinActionTarget === 'editEvent') {
+        $('ea-nama').value = activeEvent.nama_acara || '';
+        $('ea-tempat').value = activeEvent.tempat || '';
+        $('ea-mulai').value = jkt(activeEvent.waktu_mulai);     // WIB, bukan UTC
+        $('ea-selesai').value = jkt(activeEvent.waktu_selesai);
+        bootstrap.Modal.getOrCreateInstance($('modalEditAcara')).show();
+      }
+    });
+
+    // --- EDIT ACARA ADMIN ---
+    function simpanEditAcara() {
+      const payload = {
+        no: activeEvent.no, nama_acara: $('ea-nama').value, tempat: $('ea-tempat').value,
+        waktu_mulai: $('ea-mulai').value, waktu_selesai: $('ea-selesai').value
+      };
+      if (!payload.nama_acara.trim() || !payload.waktu_mulai || !payload.waktu_selesai) { alert("Nama acara, waktu mulai, dan waktu selesai wajib diisi."); return; }
+      if (payload.waktu_selesai <= payload.waktu_mulai) { alert("Waktu selesai harus setelah waktu mulai."); return; }
+      showLoading(true, "Memperbarui Data Acara...");
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'updateEvent', data: payload }) })
+        .then(res => res.json()).then(res => {
+          showLoading(false);
+          if (res.status === 'success') {
+            bootstrap.Modal.getInstance($('modalEditAcara')).hide();
+            window.location.reload();
+          } else alert("Gagal menyimpan.");
+        }).catch(() => { showLoading(false); alert("Error Jaringan"); });
+    }
+
+    // --- PIMPINAN ADMIN ---
+    function simpanDataPimpinan() {
+      const payload = { no: activeEvent.no, nama_pimpinan: $('p-nama').value, jabatan: $('p-jabatan').value, nip: $('p-nip').value };
+      showLoading(true, "Menyimpan Data...");
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'updatePimpinan', data: payload }) })
+        .then(res => res.json()).then(res => {
+          showLoading(false);
+          if (res.status === 'success') {
+            activeEvent.pimpinan = payload.nama_pimpinan; activeEvent.jabatan = payload.jabatan; activeEvent.nip = payload.nip;
+            renderBoxPimpinan(); // tampilkan dulu agar event "hidden" modal tidak mematikan saklar
+            bootstrap.Modal.getInstance($('modalPimpinan')).hide();
+          } else alert("Gagal menyimpan data.");
+        }).catch(() => { showLoading(false); alert("Error Jaringan"); });
+    }
+
+    function renderBoxPimpinan() {
+      $('pimpinan-box').style.display = 'block';
+      const iso = jkt(activeEvent.waktu_mulai), [y, m, d] = (iso || jkt(new Date())).slice(0, 10).split('-').map(Number);
+      $('lbl-tanggal-ttd').innerText = d + " " + BULAN[m - 1] + " " + y;
+      $('lbl-jabatan').innerText = String(activeEvent.jabatan || '').toUpperCase();
+      $('lbl-nama-pimpinan').innerText = activeEvent.pimpinan || '';
+      $('lbl-nip').innerText = activeEvent.nip || '';
+      if (activeEvent.ttd_pimpinan) {
+        $('ttd-placeholder').style.display = 'none';
+        const t = String(activeEvent.ttd_pimpinan), idMatch = t.match(/id=([a-zA-Z0-9_-]+)/) || t.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        $('img-ttd-pimpinan').src = idMatch && idMatch[1] ? `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w300` : t;
+        $('img-ttd-pimpinan').style.display = 'block';
+      }
+    }
+
+    function bukaModalTTDPimpinan() { bootstrap.Modal.getOrCreateInstance($('modalTTDPimpinan')).show(); }
+
+    function simpanTTDPimpinan() {
+      if (padPimpinan.isEmpty()) { alert("Isi tanda tangan!"); return; }
+      showLoading(true, "Menyimpan Tanda Tangan...");
+      const payload = { no: activeEvent.no, ttd: padPimpinan.toDataURL() };
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'saveTTDPimpinan', data: payload }) })
+        .then(res => res.json()).then(res => {
+          showLoading(false);
+          if (res.status === 'success') {
+            activeEvent.ttd_pimpinan = res.data.url;
+            bootstrap.Modal.getInstance($('modalTTDPimpinan')).hide();
+            renderBoxPimpinan();
+          }
+        }).catch(() => { showLoading(false); alert("Error Jaringan"); });
+    }
+  </script>
+</body>
+</html>
