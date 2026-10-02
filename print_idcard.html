@@ -1,755 +1,464 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak ID Card Peserta Didik</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QRCode.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Poppins', sans-serif; background-color: #f1f5f9; }
-        
-        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cetak ID Card Peserta Didik</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+body{font-family:'Poppins',sans-serif;background:#f1f5f9}
+.loader{border:4px solid #e2e8f0;border-top:4px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        /* ==========================================
-           STYLING ELEMEN DALAM ID CARD (KALIBRASI)
-           ========================================== */
-        .id-card { 
-            width: 55mm; height: 85mm; 
-            position: relative; overflow: hidden; 
-            background: white; 
-            box-sizing: border-box;
-        }
-        
-        .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .card-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
-        
-        .c-photo { 
-            position: absolute; top: 15mm; left: 2.929mm; 
-            width: 25.929mm; height: 25.929mm; 
-            border-radius: 50%; object-fit: cover; 
-            background: #fff;
-        }
-        
-        .c-text-area { 
-            position: absolute; top: 21mm; left: 32mm; right: 2mm; 
-            text-align: left; 
-        }
-        .c-name { font-size: 7.7pt; font-weight: 800; color: #111; margin-bottom: 1.5mm; line-height: 1.15;}
-        .c-major { font-size: 6pt; font-weight: 800; margin-bottom: 2mm; line-height: 1.15;}
-        
-        .c-label { font-size: 6pt; font-weight: 800; color: #111; margin-top: 1mm; line-height: 1.1;}
-        .c-value { font-size: 6pt; font-weight: 500; color: #111; line-height: 1.1;}
-        
-        .c-inst-logo { 
-            position: absolute; bottom: 12mm; left: 9.5mm; 
-            width: 10mm; height: 10mm; object-fit: contain; 
-        }
-        .c-inst-name { 
-            position: absolute; bottom: 4.5mm; left: 6.3mm; width: 16mm; 
-            text-align: center; font-size: 4pt; font-weight: 700; line-height: 1.1; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        
-        .c-qr-container { 
-            position: absolute; bottom: 9mm; right: 4mm; 
-            width: 22mm; height: 22mm; 
-            background: white; 
-            display: flex; justify-content: center; align-items: center;
-        }
-        .c-qr-container img, .c-qr-container canvas {
-            width: 100% !important; height: 100% !important;
-        }
+/* ===== ID CARD (kalibrasi tidak diubah) ===== */
+.id-card{width:55mm;height:85mm;position:relative;overflow:hidden;background:#fff;box-sizing:border-box}
+.card-bg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.card-content{position:absolute;inset:0;z-index:2}
+.c-rs-logo{position:absolute;top:3mm;left:3mm;height:9mm;width:auto;object-fit:contain} /* atur posisi logo RSUD di sini */
+.c-photo{position:absolute;top:15mm;left:2.929mm;width:25.929mm;height:25.929mm;border-radius:50%;object-fit:cover;background:#fff}
+.c-text-area{position:absolute;top:21mm;left:32mm;right:2mm;text-align:left}
+.c-name{font-size:7.7pt;font-weight:800;color:#111;margin-bottom:1.5mm;line-height:1.15}
+.c-major{font-size:6pt;font-weight:800;margin-bottom:2mm;line-height:1.15}
+.c-label{font-size:6pt;font-weight:800;color:#111;margin-top:1mm;line-height:1.1}
+.c-value{font-size:6pt;font-weight:500;color:#111;line-height:1.1}
+.c-inst-logo{position:absolute;bottom:12mm;left:9.5mm;width:10mm;height:10mm;object-fit:contain}
+.c-inst-name{position:absolute;bottom:4.5mm;left:6.3mm;width:16mm;text-align:center;font-size:4pt;font-weight:700;line-height:1.1;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.c-qr-container{position:absolute;bottom:9mm;right:4mm;width:22mm;height:22mm;background:#fff;display:flex;justify-content:center;align-items:center}
+.c-qr-container img,.c-qr-container canvas{width:100%!important;height:100%!important}
 
-        /* ==========================================
-           PENGATURAN KERTAS A4 (VISUAL DI LAYAR)
-           ========================================== */
-        .a4-page { 
-            position: relative; 
-            width: 210mm; height: 297mm; 
-            padding-top: 21mm; padding-left: 22.5mm; 
-            display: grid; 
-            grid-template-columns: repeat(3, 55mm);
-            grid-auto-rows: 85mm;
-            gap: 0; 
-            box-sizing: border-box;
-            background-color: white;
-            overflow: hidden; 
-            margin: 0 auto 2rem auto; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            flex-shrink: 0; 
-        }
+/* ===== A4 ===== */
+.a4-page{position:relative;width:210mm;height:297mm;padding-top:21mm;padding-left:22.5mm;display:grid;grid-template-columns:repeat(3,55mm);grid-auto-rows:85mm;gap:0;box-sizing:border-box;background:#fff;overflow:hidden;margin:0 auto 2rem;box-shadow:0 10px 25px rgba(0,0,0,.2);flex-shrink:0}
+.cut-line-v{position:absolute;top:0;bottom:0;width:0;border-left:.5pt dashed #000;z-index:999}
+.cut-line-h{position:absolute;left:0;right:0;height:0;border-top:.5pt dashed #000;z-index:999}
 
-        .cut-line-v { position: absolute; top: 0; bottom: 0; width: 0; border-left: 0.5pt dashed #000; z-index: 999; }
-        .cut-line-h { position: absolute; left: 0; right: 0; height: 0; border-top: 0.5pt dashed #000; z-index: 999; }
-
-        /* ==========================================
-           PENGATURAN SAAT PRINT
-           ========================================== */
-        @media print {
-            @page { size: A4 portrait; margin: 0; } 
-            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0;}
-            
-            body > div:not(#previewUI) { display: none !important; }
-            #previewUI { display: block !important; padding: 0 !important; background: transparent !important; }
-            #previewControls { display: none !important; } 
-            #previewScrollArea { overflow: visible !important; }
-            
-            .a4-page {
-                margin: 0 !important;
-                box-shadow: none !important;
-                page-break-after: always;
-            }
-        }
-    </style>
+/* ===== Multi-select ===== */
+.ms-panel{max-height:15rem;overflow-y:auto}
+@media print{
+ @page{size:A4 portrait;margin:0}
+ body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0;padding:0}
+ body>div:not(#previewUI){display:none!important}
+ #previewUI{display:block!important;padding:0!important;background:transparent!important}
+ #previewControls{display:none!important}
+ #previewScrollArea{overflow:visible!important}
+ .a4-page{margin:0!important;box-shadow:none!important;page-break-after:always}
+}
+</style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen">
 
-<!-- MAIN UI (Tabel & Filter) -->
-<div id="mainUI" class="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div class="text-center md:text-left">
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight"><i class="fas fa-id-badge text-blue-600 mr-2"></i>Cetak ID Card</h1>
-            <p class="text-sm text-slate-500 mt-1">Pilih peserta dari berbagai gelombang untuk dicetak (Format A4 Borderless)</p>
+<div id="mainUI">
+  <!-- HEADER STICKY: tombol & jumlah terpilih selalu terlihat -->
+  <div class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <img src="img/rsudbk.png" alt="RSUD" class="h-11 w-auto object-contain" onerror="this.style.display='none'">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 leading-tight">Cetak ID Card Peserta Didik</h1>
+          <p class="text-xs text-slate-500">Format A4, 9 kartu per halaman</p>
         </div>
-        <button onclick="prepareAndPrint()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-            <i class="fas fa-eye"></i> Preview Cetak
+      </div>
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <span id="textSelected" class="text-blue-700 font-bold bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 whitespace-nowrap">Terpilih: 0</span>
+        <button onclick="prepareAndPrint()" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl shadow transition flex items-center justify-center gap-2">
+          <i class="fas fa-eye"></i> Preview Cetak
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-[90rem] mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <!-- FILTER -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Gelombang</label>
+        <select id="filterSheet" onchange="changeSheet(this.value)" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium bg-slate-50"></select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Institusi</label>
+        <div id="msInst" class="relative"></div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Jenjang - Jurusan</label>
+        <div id="msJur" class="relative"></div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cari Nama / NIM</label>
+        <div class="relative">
+          <i class="fas fa-search absolute left-3 top-3.5 text-slate-400"></i>
+          <input type="text" id="searchName" oninput="renderTable()" placeholder="Ketik nama / NIM..." class="w-full pl-9 rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 bg-slate-50">
+        </div>
+      </div>
+      <label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-300 bg-slate-50 cursor-pointer font-medium text-slate-700 text-sm">
+        <input type="checkbox" id="filterBelumPrint" onchange="renderTable()" class="w-4 h-4 text-blue-600 rounded">
+        Hanya yang belum diprint
+      </label>
     </div>
 
-    <!-- FILTER & SEARCH (Grid diubah menjadi 5 kolom untuk mengakomodasi filter baru) -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Gelombang</label>
-            <select id="filterSheet" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-                <option value="ALL">Semua Gelombang</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Institusi</label>
-            <select id="filterInstitusi" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-                <option value="ALL">Semua Institusi</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Print</label>
-            <select id="filterPrint" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-                <option value="ALL">-- Status Print --</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter SIMRS</label>
-            <select id="filterSimrs" onchange="handleFilterChange()" class="w-full rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-                <option value="ALL">-- Status SIMRS --</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cari Nama / NIM</label>
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-3.5 text-slate-400"></i>
-                <input type="text" id="searchName" onkeyup="renderTable()" placeholder="Ketik nama / NIM..." class="w-full pl-9 rounded-lg border border-slate-300 p-2.5 outline-none focus:border-blue-500 font-medium text-slate-700 bg-slate-50">
-            </div>
-        </div>
-    </div>
-
-    <!-- LOADING STATE -->
     <div id="loadingState" class="flex flex-col items-center justify-center py-20">
-        <div class="loader mb-4"></div>
-        <p class="text-slate-500 font-medium">Mengambil data peserta...</p>
+      <div class="loader mb-4"></div>
+      <p class="text-slate-500 font-medium" id="loadingText">Mengambil data peserta...</p>
     </div>
 
-    <!-- TABEL DATA -->
     <div id="tableContainer" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="p-4 w-12 text-center">
-                            <input type="checkbox" id="checkAll" onchange="toggleAllCheckboxes()" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-                        </th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Nama & NIM</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Institusi & Jurusan</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Gelombang</th>
-                        <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Status Print & SIMRS</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="divide-y divide-slate-100">
-                    <!-- Baris Tabel Dirender via JS -->
-                </tbody>
-            </table>
-        </div>
-        <div class="p-4 bg-slate-50 border-t border-slate-200 text-sm flex flex-col sm:flex-row justify-between items-center gap-3">
-            <span id="textTotal" class="text-slate-500 font-medium">Total: 0 Peserta</span>
-            <span id="textSelected" class="text-blue-600 font-bold bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-100">Terpilih: 0</span>
-        </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="p-4 w-12 text-center"><input type="checkbox" id="checkAll" onchange="toggleAll()" class="w-4 h-4 cursor-pointer"></th>
+              <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Nama & NIM</th>
+              <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Institusi & Jurusan</th>
+              <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Gelombang</th>
+              <th class="p-4 text-sm font-semibold text-slate-600 uppercase whitespace-nowrap">Level / Print / SIMRS</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-200 text-sm text-slate-500 font-medium" id="textTotal">Total: 0 Peserta</div>
     </div>
+  </div>
 </div>
 
-<!-- PREVIEW UI (Canvas Kertas A4 & Kontrol) -->
+<!-- PREVIEW -->
 <div id="previewUI" class="hidden bg-slate-600 min-h-screen pb-10 pt-24">
-    <div id="previewControls" class="fixed top-0 left-0 w-full bg-slate-800 text-white p-4 flex flex-col sm:flex-row justify-between items-center z-50 shadow-md gap-3">
-        <div class="text-center sm:text-left">
-            <h2 class="text-xl font-bold">Preview Cetak A4</h2>
-            <p class="text-sm text-slate-300" id="previewStats">Menampilkan ID Card</p>
-        </div>
-        <div class="flex gap-3 w-full sm:w-auto justify-center">
-            <button onclick="closePreview()" class="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 flex-1 sm:flex-none">
-                <i class="fas fa-arrow-left"></i> Kembali
-            </button>
-            <button id="btnCetak" onclick="executePrint()" class="bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 shadow-lg flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed">
-                <i class="fas fa-print"></i> Cetak
-            </button>
-        </div>
+  <div id="previewControls" class="fixed top-0 left-0 w-full bg-slate-800 text-white p-4 flex flex-col sm:flex-row justify-between items-center z-50 shadow-md gap-3">
+    <div class="text-center sm:text-left">
+      <h2 class="text-xl font-bold">Preview Cetak A4</h2>
+      <p class="text-sm text-slate-300" id="previewStats"></p>
     </div>
-    
-    <div id="previewScrollArea" class="w-full overflow-x-auto flex flex-col items-center px-4">
-        <div id="print-container" class="flex flex-col items-center"></div>
+    <div class="flex gap-3 w-full sm:w-auto justify-center">
+      <button onclick="closePreview()" class="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"><i class="fas fa-arrow-left"></i> Kembali</button>
+      <button id="btnCetak" onclick="window.print()" class="bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-print"></i> Cetak</button>
     </div>
+  </div>
+  <div id="previewScrollArea" class="w-full overflow-x-auto flex flex-col items-center px-4">
+    <div id="print-container" class="flex flex-col items-center"></div>
+  </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec";
-    
-    let allParticipants = [];
-    let filteredParticipants = [];
-    let selectedKeys = new Set(); // key = NIM + '::' + sheetName (NIM saja tidak unik antar sheet)
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec";
+// ^ Setelah deploy ulang Code.gs, ganti dengan URL deployment terbaru jika berubah.
 
-    function makeKey(nim, sheetName) {
-        return String(nim).trim() + '::' + String(sheetName).trim();
+const LEVELS = {
+  1:{badge:'bg-emerald-100 text-emerald-700', bg:'hijau',  major:'#059669', inst:'#ffffff'},
+  2:{badge:'bg-amber-100 text-amber-700',     bg:'kuning', major:'#d97706', inst:'#000000'},
+  3:{badge:'bg-rose-100 text-rose-700',       bg:'merah',  major:'#dc2626', inst:'#ffffff'},
+  4:{badge:'bg-sky-100 text-sky-700',         bg:'biru',   major:'#0284c7', inst:'#ffffff'}
+};
+const LV_DEFAULT = {badge:'bg-slate-100 text-slate-700', bg:'abu', major:'#64748b', inst:'#ffffff'};
+const lv = p => LEVELS[Number(p.id_parent)] || LV_DEFAULT;
+
+let sheetCache = {};            // {namaSheet: [peserta...]} -> tiap sheet hanya diminta sekali
+let byKey = {};                 // key -> peserta (semua sheet yang pernah dimuat)
+let currentSheet = '';
+let selectedKeys = new Set();
+let filt = { inst: new Set(), jur: new Set() };
+let visibleList = [];
+
+const makeKey = (nim, sheet) => String(nim).trim() + '::' + String(sheet).trim();
+const sudahPrint = p => /^sudah/i.test(String(p.print).trim());
+const jurLabel = p => [p.jenjangpend, p.jurusan].filter(Boolean).join(' - ') || '-';
+const esc = s => (s == null) ? '' : String(s).replace(/[&<>'"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+
+function api(body) {
+  return fetch(GAS_URL, { method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(r => { if (!r.success) throw new Error(r.message || 'Permintaan gagal'); return r; });
+}
+
+function storeSheet(name, rows) {
+  rows.forEach(p => { p.sheetName = name; byKey[makeKey(p.nim, name)] = p; });
+  sheetCache[name] = rows;
+}
+
+function formatPrintDate(s) {
+  if (!s) return '-';
+  let m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/), y, mo, d;
+  if (m) { y = m[1]; mo = m[2]; d = m[3]; }
+  else if ((m = String(s).match(/^(\d{1,2})-(\d{1,2})-(\d{4})/))) { d = m[1].padStart(2,'0'); mo = m[2]; y = m[3]; }
+  else return esc(s);
+  const mon = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return `${d} ${mon[+mo-1]} ${y.slice(-2)}`;
+}
+
+/* ================= LOAD AWAL: 1 request, langsung sheet terakhir ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  api({ action: 'idcardInit' }).then(r => {
+    const sel = document.getElementById('filterSheet');
+    sel.innerHTML = r.sheets.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+    sel.value = r.sheetName;
+    currentSheet = r.sheetName;
+    storeSheet(r.sheetName, r.data);
+    showTable();
+    refreshFilters();
+  }).catch(e => {
+    document.getElementById('loadingState').classList.add('hidden');
+    Swal.fire('Error', e.message || 'Gagal memuat data dari server.', 'error');
+  });
+});
+
+function showTable() {
+  document.getElementById('loadingState').classList.add('hidden');
+  document.getElementById('tableContainer').classList.remove('hidden');
+}
+
+/* ================= GANTI GELOMBANG: baca hanya sheet itu ================= */
+function changeSheet(name) {
+  currentSheet = name;
+  filt.inst.clear(); filt.jur.clear();
+  if (sheetCache[name]) { refreshFilters(); return; }
+  document.getElementById('tableContainer').classList.add('hidden');
+  document.getElementById('loadingText').textContent = `Mengambil data ${name}...`;
+  document.getElementById('loadingState').classList.remove('hidden');
+  api({ action: 'idcardSheet', sheetName: name }).then(r => {
+    storeSheet(name, r.data);
+    if (currentSheet !== name) return;
+    showTable(); refreshFilters();
+  }).catch(e => { showTable(); Swal.fire('Error', e.message, 'error'); });
+}
+
+/* ================= FILTER BERTINGKAT (multi) ================= */
+function uniq(arr) { return [...new Set(arr)].filter(Boolean).sort((a,b) => a.localeCompare(b)); }
+
+function refreshFilters() {
+  const rows = sheetCache[currentSheet] || [];
+  const instOpts = uniq(rows.map(p => p.namasekolah));
+  filt.inst = new Set([...filt.inst].filter(x => instOpts.includes(x)));
+  const jurRows = filt.inst.size ? rows.filter(p => filt.inst.has(p.namasekolah)) : rows;
+  const jurOpts = uniq(jurRows.map(jurLabel));
+  filt.jur = new Set([...filt.jur].filter(x => jurOpts.includes(x)));
+  renderMulti('msInst', instOpts, filt.inst, 'Semua Institusi', () => refreshFilters());
+  renderMulti('msJur', jurOpts, filt.jur, 'Semua Jenjang - Jurusan', () => renderTable());
+  renderTable();
+}
+
+function renderMulti(id, options, selected, placeholder, onChange) {
+  const box = document.getElementById(id);
+  const wasOpen = box.querySelector('.ms-panel') && !box.querySelector('.ms-panel').classList.contains('hidden');
+  const txt = selected.size === 0 ? placeholder : (selected.size === 1 ? [...selected][0] : `${selected.size} dipilih`);
+  box.innerHTML = `
+    <button type="button" class="ms-btn w-full text-left rounded-lg border border-slate-300 p-2.5 bg-slate-50 font-medium text-slate-700 flex justify-between items-center gap-2">
+      <span class="truncate">${esc(txt)}</span><i class="fas fa-chevron-down text-xs text-slate-400"></i>
+    </button>
+    <div class="ms-panel ${wasOpen ? '' : 'hidden'} absolute z-30 mt-1 w-full min-w-[16rem] bg-white border border-slate-200 rounded-lg shadow-xl p-2">
+      <button type="button" class="ms-clear text-xs text-blue-600 font-semibold mb-1 px-1">Hapus pilihan</button>
+      ${options.map((o, i) => `<label class="flex items-start gap-2 px-1 py-1.5 hover:bg-slate-50 rounded cursor-pointer text-sm">
+        <input type="checkbox" data-i="${i}" class="mt-1" ${selected.has(o) ? 'checked' : ''}><span>${esc(o)}</span></label>`).join('') || '<div class="text-sm text-slate-400 p-2">Tidak ada data</div>'}
+    </div>`;
+  const panel = box.querySelector('.ms-panel');
+  box.querySelector('.ms-btn').onclick = e => { e.stopPropagation(); closePanels(panel); panel.classList.toggle('hidden'); };
+  panel.onclick = e => e.stopPropagation();
+  panel.querySelector('.ms-clear').onclick = () => { selected.clear(); onChange(); };
+  panel.querySelectorAll('input[type=checkbox]').forEach(cb => cb.onchange = () => {
+    const o = options[+cb.dataset.i];
+    cb.checked ? selected.add(o) : selected.delete(o);
+    onChange();
+  });
+}
+function closePanels(except) { document.querySelectorAll('.ms-panel').forEach(p => { if (p !== except) p.classList.add('hidden'); }); }
+document.addEventListener('click', () => closePanels());
+
+/* ================= TABEL ================= */
+function renderTable() {
+  const rows = sheetCache[currentSheet] || [];
+  const q = document.getElementById('searchName').value.trim().toLowerCase();
+  const belum = document.getElementById('filterBelumPrint').checked;
+
+  visibleList = rows.filter(p =>
+    (!filt.inst.size || filt.inst.has(p.namasekolah)) &&
+    (!filt.jur.size || filt.jur.has(jurLabel(p))) &&
+    (!belum || !sudahPrint(p)) &&
+    (!q || p.nama.toLowerCase().includes(q) || p.nim.toLowerCase().includes(q))
+  );
+
+  const tb = document.getElementById('tableBody');
+  if (!visibleList.length) {
+    tb.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 font-medium"><i class="fas fa-inbox text-slate-400 mb-2 text-3xl block"></i>Tidak ada data peserta yang ditemukan.</td></tr>`;
+  } else {
+    tb.innerHTML = visibleList.map((p, i) => {
+      const key = makeKey(p.nim, p.sheetName), chk = selectedKeys.has(key);
+      const hasLv = p.id_parent && p.id_parent !== '0';
+      return `<tr data-i="${i}" class="hover:bg-slate-50 cursor-pointer ${chk ? 'bg-blue-50' : ''}">
+        <td class="p-4 text-center"><input type="checkbox" class="row-cb w-4 h-4 cursor-pointer" ${chk ? 'checked' : ''}></td>
+        <td class="p-4"><div class="font-bold text-slate-800">${esc(p.nama)}</div><div class="text-xs text-slate-500 font-mono mt-0.5">${esc(p.nim)}</div></td>
+        <td class="p-4"><div class="font-medium text-slate-700 text-sm">${esc(p.namasekolah)}</div><div class="text-xs text-slate-500">${esc(jurLabel(p))}</div></td>
+        <td class="p-4"><span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200"><i class="fas fa-folder-open mr-1.5 text-slate-400"></i>${esc(p.sheetName)}</span></td>
+        <td class="p-4 space-y-1">
+          <div data-edit class="px-2 py-1 inline-block rounded text-xs font-bold ${lv(p).badge} hover:ring-2 hover:ring-offset-1" title="Klik untuk mengubah level">${hasLv ? 'Level ' + esc(p.id_parent) : 'Level Belum Diisi'} <i class="fas fa-edit ml-1 opacity-70"></i></div>
+          <div class="text-[11px] font-medium text-slate-600"><i class="fas fa-print text-blue-500 w-4"></i> Print: <b>${esc(p.print) || '-'}</b></div>
+          ${p.simrs ? `<div class="text-[11px] font-medium text-slate-600"><i class="fas fa-hospital text-emerald-500 w-4"></i> SIMRS: <b>${esc(p.simrs)}</b></div>` : ''}
+        </td></tr>`;
+    }).join('');
+  }
+  document.getElementById('textTotal').textContent = `Total: ${visibleList.length} Peserta (${currentSheet})`;
+  syncCounts();
+}
+
+// Klik baris: TIDAK render ulang tabel, hanya ubah baris itu (posisi scroll tetap)
+document.getElementById('tableBody').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+  const p = visibleList[+tr.dataset.i];
+  if (e.target.closest('[data-edit]')) { editLevel(p); return; }
+  const key = makeKey(p.nim, p.sheetName);
+  const cb = tr.querySelector('.row-cb');
+  const on = e.target === cb ? cb.checked : !selectedKeys.has(key);
+  on ? selectedKeys.add(key) : selectedKeys.delete(key);
+  cb.checked = on;
+  tr.classList.toggle('bg-blue-50', on);
+  syncCounts();
+});
+
+function toggleAll() {
+  const on = document.getElementById('checkAll').checked;
+  visibleList.forEach(p => { const k = makeKey(p.nim, p.sheetName); on ? selectedKeys.add(k) : selectedKeys.delete(k); });
+  document.querySelectorAll('#tableBody tr[data-i]').forEach(tr => {
+    tr.querySelector('.row-cb').checked = on; tr.classList.toggle('bg-blue-50', on);
+  });
+  syncCounts();
+}
+
+function syncCounts() {
+  document.getElementById('textSelected').innerHTML = `<i class="fas fa-check-double mr-1"></i> Terpilih: ${selectedKeys.size}`;
+  document.getElementById('checkAll').checked = visibleList.length > 0 && visibleList.every(p => selectedKeys.has(makeKey(p.nim, p.sheetName)));
+}
+
+/* ================= EDIT LEVEL (kirim baris + NIM, tanpa pencarian) ================= */
+function editLevel(p) {
+  const cur = (p.id_parent && p.id_parent !== '0') ? String(p.id_parent) : '';
+  Swal.fire({
+    title: `Ubah Level: ${p.nama}`,
+    html: `<select id="swal-lv" class="swal2-select" style="width:80%">
+      <option value="">Kosongkan</option>${[1,2,3,4].map(n => `<option value="${n}" ${cur == n ? 'selected' : ''}>Level ${n}</option>`).join('')}</select>`,
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+    preConfirm: () => document.getElementById('swal-lv').value
+  }).then(res => {
+    if (!res.isConfirmed || res.value === cur) return;
+    Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    api({ action: 'idcardUpdateLevel', sheetName: p.sheetName, row: p.row, nim: p.nim, newLevel: res.value })
+      .then(() => { p.id_parent = res.value; renderTable(); Swal.fire({ icon: 'success', title: 'Level diperbarui', timer: 1200, showConfirmButton: false }); })
+      .catch(e => Swal.fire('Gagal', e.message, 'error'));
+  });
+}
+
+/* ================= PREVIEW & CETAK ================= */
+let photoJobs = [], printedList = [];
+
+function prepareAndPrint() {
+  if (!selectedKeys.size) { Swal.fire('Peringatan', 'Pilih minimal 1 peserta untuk dipreview!', 'warning'); return; }
+  const list = [...selectedKeys].map(k => byKey[k]).filter(Boolean);
+  printedList = list;
+  Swal.fire({ title: 'Menyiapkan Preview...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  const pc = document.getElementById('print-container');
+  pc.innerHTML = '';
+  let html = '', qrs = []; photoJobs = [];
+
+  list.forEach((p, i) => {
+    const L = lv(p);
+    const name = esc((p.nama || 'Tanpa Nama').trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()));
+    const nim = p.nim || '-';
+    html += `
+      <div class="id-card">
+        <img src="img/idcard/${L.bg}.jpg" class="card-bg" alt="bg">
+        <div class="card-content">
+          <img src="img/rsudbk.png" class="c-rs-logo" alt="" onerror="this.style.display='none'">
+          <img id="photo_${i}" src="" class="c-photo" title="Klik untuk memuat ulang foto">
+          <div class="c-text-area">
+            <div class="c-name">${name}</div>
+            <div class="c-major" style="color:${L.major}">${esc(jurLabel(p))}</div>
+            <div class="c-label">NIM - <span class="c-value">${esc(nim)}</span></div>
+            <div class="c-label">PERIODE -</div>
+            <div class="c-value">${formatPrintDate(p.tanggal_mulai)} - ${formatPrintDate(p.tanggal_selesai)}</div>
+          </div>
+          <img src="img/logo_institusi/${esc(p.namasekolah)}.png" class="c-inst-logo" onerror="this.style.display='none'">
+          <div class="c-inst-name" style="color:${L.inst}"><span>${esc(p.namasekolah)}</span></div>
+          <div id="qr_${i}" class="c-qr-container"></div>
+        </div>
+      </div>`;
+    qrs.push({ id: `qr_${i}`, text: nim !== '-' ? nim : '00000000' });
+    photoJobs.push({ imgId: `photo_${i}`, rawUrl: p.urlFoto });
+
+    if ((i + 1) % 9 === 0 || i === list.length - 1) {
+      const cuts = [22.5, 77.5, 132.5, 187.5].map(x => `<div class="cut-line-v" style="left:${x}mm"></div>`).join('') +
+                   [21, 106, 191, 276].map(y => `<div class="cut-line-h" style="top:${y}mm"></div>`).join('');
+      const page = document.createElement('div');
+      page.className = 'a4-page';
+      page.innerHTML = cuts + html;
+      pc.appendChild(page);
+      html = '';
     }
+  });
 
-    function escapeHTML(str) {
-        if (str === null || str === undefined) return '';
-        return String(str).replace(/[&<>'"]/g, match => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-        }[match]));
-    }
+  document.getElementById('mainUI').classList.add('hidden');
+  document.getElementById('previewUI').classList.remove('hidden');
+  document.getElementById('previewStats').textContent = `${list.length} Peserta • ${Math.ceil(list.length / 9)} Halaman A4`;
 
-    function getDriveImageSrc(url) {
-        if (!url) return 'https://via.placeholder.com/150?text=No+Photo';
-        const match = String(url).match(/[-\w]{25,}/);
-        if (match && match[0]) {
-            return `https://lh3.googleusercontent.com/d/${match[0]}=w400`;
-        }
-        return url; 
-    }
+  qrs.forEach(q => new QRCode(document.getElementById(q.id), { text: q.text, width: 200, height: 200, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M }));
 
-    function formatPrintDate(dateStr) {
-        if (!dateStr) return '-';
-        const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return escapeHTML(dateStr);
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mmm = months[d.getMonth()];
-        const yy = String(d.getFullYear()).slice(-2);
-        return `${dd} ${mmm} ${yy}`;
-    }
+  // Muat foto (maks 6 paralel); tombol Cetak dikunci sampai semua selesai
+  const btn = document.getElementById('btnCetak'); btn.disabled = true;
+  let done = 0, cursor = 0;
+  const upd = () => Swal.update({ title: 'Memuat Foto...', html: `Memuat foto peserta (${done}/${photoJobs.length})` });
+  upd();
+  const next = () => {
+    if (cursor >= photoJobs.length) return Promise.resolve();
+    const j = photoJobs[cursor++];
+    return loadPhoto(j.imgId, j.rawUrl).then(() => { done++; upd(); return next(); });
+  };
+  Promise.all(Array.from({ length: 6 }, next)).then(() => {
+    Swal.close(); btn.disabled = false; window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
 
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch(GAS_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: 'getAllParticipants' })
-        })
-        .then(res => res.json())
-        .then(res => {
-            if(res.success) {
-                allParticipants = res.data;
-                populateFilters();
-                renderTable();
-                
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('tableContainer').classList.remove('hidden');
-            } else {
-                Swal.fire('Error', res.message || 'Gagal mengambil data', 'error');
-            }
-        })
-        .catch(err => {
-            Swal.fire('Error Koneksi', 'Gagal memuat data dari server.', 'error');
-        });
-    });
+function endpoints(raw) {
+  const m = String(raw || '').match(/[-\w]{25,}/);
+  if (!m) return [];
+  const id = m[0];
+  return [`https://lh3.googleusercontent.com/d/${id}=w400`, `https://drive.google.com/thumbnail?id=${id}&sz=w400-h400`,
+          `https://lh3.googleusercontent.com/d/${id}`, `https://drive.google.com/uc?export=view&id=${id}`];
+}
+const tryUrl = (el, url) => new Promise(res => { const t = new Image(); t.onload = () => { el.src = url; res(true); }; t.onerror = () => res(false); t.src = url; });
 
-    function populateFilters() {
-        const sheets = [...new Set(allParticipants.map(p => p.sheetName))].sort();
-        const institusi = [...new Set(allParticipants.map(p => p.namasekolah))].sort();
-        
-        const printStatuses = [...new Set(allParticipants.map(p => p.print || '-'))].filter(s => s !== '-').sort();
-        const simrsStatuses = [...new Set(allParticipants.map(p => p.simrs || '-'))].filter(s => s !== '-').sort();
-        
-        const selSheet = document.getElementById('filterSheet');
-        sheets.forEach(s => selSheet.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
-        
-        const selInst = document.getElementById('filterInstitusi');
-        institusi.forEach(i => selInst.innerHTML += `<option value="${escapeHTML(i)}">${escapeHTML(i)}</option>`);
+async function loadPhoto(imgId, raw) {
+  const el = document.getElementById(imgId); if (!el) return;
+  for (const u of endpoints(raw)) if (await tryUrl(el, u)) return;
+  el.src = 'https://placehold.co/150x150/f87171/ffffff?text=Klik+Reload';
+  el.style.cursor = 'pointer';
+  el.onclick = async () => {
+    el.src = 'https://placehold.co/150x150/60a5fa/ffffff?text=Memuat...';
+    for (const u of endpoints(raw)) if (await tryUrl(el, u)) { el.onclick = null; return; }
+    el.src = 'https://placehold.co/150x150/f87171/ffffff?text=Akses+Ditolak';
+    Swal.fire('Foto Terblokir', 'Pastikan file di Google Drive diatur "Siapa saja yang memiliki link".', 'error');
+  };
+}
 
-        const selPrint = document.getElementById('filterPrint');
-        printStatuses.forEach(s => selPrint.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
+function closePreview() {
+  document.getElementById('previewUI').classList.add('hidden');
+  document.getElementById('mainUI').classList.remove('hidden');
+  document.getElementById('print-container').innerHTML = '';
+  window.scrollTo({ top: 0 });
+}
 
-        const selSimrs = document.getElementById('filterSimrs');
-        simrsStatuses.forEach(s => selSimrs.innerHTML += `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`);
-    }
-
-    function handleFilterChange() {
-        selectedKeys.clear();
-        document.getElementById('checkAll').checked = false;
-        renderTable();
-    }
-
-    function renderTable() {
-                    const fSheet = document.getElementById('filterSheet').value;
-                    const fInst = document.getElementById('filterInstitusi').value;
-                    const fPrint = document.getElementById('filterPrint').value;
-                    const fSimrs = document.getElementById('filterSimrs').value;
-                    const sQuery = document.getElementById('searchName').value.trim().toLowerCase();
-                    
-                    filteredParticipants = allParticipants.filter(p => {
-                        const matchSheet = fSheet === "ALL" || p.sheetName === fSheet;
-                        const matchInst = fInst === "ALL" || p.namasekolah === fInst;
-                        
-                        const matchPrint = fPrint === "ALL" || (p.print || '-') === fPrint;
-                        const matchSimrs = fSimrs === "ALL" || (p.simrs || '-') === fSimrs;
-                        
-                        const nameStr = String(p.nama || "").toLowerCase();
-                        const nimStr = String(p.nim || "").toLowerCase();
-                        const matchSearch = nameStr.includes(sQuery) || nimStr.includes(sQuery);
-                        
-                        return matchSheet && matchInst && matchPrint && matchSimrs && matchSearch;
-                    });
-
-                    const tbody = document.getElementById('tableBody');
-                    tbody.innerHTML = '';
-                    
-                    if (filteredParticipants.length === 0) {
-                        tbody.innerHTML = `<tr>
-                            <td colspan="5" class="p-8 text-center text-slate-500 font-medium">
-                                <i class="fas fa-inbox text-slate-400 mb-2 text-3xl block"></i>Tidak ada data peserta yang ditemukan.
-                            </td>
-                        </tr>`;
-                    }
-
-                    let allVisibleChecked = filteredParticipants.length > 0;
-
-                    filteredParticipants.forEach((p) => {
-                        // --- LOGIKA WARNA BADGE YANG SUDAH DISESUAIKAN ---
-                        let badgeColor = 'bg-slate-100 text-slate-700'; // Default (Abu-abu)
-                        let levelText = 'Level Belum Diisi'; // Teks default jika 0 atau kosong
-                        
-                        // Cek apakah id_parent ada isinya, bukan spasi kosong, dan bukan 0
-                        if (p.id_parent !== null && p.id_parent !== undefined && String(p.id_parent).trim() !== '' && p.id_parent != 0) {
-                            levelText = `Level ${escapeHTML(p.id_parent)}`;
-                        }
-
-                        if (p.id_parent == 1) badgeColor = 'bg-emerald-100 text-emerald-700'; // 1 = Hijau
-                        if (p.id_parent == 2) badgeColor = 'bg-amber-100 text-amber-700';     // 2 = Kuning
-                        if (p.id_parent == 3) badgeColor = 'bg-rose-100 text-rose-700';       // 3 = Merah
-                        if (p.id_parent == 4) badgeColor = 'bg-sky-100 text-sky-700';         // 4 = Biru
-
-                        const safeNim = escapeHTML(p.nim);
-                        const safeSheetName = escapeHTML(p.sheetName);
-                        const isChecked = selectedKeys.has(makeKey(p.nim, p.sheetName)); 
-                        if (!isChecked) allVisibleChecked = false; 
-
-                        const tr = document.createElement('tr');
-                        tr.className = `hover:bg-slate-50 transition-colors cursor-pointer ${isChecked ? 'bg-blue-50/30' : ''}`;
-                        
-                        tr.onclick = (e) => {
-                            if(e.target.tagName !== 'INPUT') toggleSelection(p.nim, p.sheetName);
-                        };
-                        
-                        tr.innerHTML = `
-                            <td class="p-4 text-center">
-                                <input type="checkbox" class="participant-cb w-4 h-4 text-blue-600 rounded cursor-pointer" 
-                                    ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelection('${safeNim}', '${safeSheetName}');">
-                            </td>
-                            <td class="p-4">
-                                <div class="font-bold text-slate-800">${escapeHTML(p.nama)}</div>
-                                <div class="text-xs text-slate-500 font-mono mt-0.5">${safeNim}</div>
-                            </td>
-                            <td class="p-4">
-                                <div class="font-medium text-slate-700 text-sm">${escapeHTML(p.namasekolah)}</div>
-                                <div class="text-xs text-slate-500">${escapeHTML(p.jenjangpend)} - ${escapeHTML(p.jurusan)}</div>
-                            </td>
-                            <td class="p-4">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                    <i class="fas fa-folder-open mr-1.5 text-slate-400"></i> ${escapeHTML(p.sheetName)}
-                                </span>
-                            </td>
-                            <td class="p-4 space-y-1">
-                                <!-- Area Badge Level (Bisa diklik untuk edit) -->
-                                <div class="px-2 py-1 inline-block rounded text-xs font-bold ${badgeColor} cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all" 
-                                     title="Klik untuk mengubah level"
-                                     onclick="event.stopPropagation(); editLevel('${safeNim}', '${p.id_parent || ''}', '${escapeHTML(p.nama)}', '${escapeHTML(p.sheetName)}')">
-                                    ${levelText} <i class="fas fa-edit ml-1 opacity-70"></i>
-                                </div>
-                                
-                                <!-- Area Indikator Print & SIMRS Baru -->
-                                ${p.print ? `<div class="text-[11px] font-medium text-slate-600 mt-1"><i class="fas fa-print text-blue-500 w-4"></i> Print: <b>${escapeHTML(p.print)}</b></div>` : ''}
-                                ${p.simrs ? `<div class="text-[11px] font-medium text-slate-600"><i class="fas fa-hospital text-emerald-500 w-4"></i> SIMRS: <b>${escapeHTML(p.simrs)}</b></div>` : ''}
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-
-                    document.getElementById('textTotal').textContent = `Total: ${filteredParticipants.length} Peserta`;
-                    document.getElementById('checkAll').checked = (allVisibleChecked && filteredParticipants.length > 0);
-                    updateSelectedCount();
-                }
-
-    function toggleSelection(nim, sheetName) {
-        const key = makeKey(nim, sheetName);
-        if (selectedKeys.has(key)) {
-            selectedKeys.delete(key);
-        } else {
-            selectedKeys.add(key);
-        }
-        renderTable(); 
-    }
-
-    function toggleAllCheckboxes() {
-        const isChecked = document.getElementById('checkAll').checked;
-        filteredParticipants.forEach(p => {
-            const key = makeKey(p.nim, p.sheetName);
-            if (isChecked) {
-                selectedKeys.add(key);
-            } else {
-                selectedKeys.delete(key);
-            }
-        });
-        renderTable(); 
-    }
-
-    function updateSelectedCount() {
-        document.getElementById('textSelected').innerHTML = `<i class="fas fa-check-double mr-1"></i> Terpilih: ${selectedKeys.size}`;
-    }
-
-    function prepareAndPrint() {
-        if (selectedKeys.size === 0) {
-            Swal.fire('Peringatan', 'Pilih minimal 1 peserta untuk dipreview!', 'warning');
-            return;
-        }
-
-        const selectedParticipantsList = allParticipants.filter(p => selectedKeys.has(makeKey(p.nim, p.sheetName)));
-
-        Swal.fire({
-            title: 'Menyiapkan Preview...',
-            html: 'Menyusun halaman ID Card...',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
-        const printContainer = document.getElementById('print-container');
-        printContainer.innerHTML = ''; 
-
-        let cardsHTML = '';
-        let qrDataList = [];
-        let photoJobs = []; // {imgId, rawUrl}
-
-        selectedParticipantsList.forEach((p, i) => {
-            // Default: id_parent kosong / 0 / tidak dikenali -> template abu-abu
-            let bgImg = 'img/idcard/abu.jpg';
-            let majorColor = '#64748b'; 
-            let instTextColor = '#ffffff'; 
-            
-            if (p.id_parent == 1) {
-                bgImg = 'img/idcard/hijau.jpg';
-                majorColor = '#059669';
-                instTextColor = '#ffffff';
-            }
-            if (p.id_parent == 2) { 
-                bgImg = 'img/idcard/kuning.jpg'; 
-                majorColor = '#d97706'; 
-                instTextColor = '#000000'; 
-            }
-            if (p.id_parent == 3) { 
-                bgImg = 'img/idcard/merah.jpg'; 
-                majorColor = '#dc2626'; 
-                instTextColor = '#ffffff'; 
-            }
-            if (p.id_parent == 4) {
-                bgImg = 'img/idcard/biru.jpg';
-                majorColor = '#0284c7';
-                instTextColor = '#ffffff';
-            }
-
-            const safeName = p.nama ? String(p.nama).trim() : 'Tanpa Nama';
-            const formattedName = escapeHTML(safeName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()));
-            
-            const safeNim = p.nim ? String(p.nim).trim() : '-';
-            const periodStr = `${formatPrintDate(p.tanggal_mulai)} - ${formatPrintDate(p.tanggal_selesai)}`;
-            
-            const rawUrl = escapeHTML(p.urlFoto || ''); 
-            const logoSrc = `img/logo_institusi/${escapeHTML(p.namasekolah)}.png`;
-            const qrId = `qr_${i}`; 
-            const photoId = `photo_${i}`;
-
-            const cardHTML = `
-                <div class="id-card">
-                    <img src="${escapeHTML(bgImg)}" class="card-bg" alt="bg">
-                    <div class="card-content">
-                        <img id="${photoId}" src="" class="c-photo" data-raw-url="${rawUrl}" title="Klik untuk memuat ulang foto">
-                        <div class="c-text-area">
-                            <div class="c-name">${formattedName}</div>
-                            <div class="c-major" style="color: ${majorColor}">${escapeHTML(p.jenjangpend)} - ${escapeHTML(p.jurusan)}</div>
-                            <div class="c-label">NIM - <span class="c-value">${escapeHTML(safeNim)}</span></div>
-                            <div class="c-label">PERIODE -</div>
-                            <div class="c-value">${periodStr}</div>
-                        </div>
-                        <img src="${logoSrc}" class="c-inst-logo" onerror="this.style.display='none'">
-                        <div class="c-inst-name" style="color: ${instTextColor};"><span>${escapeHTML(p.namasekolah)}</span></div>
-                        <div id="${qrId}" class="c-qr-container"></div>
-                    </div>
-                </div>
-            `;
-            
-            cardsHTML += cardHTML;
-            qrDataList.push({ id: qrId, text: safeNim !== '-' ? safeNim : '00000000' }); 
-            photoJobs.push({ imgId: photoId, rawUrl: rawUrl });
-
-            if ((i + 1) % 9 === 0 || i === selectedParticipantsList.length - 1) {
-                const cutLines = `
-                    <div class="cut-line-v" style="left: 22.5mm;"></div>
-                    <div class="cut-line-v" style="left: 77.5mm;"></div>
-                    <div class="cut-line-v" style="left: 132.5mm;"></div>
-                    <div class="cut-line-v" style="left: 187.5mm;"></div>
-                    
-                    <div class="cut-line-h" style="top: 21mm;"></div>
-                    <div class="cut-line-h" style="top: 106mm;"></div>
-                    <div class="cut-line-h" style="top: 191mm;"></div>
-                    <div class="cut-line-h" style="top: 276mm;"></div>
-                `;
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'a4-page';
-                pageDiv.innerHTML = cutLines + cardsHTML;
-                printContainer.appendChild(pageDiv);
-                cardsHTML = ''; 
-            }
-        });
-
-        document.getElementById('mainUI').classList.add('hidden');
-        document.getElementById('previewUI').classList.remove('hidden');
-        
-        const totalPages = Math.ceil(selectedParticipantsList.length / 9);
-        document.getElementById('previewStats').textContent = `${selectedParticipantsList.length} Peserta • ${totalPages} Halaman A4`;
-
-        // Render QR codes dulu (ringan, tidak perlu network)
-        qrDataList.forEach(item => {
-            const qrEl = document.getElementById(item.id);
-            if(qrEl) {
-                new QRCode(qrEl, { 
-                    text: item.text, 
-                    width: 200, 
-                    height: 200, 
-                    colorDark : "#000000", 
-                    colorLight : "#ffffff", 
-                    correctLevel : QRCode.CorrectLevel.M 
-                });
-            }
-        });
-
-        // --- MUAT SEMUA FOTO DENGAN FALLBACK OTOMATIS + BATASI KONKURENSI ---
-        // Ini kunci perbaikannya: tombol Cetak dikunci sampai SEMUA foto
-        // selesai dimuat (berhasil atau gagal-total), supaya print preview
-        // tidak menangkap foto yang masih kosong saat jumlah kartu banyak.
-        const btnCetak = document.getElementById('btnCetak');
-        btnCetak.disabled = true;
-
-        let doneCount = 0;
-        const totalPhotos = photoJobs.length;
-        const updateProgress = () => {
-            Swal.update({
-                title: 'Memuat Foto...',
-                html: `Memuat foto peserta (${doneCount}/${totalPhotos})`
-            });
-        };
-        updateProgress();
-
-        const CONCURRENCY = 6; // batasi request paralel agar tidak dibatasi/di-throttle Google
-        let cursor = 0;
-
-        function runNext() {
-            if (cursor >= photoJobs.length) return Promise.resolve();
-            const job = photoJobs[cursor++];
-            return loadPhotoWithFallback(job.imgId, job.rawUrl).then(() => {
-                doneCount++;
-                updateProgress();
-                return runNext();
-            });
-        }
-
-        const workers = [];
-        for (let w = 0; w < CONCURRENCY; w++) {
-            workers.push(runNext());
-        }
-
-        Promise.all(workers).then(() => {
-            Swal.close();
-            btnCetak.disabled = false;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // Daftar endpoint Google Drive yang dicoba berurutan sampai salah satu berhasil.
-    // Dijalankan OTOMATIS (tanpa perlu klik) supaya proses cetak banyak kartu tidak
-    // bergantung pada aksi manual per foto.
-    function buildEndpointList(rawUrl) {
-        const match = String(rawUrl || '').match(/[-\w]{25,}/);
-        if (!match) return [];
-        const fileId = match[0];
-        return [
-            `https://lh3.googleusercontent.com/d/${fileId}=w400`,
-            `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`,
-            `https://lh3.googleusercontent.com/d/${fileId}`,
-            `https://drive.google.com/uc?export=view&id=${fileId}`
-        ];
-    }
-
-    function loadOneUrl(imgEl, url) {
-        return new Promise((resolve) => {
-            const tester = new Image();
-            tester.onload = () => { imgEl.src = url; resolve(true); };
-            tester.onerror = () => resolve(false);
-            tester.src = url;
-        });
-    }
-
-    async function loadPhotoWithFallback(imgId, rawUrl) {
-        const imgEl = document.getElementById(imgId);
-        if (!imgEl) return;
-
-        const endpoints = buildEndpointList(rawUrl);
-        if (endpoints.length === 0) {
-            imgEl.src = 'https://placehold.co/150x150/94a3b8/ffffff?text=No+Photo';
-            setupManualRetry(imgEl, rawUrl);
-            return;
-        }
-
-        for (const url of endpoints) {
-            const ok = await loadOneUrl(imgEl, url);
-            if (ok) return; // berhasil, selesai
-        }
-
-        // Semua endpoint gagal otomatis -> tampilkan placeholder, sediakan klik manual
-        imgEl.src = 'https://placehold.co/150x150/f87171/ffffff?text=Klik+Reload';
-        setupManualRetry(imgEl, rawUrl);
-    }
-
-    // Retry manual tetap disediakan sebagai jalan terakhir jika Google memang
-    // menolak akses (misalnya sharing belum "Anyone with the link").
-    function setupManualRetry(imgEl, rawUrl) {
-        imgEl.style.cursor = 'pointer';
-        imgEl.onclick = async function () {
-            imgEl.src = 'https://placehold.co/150x150/60a5fa/ffffff?text=Memuat...';
-            const endpoints = buildEndpointList(rawUrl);
-            for (const url of endpoints) {
-                const ok = await loadOneUrl(imgEl, url);
-                if (ok) { imgEl.onclick = null; imgEl.style.cursor = 'default'; return; }
-            }
-            imgEl.src = 'https://placehold.co/150x150/f87171/ffffff?text=Akses+Ditolak';
-            Swal.fire({
-                icon: 'error',
-                title: 'Foto Terblokir',
-                text: 'Sistem Google menolak akses ke foto ini. Pastikan link file di Google Drive Anda sudah diatur menjadi "Siapa saja yang memiliki link" (Anyone with the link).',
-            });
-        };
-    }
-
-    function executePrint() {
-        window.print();
-    }
-
-    function closePreview() {
-        document.getElementById('previewUI').classList.add('hidden');
-        document.getElementById('mainUI').classList.remove('hidden');
-        document.getElementById('print-container').innerHTML = '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // --- FUNGSI: Edit Level ---
-    function editLevel(nim, currentLevel, nama, sheetName) {
-        Swal.fire({
-            title: `Ubah Level untuk ${nama}`,
-            html: `
-                <select id="swal-input-level" class="swal2-select" style="width: 80%; max-width: 100%;">
-                    <option value="" ${!currentLevel || currentLevel == '0' ? 'selected' : ''}>Pilih Level (Kosongkan)</option>
-                    <option value="1" ${currentLevel == '1' ? 'selected' : ''}>Level 1</option>
-                    <option value="2" ${currentLevel == '2' ? 'selected' : ''}>Level 2</option>
-                    <option value="3" ${currentLevel == '3' ? 'selected' : ''}>Level 3</option>
-                    <option value="4" ${currentLevel == '4' ? 'selected' : ''}>Level 4</option>
-                </select>
-            `,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Simpan',
-            cancelButtonText: 'Batal',
-            preConfirm: () => {
-                return document.getElementById('swal-input-level').value;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const newLevel = result.value;
-                if (newLevel === currentLevel) return; // Tidak ada perubahan
-
-                // Tampilkan loading
-                Swal.fire({
-                    title: 'Menyimpan...',
-                    text: 'Sedang memperbarui data ke server.',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                // Kirim request ke Google Apps Script
-                fetch(GAS_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        action: 'updateLevel',
-                        nim: nim,
-                        sheetName: sheetName,
-                        newLevel: newLevel
-                    })
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success) {
-                        // PERBAIKAN: Gunakan String() agar tipe data angka dari Sheet & string dari HTML cocok
-                        const pIndex = allParticipants.findIndex(p => 
-                            String(p.nim).trim() === String(nim).trim() && 
-                            String(p.sheetName).trim() === String(sheetName).trim()
-                        );
-                        
-                        if (pIndex !== -1) {
-                            allParticipants[pIndex].id_parent = newLevel; // Update data di memori
-                        }
-                        
-                        // Render ulang tabel agar badge warnanya langsung berganti
-                        renderTable();
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: 'Level telah diperbarui.',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        Swal.fire('Gagal', res.message || 'Gagal menyimpan perubahan.', 'error');
-                    }
-                })
-                .catch(err => {
-                    Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
-                });
-            }
-        });
-    }
+// Setelah dialog cetak ditutup, tawarkan menandai status print = "Sudah"
+window.addEventListener('afterprint', () => {
+  if (document.getElementById('previewUI').classList.contains('hidden')) return;
+  const todo = printedList.filter(p => !sudahPrint(p));
+  if (!todo.length) return;
+  Swal.fire({ title: 'Tandai sudah diprint?', text: `${todo.length} peserta akan diberi status "Sudah Di Print".`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, tandai', cancelButtonText: 'Tidak' })
+  .then(r => {
+    if (!r.isConfirmed) return;
+    Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    api({ action: 'idcardMarkPrinted', items: todo.map(p => ({ sheetName: p.sheetName, row: p.row, nim: p.nim })) })
+      .then(() => { todo.forEach(p => p.print = 'Sudah Di Print'); Swal.fire({ icon: 'success', title: 'Status print diperbarui', timer: 1200, showConfirmButton: false }); })
+      .catch(e => Swal.fire('Gagal', e.message, 'error'));
+  });
+});
 </script>
 </body>
 </html>
