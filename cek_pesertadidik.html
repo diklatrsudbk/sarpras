@@ -1,633 +1,358 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Peserta Didik Aktif</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: { primary: '#0ea5e9' } // Sky blue primary
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom Scrollbar for table */
-        .table-container::-webkit-scrollbar { height: 8px; width: 8px; }
-        .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Loading Overlay Spinner */
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #0ea5e9;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cek Peserta Didik Aktif</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},colors:{primary:'#0ea5e9'}}}}</script>
+<style>
+.table-container::-webkit-scrollbar{height:8px;width:8px}
+.table-container::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px}
+.table-container::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.spinner{border:4px solid #e2e8f0;border-top:4px solid #0ea5e9;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Top Navigation -->
-    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-3">
-                    <div class="bg-primary text-white p-2 rounded-lg">
-                        <i class="fa-solid fa-users-viewfinder text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-slate-800 leading-tight">Data Peserta Didik</h1>
-                        <p class="text-xs text-slate-500 font-medium" id="header-status">Mencari Sesi...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+<nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3">
+    <img src="img/rsudbk.png" alt="RSUD" class="h-10 w-auto object-contain" onerror="this.style.display='none'">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800 leading-tight">Data Peserta Didik</h1>
+      <p class="text-xs text-slate-500 font-medium" id="header-status">Mencari sesi aktif...</p>
+    </div>
+  </div>
+</nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Status Banner (Hidden by default) -->
-        <div id="event-banner" class="hidden mb-6 rounded-xl p-4 border flex items-start gap-4 transition-all duration-300 shadow-sm">
-            <div><!-- Icon Container (injected via JS) --></div>
-            <div>
-                <h3 id="banner-title" class="text-sm font-bold uppercase tracking-wider"></h3>
-                <p id="banner-desc" class="text-sm mt-1"></p>
-            </div>
-        </div>
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- Controls & Filters Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 p-5">
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                
-                <!-- Search -->
-                <div class="md:col-span-4 relative">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-                        </div>
-                        <input type="text" id="searchInput" placeholder="Cari Nama atau NIM..." 
-                            class="pl-10 w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-shadow outline-none">
-                    </div>
-                </div>
+  <div id="event-banner" class="hidden mb-6 rounded-xl p-4 border flex items-start gap-4 shadow-sm">
+    <div id="banner-icon"></div>
+    <div><h3 id="banner-title" class="text-sm font-bold uppercase tracking-wider"></h3><p id="banner-desc" class="text-sm mt-1"></p></div>
+  </div>
 
-                <!-- Filter Institusi -->
-                <div class="md:col-span-4">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Institusi</label>
-                    <div class="relative">
-                        <select id="filterInstitusi" class="w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer bg-white">
-                            <option value="">Semua Institusi</option>
-                            <!-- Options injected here -->
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
-                        </div>
-                    </div>
-                </div>
+  <!-- Filter -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 p-5 grid grid-cols-1 md:grid-cols-12 gap-4">
+    <div class="md:col-span-4">
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian</label>
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i>
+        <input type="search" id="searchInput" name="cari_peserta" autocomplete="off" data-lpignore="true" data-1p-ignore placeholder="Cari Nama atau NIM..." class="pl-10 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+      </div>
+    </div>
+    <div class="md:col-span-4">
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Institusi</label>
+      <select id="filterInstitusi" class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none bg-white"><option value="">Semua Institusi</option></select>
+    </div>
+    <div class="md:col-span-4">
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Jenjang & Jurusan</label>
+      <select id="filterJurusan" class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none bg-white"><option value="">Semua Jenjang & Jurusan</option></select>
+    </div>
+  </div>
 
-                <!-- Filter Jurusan -->
-                <div class="md:col-span-4">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Filter Jurusan</label>
-                    <div class="relative">
-                        <select id="filterJurusan" class="w-full rounded-lg border-slate-300 border px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer bg-white">
-                            <option value="">Semua Jenjang & Jurusan</option>
-                            <!-- Options injected here -->
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Data Table Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative min-h-[400px]">
-            
-            <!-- Table Header Info -->
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h2 class="font-semibold text-slate-700">Daftar Peserta</h2>
-                <span id="data-count-info" class="text-xs font-medium text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-full">Menunggu data...</span>
-            </div>
-
-            <!-- Table Wrapper (Scrollable) -->
-            <div class="table-container overflow-x-auto w-full relative flex-grow">
-                <table class="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                            <th class="py-3 px-4 font-semibold text-center w-16">No</th>
-                            <th class="py-3 px-4 font-semibold">Peserta (Nama & NIM)</th>
-                            <th class="py-3 px-4 font-semibold">Institusi</th>
-                            <th class="py-3 px-4 font-semibold">Jenjang & Jurusan</th>
-                            <th class="py-3 px-4 font-semibold">Bagian</th>
-                            <th class="py-3 px-4 font-semibold text-center w-24">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="text-sm divide-y divide-slate-100">
-                        <!-- Rows injected here -->
-                    </tbody>
-                </table>
-                
-                <!-- Empty State -->
-                <div id="empty-state" class="hidden absolute inset-0 bg-white flex-col items-center justify-center p-8 text-center h-full min-h-[300px]">
-                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
-                        <i class="fa-solid fa-folder-open text-2xl"></i>
-                    </div>
-                    <h3 class="text-slate-700 font-semibold mb-1">Data tidak ditemukan</h3>
-                    <p class="text-slate-500 text-sm max-w-sm">Coba sesuaikan kata kunci pencarian atau filter dropdown untuk melihat hasil lainnya.</p>
-                </div>
-            </div>
-
-            <!-- Loading Overlay Fullscreen relative to Table -->
-            <div id="table-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center transition-opacity duration-300">
-                <div class="spinner mb-4 border-slate-200 border-t-primary"></div>
-                <p id="loading-text" class="text-sm font-medium text-slate-600 animate-pulse">Menghubungkan ke Server...</p>
-            </div>
-        </div>
-    </main>
-
-    <!-- Action Modal Backdrop & Container -->
-    <div id="actionModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-        
-        <!-- Modal Content -->
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 overflow-hidden flex flex-col max-h-[90vh]">
-            
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-primary"></i> Aksi Peserta
-                </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 transition-colors focus:outline-none">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Body -->
-            <div class="p-6 overflow-y-auto">
-                <!-- User Info Preview -->
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
-                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Data Peserta</p>
-                    <p id="modal-nama" class="font-bold text-slate-800 text-lg line-clamp-1">-</p>
-                    <p id="modal-nim" class="text-sm text-slate-600 font-mono mt-1">-</p>
-                    <p id="modal-institusi" class="text-xs text-slate-500 mt-2 bg-slate-200/50 inline-block px-2 py-1 rounded">-</p>
-                </div>
-
-                <!-- Update Level Section (Quick Action) -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Update Level (ID Parent)</label>
-                    <p class="text-xs text-slate-500 mb-3 leading-relaxed">Update level tanpa meninggalkan halaman ini. Perubahan langsung tersimpan ke server.</p>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="input-level" placeholder="Contoh: LVL-01" class="flex-grow rounded-lg border-slate-300 border px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
-                        <button id="btn-update-level" onclick="handleUpdateLevel()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">
-                            Simpan
-                        </button>
-                    </div>
-                </div>
-
-                <hr class="border-slate-100 mb-6">
-
-                <!-- Full Edit Section (Redirect) -->
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Edit Data Penuh</label>
-                    <p class="text-xs text-slate-500 mb-3 leading-relaxed">Membuka formulir pendaftaran lengkap di tab baru untuk mengedit seluruh data peserta (termasuk foto/dokumen).</p>
-                    
-                    <button onclick="handleEditAction()" class="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-3 rounded-xl text-sm font-bold transition-all">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Form Edit Lengkap
-                    </button>
-                </div>
-            </div>
-        </div>
+  <!-- Tabel -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative min-h-[400px]">
+    <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap gap-2 justify-between items-center bg-slate-50/50">
+      <h2 class="font-semibold text-slate-700">Daftar Peserta</h2>
+      <div class="flex items-center gap-2">
+        <span id="data-count-info" class="text-xs font-medium text-slate-500 bg-slate-200/50 px-2.5 py-1 rounded-full">Menunggu data...</span>
+        <button onclick="initApp()" title="Muat ulang" class="text-slate-500 hover:text-primary p-1.5"><i class="fa-solid fa-rotate"></i></button>
+      </div>
     </div>
 
-    <!-- Toast Notification Container (Bottom Right) -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+    <div class="table-container overflow-x-auto w-full flex-grow">
+      <table class="w-full text-left border-collapse min-w-[700px]">
+        <thead>
+          <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+            <th class="py-3 px-4 font-semibold text-center w-16">No</th>
+            <th class="py-3 px-4 font-semibold">Peserta (Nama & NIM)</th>
+            <th class="py-3 px-4 font-semibold">Institusi & Jenjang - Jurusan</th>
+            <th class="py-3 px-4 font-semibold">Bagian</th>
+            <th class="py-3 px-4 font-semibold text-center w-28">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="text-sm divide-y divide-slate-100"></tbody>
+      </table>
+      <div id="empty-state" class="hidden flex-col items-center justify-center p-12 text-center">
+        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4"><i class="fa-solid fa-folder-open text-2xl"></i></div>
+        <h3 class="text-slate-700 font-semibold mb-1">Data tidak ditemukan</h3>
+        <p class="text-slate-500 text-sm max-w-sm">Coba sesuaikan kata kunci pencarian atau filter.</p>
+      </div>
+    </div>
 
-    <script>
-        // ==========================================
-        // KONFIGURASI WEB APP URL
-        // ==========================================
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec'; 
-        const FORM_URL = 'input_pesertadidik.html'; // Set dengan URL Form Pendaftaran HTML Anda
-        
-        // State Management
-        let appState = {
-            activeSession: null,
-            allData: [],
-            filteredData: [],
-            filters: {
-                search: '',
-                institusi: '',
-                jurusan: ''
-            },
-            selectedUser: null
-        };
+    <!-- Pagination -->
+    <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3 justify-between items-center text-sm">
+      <div class="flex items-center gap-2 text-slate-500">
+        <span>Tampilkan</span>
+        <select id="pageSize" class="border border-slate-300 rounded-md px-2 py-1 bg-white"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        <span id="pageInfo"></span>
+      </div>
+      <div id="pager" class="flex items-center gap-1"></div>
+    </div>
 
-        // DOM Elements
-        const DOM = {
-            loadingOverlay: document.getElementById('table-loading'),
-            loadingText: document.getElementById('loading-text'),
-            tableBody: document.getElementById('tableBody'),
-            emptyState: document.getElementById('empty-state'),
-            searchInput: document.getElementById('searchInput'),
-            filterInstitusi: document.getElementById('filterInstitusi'),
-            filterJurusan: document.getElementById('filterJurusan'),
-            banner: document.getElementById('event-banner'),
-            bannerTitle: document.getElementById('banner-title'),
-            bannerDesc: document.getElementById('banner-desc'),
-            headerStatus: document.getElementById('header-status'),
-            dataCountInfo: document.getElementById('data-count-info'),
-            modal: document.getElementById('actionModal'),
-        };
+    <div id="table-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+      <div class="spinner mb-4"></div>
+      <p id="loading-text" class="text-sm font-medium text-slate-600 animate-pulse">Menghubungkan ke Server...</p>
+    </div>
+  </div>
+</main>
 
-        // Initialize Application
-        async function initApp() {
-            setLoading(true, "Mencari sesi aktif (OPEN)...");
-            
-            try {
-                // 1. Dapatkan Data Sesi Awal
-                const initRes = await fetchGas({ action: 'getInitialData' });
-                
-                if (!initRes || !initRes.success) {
-                    throw new Error(initRes?.message || "Gagal memuat konfigurasi awal.");
-                }
+<!-- Modal Aksi -->
+<div id="actionModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-sliders text-primary"></i> Aksi Peserta</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto">
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+        <p id="modal-nama" class="font-bold text-slate-800 text-lg">-</p>
+        <p id="modal-nim" class="text-sm text-slate-600 font-mono mt-1">-</p>
+        <p id="modal-institusi" class="text-xs text-slate-500 mt-2 bg-slate-200/50 inline-block px-2 py-1 rounded">-</p>
+      </div>
 
-                if (!initRes.event || initRes.event.status !== 'OPEN') {
-                    showBanner("Tidak Ada Sesi Terbuka", "Saat ini tidak ada nama_sheet yang berstatus OPEN di pengaturan.", "warning");
-                    DOM.headerStatus.textContent = "Sesi Tertutup";
-                    setLoading(false);
-                    return;
-                }
+      <label class="block text-sm font-bold text-slate-700 mb-2">Update Level (ID Parent)</label>
+      <div class="flex gap-2 mb-6">
+        <input type="text" id="input-level" name="level_peserta" autocomplete="off" data-lpignore="true" data-1p-ignore placeholder="Contoh: 1" class="flex-grow rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+        <button id="btn-update-level" onclick="handleUpdateLevel()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">Simpan</button>
+      </div>
+      <hr class="border-slate-100 mb-6">
 
-                appState.activeSession = initRes.event;
-                showBanner(`Sesi Aktif: ${appState.activeSession.nama_sheet}`, `Menampilkan data dari sheet "${appState.activeSession.nama_sheet}". Acara: ${appState.activeSession.nama_acara}`, "info");
-                DOM.headerStatus.textContent = `Sheet: ${appState.activeSession.nama_sheet}`;
+      <button onclick="handleEditAction()" class="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-3 rounded-xl text-sm font-bold mb-3">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Form Edit Lengkap
+      </button>
+      <button onclick="openPinModal()" class="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-3 rounded-xl text-sm font-bold">
+        <i class="fa-solid fa-trash"></i> Hapus Peserta
+      </button>
+    </div>
+  </div>
+</div>
 
-                // 2. Ambil Semua Data Peserta
-                setLoading(true, "Mengambil data peserta...");
-                const dataRes = await fetchGas({ action: 'getAllParticipants' });
+<!-- Modal PIN hapus -->
+<div id="pinModal" class="fixed inset-0 z-[55] hidden items-center justify-center">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closePinModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-3"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+    <h3 class="font-bold text-slate-800 text-lg">Hapus peserta ini?</h3>
+    <p class="text-sm text-slate-600 mt-1">Data <b id="pin-nama"></b> beserta foto dan dokumennya akan dihapus (file dipindah ke Trash Google Drive). Masukkan PIN untuk melanjutkan.</p>
+    <input type="text" id="pinInput" name="kode_hapus" inputmode="numeric" autocomplete="off" data-lpignore="true" data-1p-ignore placeholder="PIN" style="-webkit-text-security:disc;text-security:disc" class="mt-4 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none">
+    <p id="pinError" class="text-xs text-red-600 mt-2 hidden"></p>
+    <div class="flex gap-2 mt-5">
+      <button onclick="closePinModal()" class="flex-1 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50">Batal</button>
+      <button id="btnDelete" onclick="handleDelete()" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold disabled:opacity-60">Hapus</button>
+    </div>
+  </div>
+</div>
 
-                if (!dataRes || !dataRes.success) {
-                    throw new Error(dataRes?.message || "Gagal memuat data peserta.");
-                }
+<div id="toast-container" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-2 pointer-events-none"></div>
 
-                // Filter data strictly to only show rows from the active sheet name
-                appState.allData = (dataRes.data || []).filter(item => item.sheetName === appState.activeSession.nama_sheet);
-                
-                // 3. Ekstrak data unik untuk dropdown Filter
-                populateFilterDropdowns();
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwmi6A5Vg1TqtY3q54J-hxf6khaFLtXw1KPup3g7TPmmuqA8zJok6YvfChZWZ0yCE4/exec';
+const FORM_URL = 'input_pesertadidik.html';
 
-                // 4. Render Table
-                applyFilters();
-                
-                showToast("Data berhasil dimuat.", "success");
+const S = { session: null, all: [], filtered: [], page: 1, size: 25, selected: null, pageItems: [] };
+const $ = id => document.getElementById(id);
+const esc = s => (s == null) ? '' : String(s).replace(/[&<>'"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+const jurLabel = p => [p.jenjangpend, p.jurusan].filter(Boolean).join(' - ') || '-';
 
-            } catch (error) {
-                console.error("Initialization Error:", error);
-                showToast(error.message, "error");
-            } finally {
-                setLoading(false);
-            }
-        }
+function bagianBadge(b) {
+  const t = String(b || '').toLowerCase();
+  let c = 'bg-slate-100 text-slate-700';
+  if (t.includes('pelayanan')) c = 'bg-pink-100 text-pink-800';
+  else if (t.includes('penunjang')) c = 'bg-sky-100 text-sky-800';
+  else if (t.includes('umum')) c = 'bg-green-100 text-green-800';
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c}">${esc(b) || '-'}</span>`;
+}
 
-        // Wrapper for fetching data to GAS Web App safely
-        async function fetchGas(payload) {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error("Fetch GAS Error: ", error);
-                throw new Error("Koneksi ke server gagal. Cek URL API.");
-            }
-        }
+async function fetchGas(payload) {
+  let res;
+  try {
+    res = await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch (e) { throw new Error('Koneksi ke server gagal. Cek URL API / deployment.'); }
+}
 
-        // UI Helpers
-        function setLoading(isLoading, text = "Memuat...") {
-            if (isLoading) {
-                DOM.loadingOverlay.classList.remove('hidden');
-                DOM.loadingText.textContent = text;
-            } else {
-                DOM.loadingOverlay.classList.add('hidden');
-            }
-        }
+/* ===== 1 request: sesi OPEN + data sheet aktif ===== */
+async function initApp() {
+  setLoading(true, 'Memuat data sesi aktif...');
+  try {
+    const r = await fetchGas({ action: 'cekPesertaAktif' });
+    if (!r || !r.success) throw new Error((r && r.message) || 'Gagal memuat data.');
+    if (!r.event) {
+      showBanner('Tidak Ada Sesi Terbuka', 'Saat ini tidak ada sheet yang berstatus OPEN di pengaturan.', 'warning');
+      $('header-status').textContent = 'Sesi Tertutup';
+      S.all = []; S.session = null; refreshFilters(); return;
+    }
+    S.session = r.event;
+    S.all = r.data || [];
+    showBanner(`Sesi Aktif: ${r.event.nama_sheet}`, `Acara: ${r.event.nama_acara}`, 'info');
+    $('header-status').textContent = `Sheet: ${r.event.nama_sheet}`;
+    $('searchInput').value = '';
+    refreshFilters();
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { setLoading(false); }
+}
 
-        function showBanner(title, desc, type) {
-            DOM.banner.classList.remove('hidden', 'bg-blue-50', 'border-blue-200', 'bg-yellow-50', 'border-yellow-200');
-            const iconContainer = DOM.banner.querySelector('div:first-child');
-            const titleEl = DOM.banner.querySelector('h3');
-            const descEl = DOM.banner.querySelector('p');
-            
-            if (type === 'warning') {
-                DOM.banner.classList.add('bg-yellow-50', 'border-yellow-200');
-                iconContainer.className = "mt-0.5 text-yellow-600";
-                iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-xl"></i>';
-                titleEl.className = "text-sm font-bold text-yellow-900 uppercase tracking-wider";
-                descEl.className = "text-sm text-yellow-800 mt-1";
-            } else {
-                DOM.banner.classList.add('bg-blue-50', 'border-blue-200');
-                iconContainer.className = "mt-0.5 text-blue-500";
-                iconContainer.innerHTML = '<i class="fa-solid fa-circle-info text-xl"></i>';
-                titleEl.className = "text-sm font-bold text-blue-900 uppercase tracking-wider";
-                descEl.className = "text-sm text-blue-800 mt-1";
-            }
-            
-            titleEl.textContent = title;
-            descEl.textContent = desc;
-        }
+function setLoading(on, text) {
+  $('table-loading').classList.toggle('hidden', !on);
+  if (text) $('loading-text').textContent = text;
+}
 
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            let bgClass = "bg-slate-800";
-            let icon = '<i class="fa-solid fa-circle-info text-blue-400"></i>';
-            
-            if (type === 'success') {
-                bgClass = "bg-slate-800";
-                icon = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
-            } else if (type === 'error') {
-                bgClass = "bg-red-900";
-                icon = '<i class="fa-solid fa-circle-xmark text-red-400"></i>';
-            }
+function showBanner(title, desc, type) {
+  const b = $('event-banner'), w = type === 'warning';
+  b.className = `mb-6 rounded-xl p-4 border flex items-start gap-4 shadow-sm ${w ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'}`;
+  $('banner-icon').className = `mt-0.5 ${w ? 'text-yellow-600' : 'text-blue-500'}`;
+  $('banner-icon').innerHTML = `<i class="fa-solid ${w ? 'fa-triangle-exclamation' : 'fa-circle-info'} text-xl"></i>`;
+  $('banner-title').className = `text-sm font-bold uppercase tracking-wider ${w ? 'text-yellow-900' : 'text-blue-900'}`;
+  $('banner-desc').className = `text-sm mt-1 ${w ? 'text-yellow-800' : 'text-blue-800'}`;
+  $('banner-title').textContent = title; $('banner-desc').textContent = desc;
+}
 
-            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all translate-y-4 opacity-0 border border-white/10 mt-2`;
-            toast.innerHTML = `${icon}<span>${message}</span>`;
-            
-            document.getElementById('toast-container').appendChild(toast);
-            
-            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+function showToast(msg, type = 'info') {
+  const t = document.createElement('div');
+  const ic = type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'error' ? 'fa-circle-xmark text-red-400' : 'fa-circle-info text-blue-400';
+  t.className = `${type === 'error' ? 'bg-red-900' : 'bg-slate-800'} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium transition-all opacity-0 border border-white/10`;
+  t.innerHTML = `<i class="fa-solid ${ic}"></i><span>${esc(msg)}</span>`;
+  $('toast-container').appendChild(t);
+  setTimeout(() => t.classList.remove('opacity-0'), 10);
+  setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.remove(), 300); }, 3500);
+}
 
-        // Dropdown Populasi & Filtering
-        function populateFilterDropdowns() {
-            const institusiSet = new Set();
-            const jurusanSet = new Set(); 
+/* ===== Filter (jurusan mengikuti institusi) ===== */
+const uniq = a => [...new Set(a)].filter(Boolean).sort((x, y) => x.localeCompare(y));
 
-            appState.allData.forEach(item => {
-                const institusi = String(item.namasekolah || "").trim();
-                const jenjang = String(item.jenjangpend || "").trim();
-                const jurusan = String(item.jurusan || "").trim();
-                const jenjangJurusan = `${jenjang} ${jurusan}`.trim();
+function refreshFilters() {
+  const fi = $('filterInstitusi'), fj = $('filterJurusan');
+  const curI = fi.value;
+  const insts = uniq(S.all.map(p => p.namasekolah));
+  fi.innerHTML = '<option value="">Semua Institusi</option>' + insts.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('');
+  fi.value = insts.includes(curI) ? curI : '';
+  refreshJurusan();
+}
+function refreshJurusan() {
+  const fj = $('filterJurusan'), curJ = fj.value, inst = $('filterInstitusi').value;
+  const jurs = uniq(S.all.filter(p => !inst || p.namasekolah === inst).map(jurLabel));
+  fj.innerHTML = '<option value="">Semua Jenjang & Jurusan</option>' + jurs.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
+  fj.value = jurs.includes(curJ) ? curJ : '';
+  applyFilters();
+}
 
-                if (institusi) institusiSet.add(institusi);
-                if (jenjangJurusan && jenjangJurusan !== " ") jurusanSet.add(jenjangJurusan);
-            });
+function applyFilters() {
+  const q = $('searchInput').value.trim().toLowerCase(), inst = $('filterInstitusi').value, jur = $('filterJurusan').value;
+  S.filtered = S.all.filter(p =>
+    (!inst || p.namasekolah === inst) && (!jur || jurLabel(p) === jur) &&
+    (!q || p.nama.toLowerCase().includes(q) || p.nim.toLowerCase().includes(q)));
+  S.page = 1;
+  renderTable();
+}
 
-            DOM.filterInstitusi.innerHTML = '<option value="">Semua Institusi</option>';
-            Array.from(institusiSet).sort().forEach(inst => {
-                DOM.filterInstitusi.innerHTML += `<option value="${inst}">${inst}</option>`;
-            });
+/* ===== Tabel + pagination ===== */
+function renderTable() {
+  const total = S.filtered.length;
+  const pages = Math.max(1, Math.ceil(total / S.size));
+  if (S.page > pages) S.page = pages;
+  const start = (S.page - 1) * S.size;
+  S.pageItems = S.filtered.slice(start, start + S.size);
 
-            DOM.filterJurusan.innerHTML = '<option value="">Semua Jenjang & Jurusan</option>';
-            Array.from(jurusanSet).sort().forEach(jur => {
-                DOM.filterJurusan.innerHTML += `<option value="${jur}">${jur}</option>`;
-            });
-        }
+  $('empty-state').classList.toggle('hidden', total !== 0);
+  $('empty-state').classList.toggle('flex', total === 0);
+  $('tableBody').innerHTML = S.pageItems.map((p, i) => `
+    <tr class="hover:bg-slate-50/80">
+      <td class="py-3 px-4 text-center font-medium text-slate-500">${start + i + 1}</td>
+      <td class="py-3 px-4"><p class="font-semibold text-slate-800">${esc(p.nama)}</p><p class="text-xs text-slate-500 font-mono mt-0.5">${esc(p.nim)}</p></td>
+      <td class="py-3 px-4"><p class="font-medium text-slate-700">${esc(p.namasekolah) || '-'}</p><p class="text-xs text-slate-500 mt-0.5">${esc(jurLabel(p))}</p></td>
+      <td class="py-3 px-4">${bagianBadge(p.bagian)}</td>
+      <td class="py-3 px-4 text-center"><button onclick="openActionModal(${i})" class="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-primary hover:text-white rounded-lg transition-colors"><i class="fa-solid fa-pen-to-square mr-1"></i>Aksi</button></td>
+    </tr>`).join('');
 
-        function applyFilters() {
-            const searchTerm = String(appState.filters.search).toLowerCase();
-            const filterInst = appState.filters.institusi;
-            const filterJur = appState.filters.jurusan;
+  $('data-count-info').textContent = `${total} peserta`;
+  $('pageInfo').textContent = total ? `${start + 1}–${start + S.pageItems.length} dari ${total}` : '0 data';
+  renderPager(pages);
+}
 
-            appState.filteredData = appState.allData.filter(item => {
-                const nama = String(item.nama || "").toLowerCase();
-                const nim = String(item.nim || "").toLowerCase();
-                const institusi = String(item.namasekolah || "").trim();
-                const jenjang = String(item.jenjangpend || "").trim();
-                const jurusan = String(item.jurusan || "").trim();
-                const jenjangJurusan = `${jenjang} ${jurusan}`.trim();
+function renderPager(pages) {
+  const btn = (label, pg, active, dis) =>
+    `<button ${dis ? 'disabled' : `onclick="goPage(${pg})"`} class="min-w-[2rem] px-2 py-1.5 rounded-md text-sm font-medium border ${active ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
+  let h = btn('&laquo;', S.page - 1, false, S.page === 1);
+  const from = Math.max(1, Math.min(S.page - 2, pages - 4)), to = Math.min(pages, from + 4);
+  if (from > 1) h += btn('1', 1, false, false) + (from > 2 ? '<span class="px-1 text-slate-400">…</span>' : '');
+  for (let p = from; p <= to; p++) h += btn(p, p, p === S.page, false);
+  if (to < pages) h += (to < pages - 1 ? '<span class="px-1 text-slate-400">…</span>' : '') + btn(pages, pages, false, false);
+  h += btn('&raquo;', S.page + 1, false, S.page === pages);
+  $('pager').innerHTML = h;
+}
+function goPage(p) { S.page = p; renderTable(); $('tableBody').scrollIntoView({ block: 'nearest' }); }
 
-                const matchSearch = (nama.includes(searchTerm) || nim.includes(searchTerm));
-                const matchInst = filterInst === "" || institusi === filterInst;
-                const matchJur = filterJur === "" || jenjangJurusan === filterJur;
+/* ===== Modal aksi ===== */
+function openActionModal(i) {
+  const p = S.pageItems[i]; S.selected = p;
+  $('modal-nama').textContent = p.nama;
+  $('modal-nim').textContent = p.nim;
+  $('modal-institusi').textContent = `${p.namasekolah || '-'} • ${jurLabel(p)}`;
+  $('input-level').value = p.id_parent || '';
+  $('actionModal').classList.remove('hidden'); $('actionModal').classList.add('flex');
+}
+function closeModal() { $('actionModal').classList.add('hidden'); $('actionModal').classList.remove('flex'); S.selected = null; }
 
-                return matchSearch && matchInst && matchJur;
-            });
+function handleEditAction() {
+  if (!S.selected) return;
+  window.open(`${FORM_URL}?mode=edit&nim=${encodeURIComponent(S.selected.nim)}&targetSheet=${encodeURIComponent(S.session.nama_sheet)}`, '_blank');
+  closeModal();
+}
 
-            renderTable();
-        }
+async function handleUpdateLevel() {
+  const p = S.selected; if (!p) return;
+  const lvl = $('input-level').value.trim();
+  if (!lvl) { showToast('Level (ID Parent) tidak boleh kosong', 'error'); return; }
+  const btn = $('btn-update-level'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  try {
+    const r = await fetchGas({ action: 'updateLevel', nim: p.nim, sheetName: S.session.nama_sheet, newLevel: lvl });
+    if (!r.success) throw new Error(r.message);
+    p.id_parent = lvl; showToast('Level berhasil diupdate!', 'success'); closeModal();
+  } catch (e) { showToast(e.message || 'Gagal mengupdate level', 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Simpan'; }
+}
 
-        // Render Data Tabel
-        function renderTable() {
-            if (appState.filteredData.length === 0) {
-                DOM.tableBody.innerHTML = '';
-                DOM.emptyState.classList.remove('hidden');
-                DOM.emptyState.classList.add('flex');
-                DOM.dataCountInfo.textContent = 'Menampilkan 0 data';
-                return;
-            }
+/* ===== Hapus ber-PIN ===== */
+function openPinModal() {
+  if (!S.selected) return;
+  $('pin-nama').textContent = S.selected.nama;
+  $('pinInput').value = ''; $('pinError').classList.add('hidden');
+  $('pinModal').classList.remove('hidden'); $('pinModal').classList.add('flex');
+  setTimeout(() => $('pinInput').focus(), 50);
+}
+function closePinModal() { $('pinModal').classList.add('hidden'); $('pinModal').classList.remove('flex'); $('pinInput').value = ''; }
+$('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleDelete(); });
 
-            DOM.emptyState.classList.add('hidden');
-            DOM.emptyState.classList.remove('flex');
+async function handleDelete() {
+  const p = S.selected, pin = $('pinInput').value;
+  if (!p) return;
+  if (!pin) { $('pinError').textContent = 'PIN wajib diisi.'; $('pinError').classList.remove('hidden'); return; }
+  const btn = $('btnDelete'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  try {
+    const r = await fetchGas({ action: 'deletePeserta', sheetName: S.session.nama_sheet, row: p.row, nim: p.nim, pin: pin });
+    if (!r.success) { $('pinError').textContent = r.message || 'Gagal menghapus.'; $('pinError').classList.remove('hidden'); return; }
+    // Hapus dari memori, dan geser nomor baris data di bawahnya (deleteRow menggeser baris sheet)
+    S.all = S.all.filter(x => x !== p);
+    S.all.forEach(x => { if (x.row > p.row) x.row--; });
+    closePinModal(); closeModal(); refreshFilters();
+    showToast(r.message || 'Peserta dihapus.', 'success');
+  } catch (e) { $('pinError').textContent = e.message; $('pinError').classList.remove('hidden'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Hapus'; }
+}
 
-            let html = '';
-            appState.filteredData.forEach((item, index) => {
-                const jenjangJurusan = `${item.jenjangpend || '-'} - ${item.jurusan || '-'}`;
-                const escItem = encodeURIComponent(JSON.stringify(item));
-                
-                html += `
-                    <tr class="hover:bg-slate-50/80 transition-colors group">
-                        <td class="py-3 px-4 border-t border-slate-100 text-center font-medium text-slate-500">${index + 1}</td>
-                        <td class="py-3 px-4 border-t border-slate-100">
-                            <p class="font-semibold text-slate-800">${item.nama || '-'}</p>
-                            <p class="text-xs text-slate-500 font-mono mt-0.5">${item.nim || '-'}</p>
-                        </td>
-                        <td class="py-3 px-4 border-t border-slate-100 font-medium text-slate-700">${item.namasekolah || '-'}</td>
-                        <td class="py-3 px-4 border-t border-slate-100 text-sm text-slate-600">${jenjangJurusan}</td>
-                        <td class="py-3 px-4 border-t border-slate-100 text-sm">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                ${item.bagian || '-'}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4 border-t border-slate-100 text-center relative">
-                            <div class="inline-block relative">
-                                <button onclick="toggleActionMenu(${index}, event)" class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-full transition-colors focus:outline-none">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
-                                
-                                <div id="menu-${index}" class="dropdown-menu absolute right-0 mt-1 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10 hidden opacity-0 scale-95 transition-all duration-200">
-                                    <div class="py-1" role="none">
-                                        <button onclick="openActionModal('${escItem}')" class="text-slate-700 hover:bg-slate-50 hover:text-primary group flex items-center w-full px-4 py-2 text-sm font-medium transition-colors text-left">
-                                            <i class="fa-solid fa-pen-to-square mr-3 text-slate-400 group-hover:text-primary w-4 text-center"></i>
-                                            Aksi Edit
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            DOM.tableBody.innerHTML = html;
-            DOM.dataCountInfo.textContent = `Menampilkan ${appState.filteredData.length} data`;
-        }
-
-        // Action Menu (Titik 3) Logic
-        let activeMenu = null;
-        function toggleActionMenu(index, e) {
-            if(e) e.stopPropagation();
-            const menu = document.getElementById(`menu-${index}`);
-            
-            if (activeMenu && activeMenu !== menu) closeActionMenu(activeMenu);
-            
-            if (menu.classList.contains('hidden')) {
-                menu.classList.remove('hidden');
-                setTimeout(() => {
-                    menu.classList.remove('opacity-0', 'scale-95');
-                    menu.classList.add('opacity-100', 'scale-100');
-                }, 10);
-                activeMenu = menu;
-            } else {
-                closeActionMenu(menu);
-            }
-        }
-
-        function closeActionMenu(menu) {
-            if(!menu) return;
-            menu.classList.remove('opacity-100', 'scale-100');
-            menu.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                menu.classList.add('hidden');
-            }, 200); 
-            activeMenu = null;
-        }
-
-        document.addEventListener('click', () => {
-            if (activeMenu) closeActionMenu(activeMenu);
-        });
-
-        function openActionModal(encodedItem) {
-            const item = JSON.parse(decodeURIComponent(encodedItem));
-            appState.selectedUser = item;
-            
-            // Set text di modal sesuai ID HTML
-            document.getElementById('modal-nama').textContent = item.nama || '-';
-            document.getElementById('modal-nim').textContent = item.nim || '-';
-            document.getElementById('modal-institusi').textContent = item.namasekolah || '-';
-            document.getElementById('input-level').value = item.id_parent || '';
-            
-            // Tampilkan Modal
-            const modal = DOM.modal;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.querySelector('.transform').classList.remove('scale-95', 'opacity-0');
-            }, 10);
-        }
-
-        function closeModal() {
-            const modal = DOM.modal;
-            modal.querySelector('.transform').classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                appState.selectedUser = null;
-                document.getElementById('btn-update-level').innerHTML = 'Simpan';
-            }, 200);
-        }
-
-        function handleEditAction() {
-            if(appState.selectedUser) {
-                const nim = encodeURIComponent(appState.selectedUser.nim);
-                const sheet = encodeURIComponent(appState.activeSession.nama_sheet);
-                
-                showToast(`Mengalihkan form untuk: ${appState.selectedUser.nama}`, 'info');
-                
-                const editUrl = `${FORM_URL}?mode=edit&nim=${nim}&targetSheet=${sheet}`;
-                window.open(editUrl, '_blank');
-                
-                closeModal();
-            }
-        }
-
-        async function handleUpdateLevel() {
-            if(!appState.selectedUser) return;
-            
-            const newLevel = document.getElementById('input-level').value.trim();
-            if(!newLevel) {
-                showToast("Level (ID Parent) tidak boleh kosong", "error");
-                return;
-            }
-
-            const btn = document.getElementById('btn-update-level');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-
-            try {
-                const payload = {
-                    action: 'updateLevel',
-                    nim: appState.selectedUser.nim,
-                    sheetName: appState.activeSession.nama_sheet,
-                    newLevel: newLevel
-                };
-
-                const res = await fetchGas(payload);
-
-                if(res.success) {
-                    showToast("Level berhasil diupdate!", "success");
-                    appState.selectedUser.id_parent = newLevel;
-                    // Re-render UI table to reflect any changes if needed
-                    renderTable();
-                    closeModal();
-                } else {
-                    throw new Error(res.message);
-                }
-            } catch (error) {
-                showToast(error.message || "Gagal mengupdate level", "error");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // Event Listeners for Filters Input
-        DOM.searchInput.addEventListener('input', (e) => {
-            appState.filters.search = e.target.value;
-            applyFilters();
-        });
-
-        DOM.filterInstitusi.addEventListener('change', (e) => {
-            appState.filters.institusi = e.target.value;
-            applyFilters();
-        });
-
-        DOM.filterJurusan.addEventListener('change', (e) => {
-            appState.filters.jurusan = e.target.value;
-            applyFilters();
-        });
-
-        // Run On Load
-        window.addEventListener('DOMContentLoaded', () => {
-            initApp();
-        });
-
-    </script>
+/* ===== Event ===== */
+$('searchInput').addEventListener('input', applyFilters);
+$('filterInstitusi').addEventListener('change', refreshJurusan);
+$('filterJurusan').addEventListener('change', applyFilters);
+$('pageSize').addEventListener('change', e => { S.size = +e.target.value; S.page = 1; renderTable(); });
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>
