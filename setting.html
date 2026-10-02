@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Poppins','sans-serif']}}}}</script>
 <style>
 body,.swal2-popup{font-family:'Poppins',sans-serif}
@@ -19,6 +20,8 @@ body,.swal2-popup{font-family:'Poppins',sans-serif}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pat{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M20 22h4M22 20v4' stroke='%23334155' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")}
+#qr img,#qr canvas{display:block}
+.hidden{display:none!important}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-700 min-h-screen">
@@ -68,6 +71,18 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button id="reload" title="Reload data" class="w-10 h-10 rounded-xl bg-white border border-slate-200 text-blue-600 hover:bg-blue-50"><i class="fa-solid fa-rotate"></i></button>
         <button id="add" class="h-10 px-4 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition"><i class="fa-solid fa-plus mr-1"></i>Add</button>
       </div>
+
+      <!-- Kotak link + QR (hanya Setting Daftar Hadir) -->
+      <div id="linkBox" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4 text-center">
+        <div id="qr" class="inline-block p-2 bg-white rounded-2xl border border-slate-200"></div>
+        <p class="text-xs text-slate-500 mt-3 break-all" id="linkTxt"></p>
+        <div class="flex justify-center gap-2 mt-3">
+          <button id="opLink" class="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 transition"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Open</button>
+          <button id="cpLink" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:shadow-lg hover:shadow-blue-500/40 transition"><i class="fa-solid fa-copy mr-1"></i>Copy Link</button>
+          <button id="prLink" class="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 transition"><i class="fa-solid fa-print mr-1"></i>Print Link</button>
+        </div>
+      </div>
+
       <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden"><div id="tbl" class="overflow-x-auto"></div><div id="pg"></div></div>
     </section>
   </main>
@@ -92,6 +107,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <script>
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwj7A96_iATZ13TJTzoPR3SdVWX6lGWHjofUawdWcQVuJ1l3LVBxkVoqD9BNSlmEjnX/exec'; // isi URL Web App (…/exec) bila halaman ini di-host di GitHub Pages
 const LOGO_BASE = 'img/logo_institusi/';
+const LINKS = {
+  PD: { url: 'https://diklatrsudbk.github.io/sarpras/input_pesertadidik.html', judul: 'INPUT PESERTA DIDIK', catatan: ['Scan QR code di atas menggunakan kamera HP.', 'Isi data peserta didik dengan lengkap dan benar.', 'Form hanya dapat diisi selama periode pembukaan.'] },
+  DH: { url: 'https://diklatrsudbk.github.io/sarpras/daftar_hadir.html', judul: 'DAFTAR HADIR', catatan: ['Scan QR code di atas menggunakan kamera HP.', 'Isi data kehadiran dengan lengkap dan benar.', 'Daftar hadir hanya dapat diisi selama acara berlangsung.'] }
+};
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const APP_PIN = '1234'; // <-- ganti PIN di sini
@@ -121,7 +140,7 @@ function send(fn, args, opt = {}) {
   if (!list) { GEN++; for (const k in CACHE) delete CACHE[k]; } // ada perubahan -> buang cache
   const key = list ? fn + JSON.stringify(args) : null;
   if (key && PEND[key]) return PEND[key];
-  const tries = list ? 3 : 1, ms = list ? 20000 : 90000; // baca: coba ulang otomatis; tulis: TIDAK diulang (hindari data ganda)
+  const tries = list ? 2 : 1, ms = list ? 15000 : 90000; // baca: coba ulang otomatis; tulis: TIDAK diulang (hindari data ganda)
   const job = (async () => {
     for (let i = 0; ; i++) {
       try { return await once(fn, args, ms); }
@@ -155,6 +174,8 @@ const ask = (o) => Swal.fire({ showCancelButton: true, cancelButtonText: 'Batal'
 async function run(msg, fn, okMsg) { busy(msg); try { const r = await fn(); if (okMsg) await good(okMsg); else Swal.close(); return r; } catch (e) { fail(e); throw e; } }
 const nowIso = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16).replace(' ', 'T');
 const endIso = (m, d, u) => { if (!m || !(d > 0)) return ''; const t = new Date(m + ':00Z'); t.setTime(t.getTime() + d * (u === 'Hari' ? 864e5 : 36e5)); return t.toISOString().slice(0, 16); };
+// status tampilan: OPEN yang waktu selesainya sudah lewat otomatis CLOSE (OPEN tidak bergantung waktu mulai)
+const eff = o => (o.STATUS === 'OPEN' && o.SELESAI_I && o.SELESAI_I <= nowIso()) ? 'CLOSE' : o.STATUS;
 
 /* ---- Modal form generik ---- */
 let FF = [], FI, FS;
@@ -197,7 +218,7 @@ $('grid').innerHTML = Object.entries(M).map(([k, m]) => `<div data-k="${k}" clas
 <h3 class="relative font-semibold text-slate-800 text-sm sm:text-base">${m.t}</h3><p class="relative text-xs text-slate-500 mt-1">${m.d}</p></div>`).join('');
 
 let cur, data = [], T = { cols: [], rows: [], q: '', s: -1, d: 1, p: 1 };
-$('grid').onclick = e => { const c = e.target.closest('.menu'); if (!c) return; cur = c.dataset.k; T.q = ''; T.s = -1; T.p = 1; $('home').classList.add('hidden'); $('view').classList.remove('hidden'); $('vt').textContent = M[cur].t; $('q').value = ''; load(); };
+$('grid').onclick = e => { const c = e.target.closest('.menu'); if (!c) return; cur = c.dataset.k; T.q = ''; T.s = -1; T.p = 1; $('home').classList.add('hidden'); $('view').classList.remove('hidden'); $('vt').textContent = M[cur].t; $('q').value = ''; setLink(); load(); };
 $('back').onclick = () => { SEQ++; $('view').classList.add('hidden'); $('home').classList.remove('hidden'); };
 $('reload').onclick = () => load(true); // tombol reload: lewati cache browser dan cache server
 $('add').onclick = () => M[cur].k === 'm' ? masterForm() : addForm();
@@ -236,7 +257,7 @@ async function load(force) {
   else Swal.fire({ title: 'Mengambil data...', text: 'Mohon tunggu', allowOutsideClick: false, showConfirmButton: false, showCancelButton: true, cancelButtonText: 'Batal', didOpen: () => Swal.showLoading() })
     .then(r => { if (r.dismiss === Swal.DismissReason.cancel && my === SEQ) { SEQ++; goHome(); } });
   try {
-    const fresh = await send(fnOf(k), [k, !!force]);
+    const fresh = await send(fnOf(k), [k, !!force]); // listSetting('PD'|'DH') -> sheet SETTING_PD / SETTING_DH di backend
     if (my !== SEQ) return; // pengguna sudah pindah menu
     if (g === GEN) CACHE[k] = fresh;
     data = fresh; render();
@@ -266,7 +287,9 @@ function render() {
     T.cols.push({ t: 'Nama Sheet', v: o => o.NAMA_SHEET }, { t: 'Nama Acara', v: o => o.NAMA_ACARA }, { t: 'Waktu Mulai', nw: 1, v: o => o.MULAI_I, h: o => o.WAKTU_MULAI }, { t: 'Waktu Selesai', nw: 1, v: o => o.SELESAI_I, h: o => o.WAKTU_SELESAI },
       { t: 'Status', v: o => o.STATUS, h: st }, { t: 'Aksi', x: 1, v: () => '', h: o => ib('mn', o._row, 'fa-ellipsis-vertical', 'hover:bg-slate-100 text-slate-500') });
   }
-  T.rows = data; drawT();
+  // setting: status OPEN yang sudah lewat waktu selesai otomatis tampil CLOSE
+  T.rows = m.k === 'm' ? data : data.map(o => ({ ...o, STATUS: eff(o) }));
+  drawT();
 }
 const rowOf = id => data.find(o => (o.row || o._row) == id);
 const act = (a, id) => { const o = rowOf(id); if (a === 'dl') return del(o); M[cur].k === 'm' ? masterForm(o) : editForm(o); };
@@ -280,11 +303,13 @@ document.addEventListener('click', e => {
   hide(); act(b.dataset.a, b.dataset.id);
 });
 window.addEventListener('scroll', () => $('mn').classList.add('hidden'), true);
+
+/* ---- Toggle manual ---- */
 document.addEventListener('change', async e => {
   const t = e.target; if (!t.classList.contains('tg')) return;
-  const o = rowOf(t.dataset.id), on = t.checked; t.checked = !on; // toggle mengikuti status aktual
-  if (on) return openForm(o);
-  if (await ask({ icon: 'question', title: 'Tutup ' + M[cur].t.replace('Setting ', 'Input ') + '?', text: 'Waktu selesai akan diubah menjadi waktu sekarang.', confirmButtonText: 'Ya, Tutup', confirmButtonColor: '#2563eb' }))
+  const o = rowOf(t.dataset.id), on = t.checked; t.checked = !on; // toggle mengikuti status aktual; berubah setelah data dimuat ulang
+  if (on) return openForm(o); // CLOSE -> OPEN: dialog atur waktu
+  if (await ask({ icon: 'question', title: 'Tutup ' + M[cur].t.replace('Setting ', 'Input ') + ' sekarang?', text: 'Jika ya, waktu selesai akan diubah menjadi waktu saat ini.', confirmButtonText: 'Ya, Tutup', confirmButtonColor: '#2563eb' }))
     try { await run('Menutup...', () => api('closeNow', cur, o._row), 'Berhasil ditutup'); load(); } catch (x) { }
 });
 async function del(o) {
@@ -356,17 +381,79 @@ function editForm(o) {
     }
   });
 }
+// Toggle CLOSE -> OPEN: waktu mulai >= sekarang, waktu selesai > waktu mulai. Status OPEN tidak bergantung waktu mulai.
 function openForm(o) {
-  const f = [{ id: 'mulai', label: 'Waktu Mulai', icon: 'fa-calendar-plus', type: 'datetime-local', value: nowIso(), min: nowIso() }, ...durFields()];
+  const n = nowIso();
+  const f = [
+    { id: 'mulai', label: 'Waktu Mulai', icon: 'fa-calendar-plus', type: 'datetime-local', value: n, min: n },
+    { id: 'selesai', label: 'Waktu Selesai', icon: 'fa-calendar-check', type: 'datetime-local', value: endIso(n, 1, 'Jam'), min: n }];
   form({
-    title: 'Buka ' + M[cur].t.replace('Setting ', 'Input '), ok: 'Buka', fields: f, onInput: calcEnd, after: () => calcEnd({ mulai: nowIso(), durasi: 1, satuan: 'Jam' }),
+    title: 'Buka ' + M[cur].t.replace('Setting ', 'Input '), ok: 'Buka', fields: f,
+    onInput: v => { const s = $('f_selesai'); s.min = v.mulai || n; if (v.mulai && v.selesai && v.selesai < v.mulai) s.value = v.mulai; },
     onSave: async v => {
-      if (!v.mulai || v.mulai < nowIso()) { fail(new Error('Waktu mulai tidak boleh menggunakan waktu yang sudah lewat.')); throw 0; }
-      if (!(+v.durasi > 0)) { fail(new Error('Durasi harus lebih dari 0.')); throw 0; }
-      await run('Membuka...', () => api('setOpen', cur, o._row, v.mulai, v.durasi, v.satuan), 'Jadwal tersimpan'); load();
+      if (!v.mulai || !v.selesai) { fail(new Error('Waktu mulai dan waktu selesai wajib diisi.')); throw 0; }
+      if (v.mulai < nowIso()) { fail(new Error('Waktu mulai tidak boleh kurang dari waktu sekarang.')); throw 0; }
+      if (v.selesai <= v.mulai) { fail(new Error('Waktu selesai harus setelah waktu mulai.')); throw 0; }
+      const jam = (new Date(v.selesai + ':00Z') - new Date(v.mulai + ':00Z')) / 36e5; // selisih jam (kompatibel backend lama)
+      await run('Membuka...', () => api('setOpen', cur, o._row, v.mulai, jam, 'Jam', v.selesai), 'Jadwal tersimpan'); load();
     }
   });
 }
+
+/* ---- Link + QR (Setting PD & DH) ---- */
+let qrObj = null;
+function setLink() {
+  const L = LINKS[cur]; $('linkBox').classList.toggle('hidden', !L); if (!L) return;
+  $('linkTxt').textContent = L.url;
+  if (!window.QRCode) return;
+  if (!qrObj) qrObj = new QRCode($('qr'), { text: L.url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+  else { qrObj.clear(); qrObj.makeCode(L.url); }
+}
+$('opLink').onclick = () => window.open(LINKS[cur].url, '_blank', 'noopener');
+$('cpLink').onclick = async () => {
+  const u = LINKS[cur].url;
+  try { await navigator.clipboard.writeText(u); }
+  catch (_) { const t = document.createElement('textarea'); t.value = u; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Link disalin', timer: 1500, showConfirmButton: false });
+};
+const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu'];
+const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const tgl = iso => { const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return HARI[new Date(y, m - 1, d).getDay()] + ', ' + d + ' ' + BULAN[m - 1] + ' ' + y; };
+$('prLink').onclick = () => {
+  const L = LINKS[cur];
+  const o = data.find(r => eff(r) === 'OPEN') || data[data.length - 1] || {}; // acara yang sedang OPEN, atau yang terakhir
+  const cv = $('qr').querySelector('canvas'); if (!cv) return fail(new Error('QR code belum siap.'));
+  const img = cv.toDataURL('image/png'), logo = new URL('img/rsudbk.png', location.href).href;
+  let hari = '', jam = '';
+  if (o.MULAI_I && o.SELESAI_I) {
+    const a = tgl(o.MULAI_I), b = tgl(o.SELESAI_I);
+    hari = a === b ? a : a + ' s/d ' + b; jam = o.MULAI_I.slice(11, 16) + ' - ' + o.SELESAI_I.slice(11, 16);
+  }
+  const w = window.open('', '_blank'); if (!w) return fail(new Error('Pop-up diblokir browser. Izinkan pop-up lalu coba lagi.'));
+  w.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><title>${L.judul}</title>
+<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:Poppins,Arial,sans-serif;text-align:center;color:#1e293b}
+.pg{height:270mm;overflow:hidden;display:flex;flex-direction:column}
+.lg{height:22mm;margin:0 auto 3mm;display:block}
+h1{font-size:26pt;margin:0;letter-spacing:1px}h2{font-size:16pt;margin:1mm 0 5mm;color:#714B67;font-weight:600}
+.ev{border-top:1.5px solid #cbd5e1;border-bottom:1.5px solid #cbd5e1;padding:4mm 0;margin-bottom:4mm}
+.ac{font-size:17pt;font-weight:700;margin:0 0 2mm}.i{font-size:12.5pt;margin:1mm 0}.i b{display:inline-block;min-width:24mm;text-align:right;margin-right:2mm}
+.q{width:88mm;height:88mm;margin:2mm auto 3mm}.q img{width:100%;height:100%}
+.s{font-size:26pt;font-weight:700;margin:0}.l{font-size:10pt;color:#475569;word-break:break-all;margin:2mm 0 0}
+.c{margin:5mm 8mm 0;border:1.5px dashed #94a3b8;border-radius:8px;padding:4mm 6mm;font-size:11pt;text-align:left}.c ol{margin:2mm 0 0;padding-left:5mm}
+.ft{margin-top:auto;padding-top:3mm;border-top:1px solid #e2e8f0;font-size:9.5pt;color:#64748b}</style></head><body><div class="pg">
+<img class="lg" src="${logo}" onload="go()" onerror="this.style.display='none';go()">
+<h1>${L.judul}</h1><h2>RSUD Bandung Kiwari</h2>
+<div class="ev"><p class="ac">${esc(o.NAMA_ACARA || '-')}</p>
+${o.TEMPAT ? `<p class="i"><b>Tempat :</b>${esc(o.TEMPAT)}</p>` : ''}
+${hari ? `<p class="i"><b>Hari, Tanggal :</b>${esc(hari)}</p><p class="i"><b>Jam :</b>${esc(jam)}</p>` : ''}</div>
+<div class="q"><img src="${img}"></div><p class="s">SCAN ME</p><p class="l">${L.url}</p>
+<div class="c"><b>Catatan ${L.judul === 'DAFTAR HADIR' ? 'Daftar Hadir' : 'Peserta Didik'}:</b><ol>${L.catatan.map(x => '<li>' + x + '</li>').join('')}</ol></div>
+<div class="ft">© ${new Date().getFullYear()} RSUD Bandung Kiwari. All rights reserved.</div></div>
+<script>var d=0;function go(){if(d++)return;setTimeout(function(){window.focus();window.print()},300)}setTimeout(go,3000)<\/script>
+</body></html>`);
+  w.document.close();
+};
 
 /* ---- Mulai: dijalankan paling akhir, setelah semua fungsi dan konstanta siap ---- */
 if (sessionStorage.getItem('ok')) unlock();
