@@ -384,9 +384,11 @@ function editForm(o) {
 // Toggle CLOSE -> OPEN: waktu mulai >= sekarang, waktu selesai > waktu mulai. Status OPEN tidak bergantung waktu mulai.
 function openForm(o) {
   const n = nowIso();
+  const mu = o.MULAI_I && o.MULAI_I >= n ? o.MULAI_I : n;                              // pertahankan mulai di masa depan
+  const se = o.SELESAI_I && o.SELESAI_I > mu ? o.SELESAI_I : endIso(mu, 1, 'Jam');      // pertahankan selesai bila valid
   const f = [
-    { id: 'mulai', label: 'Waktu Mulai', icon: 'fa-calendar-plus', type: 'datetime-local', value: n, min: n },
-    { id: 'selesai', label: 'Waktu Selesai', icon: 'fa-calendar-check', type: 'datetime-local', value: endIso(n, 1, 'Jam'), min: n }];
+    { id: 'mulai', label: 'Waktu Mulai', icon: 'fa-calendar-plus', type: 'datetime-local', value: mu, min: n },
+    { id: 'selesai', label: 'Waktu Selesai', icon: 'fa-calendar-check', type: 'datetime-local', value: se, min: n }];
   form({
     title: 'Buka ' + M[cur].t.replace('Setting ', 'Input '), ok: 'Buka', fields: f,
     onInput: v => { const s = $('f_selesai'); s.min = v.mulai || n; if (v.mulai && v.selesai && v.selesai < v.mulai) s.value = v.mulai; },
