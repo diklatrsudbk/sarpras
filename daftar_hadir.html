@@ -53,7 +53,8 @@
 
     .admin-box { font-family: 'Poppins', sans-serif; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; }
 
-    .pimpinan-box { float: right; width: 300px; max-width: 100%; text-align: center; font-size: 11pt; display: none; margin-top: 40px; }
+    /* kotak pimpinan: rata kanan tanpa float agar aman saat dicetak */
+    .pimpinan-box { width: 300px; max-width: 100%; margin: 40px 0 0 auto; text-align: center; font-size: 11pt; display: none; }
     .area-ttd-pimpinan { height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; cursor: pointer; transition: .3s; border-radius: 8px; }
     .area-ttd-pimpinan:hover { background-color: #f8f9fa; outline: 1px dotted #ccc; }
     .area-ttd-pimpinan img { max-height: 100px; max-width: 100%; }
@@ -63,7 +64,7 @@
     .fab:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 18px 34px -8px rgba(37, 99, 235, .7); color: #fff; }
     .fab i { font-size: 18px; }
 
-    /* ---------- Kartu: tidak ada acara aktif ---------- */
+    /* ---------- Kartu: daftar hadir ditutup ---------- */
     .state-card { display: none; max-width: 480px; margin: 9vh auto 0; background: #fff; border-radius: 26px; padding: 40px 28px 34px; text-align: center; box-shadow: 0 25px 55px -18px rgba(15, 23, 42, .22); font-family: 'Poppins', sans-serif; }
     .state-card .logo { height: 64px; margin-bottom: 18px; }
     .state-card .ico { width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 26px; display: grid; place-items: center; font-size: 38px; background: #fef3c7; color: #d97706; }
@@ -89,10 +90,45 @@
 
     .spinner-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(3px); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; font-family: 'Poppins', sans-serif; }
 
+    /* =====================================================
+       TEMPLATE CETAK — A4 portrait, margin 2,54 cm semua sisi
+       (di dialog cetak: Margins = Default, matikan "Headers and footers")
+       ===================================================== */
+    @page { size: A4 portrait; margin: 2.54cm; }
+
     @media print {
-      body { background: #fff; padding: 0; }
-      .document-paper { box-shadow: none; padding: 0; margin: 0; max-width: 100%; border-radius: 0; min-height: 0; }
-      .d-print-none, .toolbar, .fab { display: none !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; width: auto; }
+
+      /* sembunyikan semua elemen layar */
+      .d-print-none, .toolbar, .fab, .spinner-overlay, .state-card, .state-foot, .modal, .modal-backdrop { display: none !important; }
+
+      /* kertas = area cetak; margin diatur oleh @page, jadi padding 0 */
+      .document-paper { box-shadow: none !important; border-radius: 0 !important; background: #fff !important; width: 100% !important; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; font-size: 11pt; }
+
+      /* kop surat: ukuran tetap (tidak ikut aturan layar kecil) */
+      .kop-surat { border-bottom: 4px double #000; padding-bottom: 10pt; margin-bottom: 16pt; }
+      .kop-logo-container { width: 100px; }
+      .kop-logo-container img { width: 90px; }
+      .kop-text-container { padding-right: 100px; }
+      .kop-title-1, .kop-title-2, .kop-title-3 { font-size: 14pt; }
+      .kop-address { font-size: 9pt; }
+
+      .judul-dokumen { font-size: 14pt; margin-bottom: 14pt; }
+      .info-acara { font-size: 11pt; margin-bottom: 12pt; }
+      .info-acara td:first-child { width: 140px; font-size: 11pt; }
+
+      /* tabel */
+      .table-responsive { overflow: visible !important; }
+      .table-hadir { width: 100% !important; font-size: 11pt; }
+      .table-hadir thead { display: table-header-group; }   /* judul kolom diulang tiap halaman */
+      .table-hadir tr, .table-hadir img { break-inside: avoid; page-break-inside: avoid; }
+      .table-hadir th, .table-hadir td { padding: 4pt 6pt; border: 1px solid #000 !important; }
+      .table-hadir th { background-color: #f1f5f9 !important; border-bottom: 2px solid #000 !important; }
+
+      /* blok tanda tangan pimpinan tidak terpotong antar halaman */
+      .pimpinan-box { break-inside: avoid; page-break-inside: avoid; margin-top: 24pt; font-size: 11pt; }
+      .area-ttd-pimpinan { cursor: default; outline: none !important; background: none !important; }
     }
   </style>
 </head>
@@ -103,12 +139,12 @@
     <h6 class="mt-3 text-muted fw-semibold" id="loading-text">Memproses...</h6>
   </div>
 
-  <!-- ===== Kartu: tidak ada acara aktif / gagal memuat ===== -->
+  <!-- ===== Kartu: daftar hadir ditutup / gagal memuat ===== -->
   <div class="state-card" id="state-none">
     <img class="logo" src="img/rsudbk.png" alt="RSUD Bandung Kiwari" onerror="this.style.display='none'">
     <div class="ico"><i class="bi" id="state-ico"></i></div>
-    <h1 id="state-title">Tidak Ada Acara Aktif</h1>
-    <p id="state-text">Daftar hadir sedang ditutup.</p>
+    <h1 id="state-title">Daftar Hadir Sudah Ditutup</h1>
+    <p id="state-text">Halaman Daftar Hadir sudah ditutup.</p>
     <button class="btn btn-primary rounded-pill px-4" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-1"></i>Muat Ulang</button>
     <div class="mt-4 pt-3 border-top small text-muted">RSUD Bandung Kiwari</div>
   </div>
@@ -167,7 +203,6 @@
       <p class="mb-0 fw-bold text-decoration-underline" id="lbl-nama-pimpinan">NAMA PIMPINAN</p>
       <p class="mb-0">NIP. <span id="lbl-nip"></span></p>
     </div>
-    <div class="clearfix"></div>
   </div>
 
   <div class="state-foot d-print-none" id="foot" style="display:none;">© <span id="yr"></span> RSUD Bandung Kiwari</div>
@@ -292,11 +327,41 @@
     let padPeserta, padPimpinan;
     let currentTableData = [];
     let pinActionTarget = "";
-    let closeTimer = null;
 
     const $ = id => document.getElementById(id);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const show = (id, v, d = 'block') => { $(id).style.display = v ? d : 'none'; };
+
+    // Panel diagnosa: buka halaman dengan ?debug di belakang URL
+    function dbg(msg) {
+      if (!/[?&]debug/.test(location.search)) return;
+      let d = $('dbg');
+      if (!d) { d = document.createElement('div'); d.id = 'dbg'; d.className = 'd-print-none'; d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#111;color:#0f0;font:12px monospace;padding:6px 10px;z-index:99999;white-space:pre-wrap'; document.body.appendChild(d); }
+      d.textContent += msg + '\n';
+    }
+
+    // GET ke Apps Script dengan batas waktu + ulang otomatis (Apps Script kadang gagal/404 sesaat)
+    async function api(url, tries = 3, timeoutMs = 20000) {
+      const name = new URL(url).searchParams.get('action');
+      const tStart = performance.now();
+      let lastErr;
+      for (let i = 0; i < tries; i++) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: ctrl.signal });
+          clearTimeout(t);
+          const json = await res.json();
+          dbg(name + ': total ' + Math.round(performance.now() - tStart) + ' ms, percobaan ke-' + (i + 1) + ', server: ' + JSON.stringify(json.debug || {}));
+          return json;
+        } catch (e) {
+          clearTimeout(t); lastErr = e;
+          dbg(name + ': percobaan ke-' + (i + 1) + ' gagal setelah ' + Math.round(performance.now() - tStart) + ' ms (' + (e && e.name) + ')');
+          await new Promise(r => setTimeout(r, 800 * (i + 1)));
+        }
+      }
+      throw lastErr;
+    }
 
     // ---------- Waktu (selalu WIB) ----------
     const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu'];
@@ -305,13 +370,9 @@
     const tglIndo = iso => { if (!iso) return '-'; const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return HARI[new Date(y, m - 1, d).getDay()] + ', ' + d + ' ' + BULAN[m - 1] + ' ' + y; };
     const jamIndo = iso => iso ? iso.slice(11, 16) : '-';
 
-    // Acara dianggap aktif hanya bila berstatus OPEN dan waktu selesai belum lewat (tidak bergantung waktu mulai)
+    // Satu-satunya syarat halaman tampil: STATUS = OPEN di sheet SETTING_DH
     function isOpen(e) {
-      if (!e) return false;
-      if (e.status && String(e.status).toUpperCase() !== 'OPEN') return false;
-      const end = new Date(e.waktu_selesai);
-      if (!isNaN(end) && end <= new Date()) return false;
-      return true;
+      return !!e && String(e.status || '').trim().toUpperCase() === 'OPEN';
     }
 
     function showLoading(on, text = "Memproses...") {
@@ -319,17 +380,16 @@
       $('loading-text').innerText = text;
     }
 
-    // Tampilan "tidak ada acara aktif" (mode 'none') atau "gagal memuat" (mode 'err')
+    // Tampilan "daftar hadir sudah ditutup" (mode 'none') atau "gagal memuat" (mode 'err')
     function showNone(mode = 'none') {
-      clearTimeout(closeTimer);
       ['toolbar', 'doc', 'foot'].forEach(i => show(i, false));
       $('btn-input-kehadiran').style.display = 'none';
       document.querySelectorAll('.modal.show').forEach(m => bootstrap.Modal.getInstance(m)?.hide());
       const err = mode === 'err';
       $('state-none').classList.toggle('err', err);
       $('state-ico').className = 'bi ' + (err ? 'bi-wifi-off' : 'bi-calendar-x');
-      $('state-title').innerText = err ? 'Gagal Memuat Data' : 'Tidak Ada Acara Aktif';
-      $('state-text').innerText = err ? 'Periksa koneksi internet Anda, lalu muat ulang halaman.' : 'Daftar hadir sedang ditutup. Silakan scan kembali QR code saat acara dibuka.';
+      $('state-title').innerText = err ? 'Gagal Memuat Data' : 'Daftar Hadir Sudah Ditutup';
+      $('state-text').innerText = err ? 'Periksa koneksi internet Anda, lalu muat ulang halaman.' : 'Halaman Daftar Hadir sudah ditutup. Silakan scan kembali QR code saat acara dibuka.';
       $('state-none').style.display = 'block';
       showLoading(false);
     }
@@ -351,7 +411,7 @@
 
       window.addEventListener("resize", () => { if ($('modalKehadiran').classList.contains('show')) resizeCanvas(c1); });
 
-      fetch(`${API_URL}?action=getActiveEvent`).then(res => res.json()).then(response => {
+      api(`${API_URL}?action=getActiveEvent`).then(response => {
         if (response.status === 'success') initPage(response.data);
         else showNone('err');
       }).catch(() => showNone('err'));
@@ -364,7 +424,7 @@
       canvas.getContext("2d").scale(ratio, ratio);
     }
 
-    function initPage(eventData) {
+    function initPage(eventData, rows) {
       if (!isOpen(eventData)) return showNone('none'); // tidak ada acara berstatus OPEN
       activeEvent = eventData;
       activeEvent.pimpinan = activeEvent.pimpinan || activeEvent.nama_pimpinan || ''; // samakan nama field dari server
@@ -395,25 +455,26 @@
         $('info-tanggal').innerText = tglIndo(a);
         $('info-waktu').innerText = a && b ? jamIndo(a) + ' - ' + jamIndo(b) + ' WIB' : '-';
       }
-      $('pill-text').innerText = b ? 'Dibuka sampai ' + jamIndo(b) + ' WIB' : 'Daftar hadir dibuka';
+      $('pill-text').innerText = 'Daftar hadir dibuka';
       $('tabel-head').innerHTML = thead;
 
       $('state-none').style.display = 'none';
       show('toolbar', true, 'flex'); show('doc', true); show('foot', true);
       $('btn-input-kehadiran').style.display = 'inline-flex';
 
-      // tutup tampilan otomatis begitu waktu selesai terlewati saat halaman masih terbuka
-      const ms = new Date(eventData.waktu_selesai) - new Date();
-      if (ms > 0 && ms < 2147483647) closeTimer = setTimeout(() => showNone('none'), ms);
-
       if (activeEvent.pimpinan) { $('chk-pimpinan').checked = true; renderBoxPimpinan(); }
-      loadTableData();
+      showLoading(false); // halaman langsung tampil; tabel menyusul
+      if (rows) { currentTableData = rows; renderTable(rows); }
+      else {
+        $('tabel-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4 ui">Memuat data kehadiran...</td></tr>`;
+        loadTableData();
+      }
     }
 
     function loadTableData() {
-      fetch(`${API_URL}?action=getAttendanceData&sheetName=${encodeURIComponent(activeEvent.nama_sheet)}&template=${encodeURIComponent(activeEvent.template)}`)
-        .then(res => res.json()).then(response => { if (response.status === 'success') { currentTableData = response.data; renderTable(currentTableData); } else showLoading(false); })
-        .catch(() => showLoading(false));
+      api(`${API_URL}?action=getAttendanceData&sheetName=${encodeURIComponent(activeEvent.nama_sheet)}&template=${encodeURIComponent(activeEvent.template)}`)
+        .then(response => { if (response.status === 'success') { currentTableData = response.data; renderTable(currentTableData); } else showLoading(false); })
+        .catch(() => { showLoading(false); $('tabel-body').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4 ui">Gagal memuat data kehadiran. Muat ulang halaman.</td></tr>`; });
     }
 
     function renderTable(data) {
@@ -486,7 +547,7 @@
       nimInput.disabled = true;
       $('nim-msg').innerHTML = '<span class="text-warning"><i class="bi bi-hourglass-split"></i> Memverifikasi data...</span>';
 
-      fetch(`${API_URL}?action=checkNIM&nim=${encodeURIComponent(nimValue)}`).then(res => res.json()).then(response => {
+      api(`${API_URL}?action=checkNIM&nim=${encodeURIComponent(nimValue)}`).then(response => {
         nimInput.disabled = false;
         if (response.data.found) {
           $('dhpd-fields').style.display = 'block';
@@ -496,7 +557,7 @@
           $('f-nama').value = response.data.nama;
           $('f-institusi').value = response.data.institusi;
           $('f-jurusan').value = response.data.jurusan;
-          cekModeEdit(response.data.nama, '', '');
+          cekModeEdit(response.data.nama, '');
           resizeCanvas($('signature-pad')); // ukuran canvas dihitung ulang setelah tampil
           padPeserta.clear();
         } else {
@@ -511,8 +572,8 @@
     function checkEditDH() {
       const nama = $('f-nama').value;
       if (!nama) return;
-      if (activeEvent.template === 'TEMPLATE_DH') cekModeEdit(nama, $('f-bagian').value, '');
-      else if (activeEvent.template === 'TEMPLATE_DHPL') cekModeEdit(nama, $('f-profesi').value, '');
+      if (activeEvent.template === 'TEMPLATE_DH') cekModeEdit(nama, $('f-bagian').value);
+      else if (activeEvent.template === 'TEMPLATE_DHPL') cekModeEdit(nama, $('f-profesi').value);
     }
 
     function cekModeEdit(valNama, valCol3) {
