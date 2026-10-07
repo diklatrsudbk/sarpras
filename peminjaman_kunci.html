@@ -148,6 +148,7 @@
                             <div><label class="text-[10px] font-semibold text-slate-500">Jurusan / Divisi</label><input type="text" id="JURUSAN_DIVISI" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
                             <div><label class="text-[10px] font-semibold text-slate-500">No. HP / WhatsApp</label><input type="text" id="NO_HP" readonly class="w-full bg-transparent text-sm font-semibold outline-none border-b border-slate-300 pb-1"></div>
                         </div>
+                        <p class="text-[10px] text-emerald-600 mt-3"><i class="fa-brands fa-whatsapp"></i> Konfirmasi persetujuan kunci akan dikirim ke nomor WhatsApp di atas.</p>
                     </div>
 
                     <div>
@@ -261,7 +262,8 @@
     
     <div id="modalCancel" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <form onsubmit="processCancel(event)" class="bg-white rounded-2xl p-6 text-center max-w-sm w-full">
-            <i class="fa-solid fa-ban text-3xl text-rose-600 mb-3"></i><h3 class="font-bold mb-4">Batalkan Peminjaman</h3>
+            <i class="fa-solid fa-ban text-3xl text-rose-600 mb-3"></i><h3 class="font-bold mb-1">Batalkan Peminjaman</h3>
+            <p class="text-xs text-slate-500 mb-3">Alasan akan dikirim ke peminjam via WhatsApp.</p>
             <input type="hidden" id="cancelId">
             <textarea id="cancelCatatan" rows="3" required placeholder="Alasan pembatalan (Wajib)..." class="w-full p-3 border rounded-lg text-xs mb-4 outline-none focus:ring-2 focus:ring-rose-500"></textarea>
             <div class="flex gap-2.5">
@@ -312,7 +314,7 @@
     <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customConfirmContent"><div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customConfirmIcon" class="fa-solid fa-circle-question"></i></div><h3 id="customConfirmTitle" class="text-lg font-bold mb-2 text-slate-800">Konfirmasi</h3><p id="customConfirmMessage" class="text-sm text-slate-600 mb-6">Pesan</p><div class="flex gap-3"><button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button><button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya</button></div></div></div>
 
     <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec";
         const TIPE_MODUL = 'kunci';
 
         let canvas, ctx, isDrawing = false;
@@ -324,8 +326,7 @@
         const ADMIN_PASS = "admin";
 
         // =========================================
-        // HELPER FETCH TERPUSAT (menggantikan mode:"no-cors" yang tidak bisa
-        // membaca respons error dari server)
+        // HELPER FETCH TERPUSAT
         // =========================================
         async function postToServer(payload) {
             payload.TIPE = payload.TIPE || TIPE_MODUL;
@@ -347,6 +348,11 @@
                 throw new Error("Respons server tidak dapat dibaca (kemungkinan Web App belum di-deploy ulang).");
             }
             if (result.status !== "success") throw new Error(result.message || "Server menolak permintaan tanpa pesan detail.");
+
+            // Hasil kirim WhatsApp dari server (ditampilkan di alert sukses berikutnya)
+            const note = [];
+            if (Array.isArray(result.wa)) result.wa.forEach(w => note.push(w.ok ? '✅ Notifikasi WA terkirim' : '⚠️ WA GAGAL: ' + String(w.info || '').replace(/[<>&]/g, '')));
+            window.lastServerNote = note.join('<br>');
             return result;
         }
 
@@ -419,6 +425,8 @@
 
         // --- CUSTOM DIALOGS ---
         function customAlert(msg, title="Info", type="info") { 
+            // Sisipkan hasil kirim WA (jika ada) pada alert sukses
+            if (type === 'success' && window.lastServerNote) { msg += '\n\n' + window.lastServerNote; window.lastServerNote = ''; }
             return new Promise(resolve => {
                 const modal = document.getElementById('customModalAlert'); const content = document.getElementById('customAlertContent');
                 document.getElementById('customAlertTitle').innerText = title; document.getElementById('customAlertMessage').innerHTML = msg.replace(/\n/g, '<br>');
@@ -447,6 +455,7 @@
         }
 
         function handleSearchInput() { clearTimeout(searchTimeout); searchTimeout = setTimeout(filterTable, 300); }
+        function filterTable() { renderTable(); }
 
         function renderTable() {
             const tbody = document.getElementById('tableBody');
@@ -584,121 +593,114 @@
         }
 
         // ==========================================
-// 1. PLOTTING KUNCI (ADMIN)
-// ==========================================
-function openPlotModal(id, jenis, qty, targetStatus) {
-    document.getElementById('modalPlotKunci').classList.remove('hidden');
-    document.getElementById('plotId').value = id;
-    document.getElementById('plotTargetStatus').value = targetStatus;
-    document.getElementById('plotReqQty').value = qty;
-    
-    // Reset dan sembunyikan catatan di awal
-    document.getElementById('plotCatatan').value = "";
-    document.getElementById('plotCatatanContainer').classList.add('hidden');
-    
-    const labelJenis = jenis === 'P' ? 'Perempuan' : 'Laki-laki';
-    document.getElementById('plotSubtitle').innerHTML = `Permintaan awal: <b>${qty}</b> kunci Loker <b>${labelJenis}</b>.`;
-    
-    const container = document.getElementById('plotKeysContainer');
-    container.innerHTML = "";
-
-    const available = dbKunci.filter(k => k.jenis === jenis && String(k.status).toUpperCase() === 'TERSEDIA');
-    if (available.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center p-4 text-rose-500 text-xs font-semibold">Stok Kunci Loker habis. Silakan Cancel request ini.</div>`;
-        return;
-    }
-    
-    available.forEach(k => {
-        const div = document.createElement('div');
-        div.className = "flex items-center gap-2 bg-white border border-slate-200 p-2 rounded-lg hover:border-indigo-300 transition cursor-pointer";
-        div.innerHTML = `<input type="checkbox" name="plotKey" value="${k.nomor}" class="w-4 h-4 text-indigo-600 key-checkbox" onchange="checkPlotLimit(${qty})">
-                         <span class="text-xs font-semibold text-slate-700">Loker ${k.nomor}</span>`;
-        div.onclick = (e) => { if(e.target.tagName !== 'INPUT') div.querySelector('input').click(); }
-        container.appendChild(div);
-    });
-}
-
-function closePlotModal() {
-    document.getElementById('modalPlotKunci').classList.add('hidden');
-}
-
-function checkPlotLimit(max) {
-    const boxes = document.querySelectorAll('.key-checkbox');
-    const checked = document.querySelectorAll('.key-checkbox:checked').length;
-    
-    // Mencegah user menceklis melebihi permintaan awal
-    boxes.forEach(b => { if(!b.checked) b.disabled = (checked >= max); });
-    
-    // Jika user mengubah pikiran dan menggenapkan kunci sesuai request, sembunyikan lagi form alasannya
-    if (checked === max) {
-        document.getElementById('plotCatatanContainer').classList.add('hidden');
-        document.getElementById('plotCatatan').value = "";
-    }
-}
-
-async function processPlot(e) {
-    e.preventDefault();
-    const reqQty = parseInt(document.getElementById('plotReqQty').value);
-    const checked = Array.from(document.querySelectorAll('.key-checkbox:checked')).map(b => b.value);
-    const selectedQty = checked.length;
-    
-    if (selectedQty === 0) { 
-        await customAlert("Pilih minimal 1 kunci terlebih dahulu!", "Peringatan", "warning"); 
-        return; 
-    }
-
-    const catContainer = document.getElementById('plotCatatanContainer');
-    const catInput = document.getElementById('plotCatatan');
-    let cat = catInput.value.trim();
-
-    // Skenario jika jumlah yang dipilih kurang dari yang direquest
-    if (selectedQty < reqQty) {
-        // Jika kotak catatan belum muncul, tanyakan konfirmasi terlebih dahulu
-        if (catContainer.classList.contains('hidden')) {
-            const isConfirmed = await customConfirm(`Anda hanya memilih ${selectedQty} dari ${reqQty} kunci yang diminta.\n\nApakah Anda yakin ingin melanjutkan dengan jumlah yang lebih sedikit?`, "Kunci Kurang dari Request", "warning");
+        // 1. PLOTTING KUNCI (ADMIN) -> setelah simpan, peserta didik dikirimi WA konfirmasi
+        // ==========================================
+        function openPlotModal(id, jenis, qty, targetStatus) {
+            document.getElementById('modalPlotKunci').classList.remove('hidden');
+            document.getElementById('plotId').value = id;
+            document.getElementById('plotTargetStatus').value = targetStatus;
+            document.getElementById('plotReqQty').value = qty;
             
-            if (isConfirmed) {
-                // Tampilkan kotak alasan dan suruh user mengisinya
-                catContainer.classList.remove('hidden');
-                catInput.focus();
+            document.getElementById('plotCatatan').value = "";
+            document.getElementById('plotCatatanContainer').classList.add('hidden');
+            
+            const labelJenis = jenis === 'P' ? 'Perempuan' : 'Laki-laki';
+            document.getElementById('plotSubtitle').innerHTML = `Permintaan awal: <b>${qty}</b> kunci Loker <b>${labelJenis}</b>.`;
+            
+            const container = document.getElementById('plotKeysContainer');
+            container.innerHTML = "";
+
+            const available = dbKunci.filter(k => k.jenis === jenis && String(k.status).toUpperCase() === 'TERSEDIA');
+            if (available.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center p-4 text-rose-500 text-xs font-semibold">Stok Kunci Loker habis. Silakan Cancel request ini.</div>`;
+                return;
             }
-            return; // Hentikan script di sini, tunggu user klik tombol Simpan & Acc lagi
-        } 
-        // Jika kotak catatan sudah muncul (artinya ini adalah klik kedua)
-        else {
-            if (cat === "") {
-                await customAlert("Alasan wajib diisi jika kunci yang diberikan kurang dari permintaan!", "Catatan Wajib", "warning"); 
-                catInput.focus();
+            
+            available.forEach(k => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-white border border-slate-200 p-2 rounded-lg hover:border-indigo-300 transition cursor-pointer";
+                div.innerHTML = `<input type="checkbox" name="plotKey" value="${k.nomor}" class="w-4 h-4 text-indigo-600 key-checkbox" onchange="checkPlotLimit(${qty})">
+                                 <span class="text-xs font-semibold text-slate-700">Loker ${k.nomor}</span>`;
+                div.onclick = (e) => { if(e.target.tagName !== 'INPUT') div.querySelector('input').click(); }
+                container.appendChild(div);
+            });
+        }
+
+        function closePlotModal() {
+            document.getElementById('modalPlotKunci').classList.add('hidden');
+        }
+
+        function checkPlotLimit(max) {
+            const boxes = document.querySelectorAll('.key-checkbox');
+            const checked = document.querySelectorAll('.key-checkbox:checked').length;
+            
+            boxes.forEach(b => { if(!b.checked) b.disabled = (checked >= max); });
+            
+            if (checked === max) {
+                document.getElementById('plotCatatanContainer').classList.add('hidden');
+                document.getElementById('plotCatatan').value = "";
+            }
+        }
+
+        async function processPlot(e) {
+            e.preventDefault();
+            const reqQty = parseInt(document.getElementById('plotReqQty').value);
+            const checked = Array.from(document.querySelectorAll('.key-checkbox:checked')).map(b => b.value);
+            const selectedQty = checked.length;
+            
+            if (selectedQty === 0) { 
+                await customAlert("Pilih minimal 1 kunci terlebih dahulu!", "Peringatan", "warning"); 
                 return; 
             }
+
+            const catContainer = document.getElementById('plotCatatanContainer');
+            const catInput = document.getElementById('plotCatatan');
+            let cat = catInput.value.trim();
+
+            if (selectedQty < reqQty) {
+                if (catContainer.classList.contains('hidden')) {
+                    const isConfirmed = await customConfirm(`Anda hanya memilih ${selectedQty} dari ${reqQty} kunci yang diminta.\n\nApakah Anda yakin ingin melanjutkan dengan jumlah yang lebih sedikit?`, "Kunci Kurang dari Request", "warning");
+                    
+                    if (isConfirmed) {
+                        catContainer.classList.remove('hidden');
+                        catInput.focus();
+                    }
+                    return;
+                } 
+                else {
+                    if (cat === "") {
+                        await customAlert("Alasan wajib diisi jika kunci yang diberikan kurang dari permintaan!", "Catatan Wajib", "warning"); 
+                        catInput.focus();
+                        return; 
+                    }
+                }
+            }
+
+            const assignedKeysStr = checked.join(', '); 
+            const id = document.getElementById('plotId').value;
+            const targetStatus = document.getElementById('plotTargetStatus').value;
+            
+            closePlotModal();
+            showGlobalLoading("Menyimpan plot kunci & mengirim notifikasi...");
+
+            try {
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: cat, ASSIGNED_KEYS: assignedKeysStr, QTY: selectedQty, TIPE: 'kunci' });
+
+                const index = dummyData.findIndex(d => String(d.ID) === String(id));
+                if(index > -1) { 
+                    dummyData[index].STATUS = targetStatus; 
+                    dummyData[index].NOMOR_KUNCI = assignedKeysStr;
+                    dummyData[index].QTY = selectedQty;
+                    renderTable(); 
+                }
+                hideGlobalLoading();
+                await customAlert(`Berhasil! ${selectedQty} Kunci (${assignedKeysStr}) ditetapkan, status: ${targetStatus}.\nPeserta didik dikirimi konfirmasi via WhatsApp.`, "Berhasil", "success");
+            } catch(err) {
+                hideGlobalLoading();
+                await customAlert("Gagal menyimpan data ke server.\n" + (err.message || ""), "Error", "error");
+                loadDataSequentially();
+            }
         }
-    }
-
-    // --- Jika semua validasi lolos, lanjutkan pengiriman ke Server ---
-    const assignedKeysStr = checked.join(', '); 
-    const id = document.getElementById('plotId').value;
-    const targetStatus = document.getElementById('plotTargetStatus').value;
-    
-    closePlotModal();
-    showGlobalLoading("Menyimpan plot kunci...");
-
-    try {
-        await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: cat, ASSIGNED_KEYS: assignedKeysStr, QTY: selectedQty, TIPE: 'kunci' });
-
-        const index = dummyData.findIndex(d => String(d.ID) === String(id));
-        if(index > -1) { 
-            dummyData[index].STATUS = targetStatus; 
-            dummyData[index].NOMOR_KUNCI = assignedKeysStr;
-            dummyData[index].QTY = selectedQty; // Update QTY di tampilan tabel juga
-            renderTable(); 
-        }
-        hideGlobalLoading();
-        await customAlert(`Berhasil! ${selectedQty} Kunci diserahkan dan Status diubah menjadi: ${targetStatus}`, "Berhasil", "success");
-    } catch(err) {
-        hideGlobalLoading();
-        await customAlert("Gagal menyimpan data ke server.\n" + (err.message || ""), "Error", "error");
-    }
-}
 
         // ==========================================
         // 2. UPDATE STATUS (Tanpa Admin - Serahkan Kunci)
@@ -709,7 +711,8 @@ async function processPlot(e) {
             let oldStatus = ""; if(index > -1) { oldStatus = dummyData[index].STATUS; dummyData[index].STATUS = targetStatus; renderTable(); }
             
             try {
-                await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", ASSIGNED_KEYS: "", TIPE: 'kunci' });
+                // ASSIGNED_KEYS sengaja tidak dikirim agar nomor kunci yang sudah diplot tidak terhapus
+                await postToServer({ action: 'updateStatus', ID: id, STATUS: targetStatus, CATATAN: "", TIPE: 'kunci' });
                 hideGlobalLoading();
                 await customAlert(`Status berhasil diubah menjadi: ${targetStatus}`, "Berhasil", "success");
             } catch(e) {
@@ -720,7 +723,7 @@ async function processPlot(e) {
         }
 
         // ==========================================
-        // 3. ACTION CANCEL (ADMIN)
+        // 3. ACTION CANCEL (ADMIN) -> alasan dikirim ke peserta didik via WA
         // ==========================================
         function openCancelModal(id) { document.getElementById('modalCancel').classList.remove('hidden'); document.getElementById('cancelId').value=id; document.getElementById('cancelCatatan').value=''; }
         function closeCancelModal() { document.getElementById('modalCancel').classList.add('hidden'); }
@@ -830,112 +833,113 @@ async function processPlot(e) {
         }
         
         function cekNIM(nim) {
-    if (currentAbortController) {
-        currentAbortController.abort();
-    }
-    
-    currentAbortController = new AbortController();
-    const signal = currentAbortController.signal;
-
-    // Tampilkan indikator loading saat mulai/mencoba lagi
-    document.getElementById('nimLoading').classList.remove('hidden');
-    document.getElementById('nimError').classList.add('hidden');
-    document.getElementById('nimSuccess').classList.add('hidden');
-
-    fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
-    .then(res => {
-        if (!res.ok) throw new Error("Gagal mengambil data dari server");
-        return res.json();
-    })
-    .then(data => {
-        if (data.status === 'success') {
-            document.getElementById('NAMA_PEMINJAM').value = data.nama || '';
-            document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi || '';
-            document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang||''} ${data.jurusan||''}`.trim();
-            document.getElementById('NO_HP').value = data.noHp || '';
+            if (currentAbortController) {
+                currentAbortController.abort();
+            }
             
+            currentAbortController = new AbortController();
+            const signal = currentAbortController.signal;
+
+            document.getElementById('nimLoading').classList.remove('hidden');
             document.getElementById('nimError').classList.add('hidden');
-            document.getElementById('nimSuccess').classList.remove('hidden');
-            document.getElementById('loanForm').classList.remove('hidden');
-            isValidNim = true;
-        } else { 
-            document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan atau tidak terdaftar!';
-            document.getElementById('nimError').classList.remove('hidden'); 
-            document.getElementById('nimSuccess').classList.add('hidden'); 
-            document.getElementById('loanForm').classList.add('hidden');
-            isValidNim = false; 
+            document.getElementById('nimSuccess').classList.add('hidden');
+
+            fetch(`${GAS_WEB_APP_URL}?action=lookupNIM&nim=${encodeURIComponent(nim)}`, { signal })
+            .then(res => {
+                if (!res.ok) throw new Error("Gagal mengambil data dari server");
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('NAMA_PEMINJAM').value = data.nama || '';
+                    document.getElementById('INSTITUSI_PERUSAHAAN').value = data.institusi || '';
+                    document.getElementById('JURUSAN_DIVISI').value = `${data.jenjang||''} ${data.jurusan||''}`.trim();
+                    document.getElementById('NO_HP').value = data.noHp || '';
+                    
+                    document.getElementById('nimError').classList.add('hidden');
+                    document.getElementById('nimSuccess').classList.remove('hidden');
+                    document.getElementById('loanForm').classList.remove('hidden');
+                    isValidNim = true;
+                } else { 
+                    document.getElementById('nimError').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NIM tidak ditemukan atau tidak terdaftar!';
+                    document.getElementById('nimError').classList.remove('hidden'); 
+                    document.getElementById('nimSuccess').classList.add('hidden'); 
+                    document.getElementById('loanForm').classList.add('hidden');
+                    isValidNim = false; 
+                }
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                
+                console.error("Fetch Error:", err);
+                
+                document.getElementById('nimError').innerHTML = `
+                    <i class="fa-solid fa-wifi"></i> Gagal menghubungi server. 
+                    <button type="button" onclick="cekNIM('${nim}')" style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 5px; font-weight: bold;">
+                        <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+                    </button>
+                `;
+                document.getElementById('nimError').classList.remove('hidden'); 
+                document.getElementById('nimSuccess').classList.add('hidden'); 
+                document.getElementById('loanForm').classList.add('hidden');
+                isValidNim = false;
+            })
+            .finally(() => { 
+                if (!signal.aborted) {
+                    document.getElementById('nimLoading').classList.add('hidden'); 
+                }
+            });
         }
-    })
-    .catch(err => {
-        if (err.name === 'AbortError') return;
-        
-        console.error("Fetch Error:", err);
-        
-        // MODIFIKASI: Menambahkan tombol "Coba Lagi" (Retry)
-        document.getElementById('nimError').innerHTML = `
-            <i class="fa-solid fa-wifi"></i> Gagal menghubungi server. 
-            <button type="button" onclick="cekNIM('${nim}')" style="background: none; border: none; color: #007bff; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 5px; font-weight: bold;">
-                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
-            </button>
-        `;
-        document.getElementById('nimError').classList.remove('hidden'); 
-        document.getElementById('nimSuccess').classList.add('hidden'); 
-        document.getElementById('loanForm').classList.add('hidden');
-        isValidNim = false;
-    })
-    .finally(() => { 
-        if (!signal.aborted) {
-            document.getElementById('nimLoading').classList.add('hidden'); 
-        }
-    });
-}
 
         async function submitForm(e) {
-    e.preventDefault();
-    if(!isValidNim) { await customAlert("NIM tidak valid!","Error","error"); return; }
-    if(!document.getElementById('checkSK').checked) { await customAlert("Setujui persyaratan peminjaman!","Peringatan","warning"); return; }
-    
-    // 1. TAMPILKAN LOADING
-    showGlobalLoading("Mengajukan peminjaman kunci...");
+            e.preventDefault();
+            if(!isValidNim) { await customAlert("NIM tidak valid!","Error","error"); return; }
+            if(!document.getElementById('checkSK').checked) { await customAlert("Setujui persyaratan peminjaman!","Peringatan","warning"); return; }
+            if(!document.getElementById('NO_HP').value.trim()) { await customAlert("Nomor HP/WhatsApp pada data NIM Anda kosong, sehingga konfirmasi WA tidak dapat dikirim. Hubungi admin untuk melengkapi data.","Nomor HP Kosong","warning"); return; }
+            
+            showGlobalLoading("Mengajukan peminjaman kunci...");
 
-    // 2. AMBIL DATA CANVAS TTD
-    const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = canvas.width/2; tempCanvas.height = canvas.height/2; 
-    tempCtx.fillStyle='#fff'; tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height); 
-    tempCtx.drawImage(canvas,0,0,tempCanvas.width,tempCanvas.height);
-    const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
+            const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width/2; tempCanvas.height = canvas.height/2; 
+            tempCtx.fillStyle='#fff'; tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height); 
+            tempCtx.drawImage(canvas,0,0,tempCanvas.width,tempCanvas.height);
+            const sigData = tempCanvas.toDataURL("image/jpeg", 0.5);
 
-    // 3. BUAT PAYLOAD DARI FORM
-    const now = new Date(); const pad = (n) => String(n).padStart(2,'0');
-    const tStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    const bId = `PK_${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const idStr = bId + String(dummyData.filter(d=>String(d.ID).startsWith(bId)).length+1).padStart(3,'0');
+            const now = new Date(); const pad = (n) => String(n).padStart(2,'0');
+            const tStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const bId = `PK_${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}`;
+            const idStr = bId + String(dummyData.filter(d=>String(d.ID).startsWith(bId)).length+1).padStart(3,'0');
 
-    const payload = {
-        action: "requestKunci", TIPE: "kunci", ID: idStr, TIMESTAMPT: tStr, TANGGAL: now.toLocaleDateString('id-ID'),
-        NAMA_BARANG: document.getElementById('JENIS_LOKER').value, QTY: document.getElementById('QTY_INPUT').value,
-        NOMOR_KUNCI: "", STATUS: "Request", NIM_NIK: document.getElementById('NIM_NIK').value,
-        NAMA_PEMINJAM: document.getElementById('NAMA_PEMINJAM').value, INSTITUSI_PERUSAHAAN: document.getElementById('INSTITUSI_PERUSAHAAN').value,
-        JURUSAN_DIVISI: document.getElementById('JURUSAN_DIVISI').value, NO_HP: "'"+document.getElementById('NO_HP').value,
-        TGL_PINJAM: document.getElementById('TGL_PINJAM').value, TGL_KEMBALI: document.getElementById('TGL_KEMBALI').value,
-        DURASI: document.getElementById('DURASI').value, TANDA_TANGAN: sigData
-    };
-    
-    // 4. TUTUP MODAL SETELAH PAYLOAD DIAMANKAN
-    closeModal();
-    
-    // 5. KIRIM DATA KE SERVER
-    try {
-        await postToServer(payload);
-        dummyData.unshift(payload);
-        renderTable();
-        hideGlobalLoading();
-        await customAlert("Pengajuan kunci berhasil dikirim! Menunggu persetujuan admin.","Berhasil","success");
-    } catch(err) { 
-        hideGlobalLoading();
-        await customAlert("Gagal terhubung ke server. Periksa koneksi internet.\n" + (err.message || ""),"Error","error"); 
-    }
-}
+            const payload = {
+                action: "requestKunci", TIPE: "kunci", ID: idStr, TIMESTAMPT: tStr, TANGGAL: now.toLocaleDateString('id-ID'),
+                NAMA_BARANG: document.getElementById('JENIS_LOKER').value, QTY: document.getElementById('QTY_INPUT').value,
+                NOMOR_KUNCI: "", STATUS: "Request", NIM_NIK: document.getElementById('NIM_NIK').value,
+                NAMA_PEMINJAM: document.getElementById('NAMA_PEMINJAM').value, INSTITUSI_PERUSAHAAN: document.getElementById('INSTITUSI_PERUSAHAAN').value,
+                JURUSAN_DIVISI: document.getElementById('JURUSAN_DIVISI').value, NO_HP: "'"+document.getElementById('NO_HP').value,
+                TGL_PINJAM: document.getElementById('TGL_PINJAM').value, TGL_KEMBALI: document.getElementById('TGL_KEMBALI').value,
+                DURASI: document.getElementById('DURASI').value, TANDA_TANGAN: sigData
+            };
+            
+            closeModal();
+            
+            try {
+                await postToServer(payload);
+                dummyData.unshift(payload);
+                renderTable();
+                hideGlobalLoading();
+                await customAlert("Pengajuan kunci berhasil dikirim! Admin telah dinotifikasi via WhatsApp. Konfirmasi persetujuan akan dikirim ke WA Anda.","Berhasil","success");
+            } catch(err) { 
+                // Respons bisa gagal sampai ke browser padahal data sudah tersimpan -> cek ke server dulu
+                try { await loadDataSequentially(); } catch (e2) {}
+                if (dummyData.some(d => String(d.ID) === idStr)) {
+                    hideGlobalLoading();
+                    await customAlert("Pengajuan kunci berhasil dikirim! (data sudah tersimpan di server)","Berhasil","success");
+                    return;
+                }
+                hideGlobalLoading();
+                await customAlert("Gagal terhubung ke server. Periksa koneksi internet.\n" + (err.message || ""),"Error","error"); 
+            }
+        }
 
         // ==========================================
         // SISTEM KOORDINAT CANVAS & DURASI
