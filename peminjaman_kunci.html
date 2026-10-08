@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script>
         // Mulai mengunduh data SEKARANG (paralel dengan Tailwind/Font), tidak menunggu halaman selesai dimuat
-        window.__PRE = (function () { try { return fetch("https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec?action=getData&tipe=kunci&_t=" + Date.now()).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return null; }); } catch (e) { return null; } })();
+        window.__PRE = (function () { try { return fetch("https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec?action=getData&tipe=kunci&_t=" + Date.now()).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return null; }); } catch (e) { return null; } })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Peminjaman Kunci Loker - RSUD Bandung Kiwari</title>
@@ -318,7 +318,7 @@
     <div id="customModalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4"><div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center transform scale-95 opacity-0 transition-all duration-200" id="customConfirmContent"><div id="customConfirmIconBox" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i id="customConfirmIcon" class="fa-solid fa-circle-question"></i></div><h3 id="customConfirmTitle" class="text-lg font-bold mb-2 text-slate-800">Konfirmasi</h3><p id="customConfirmMessage" class="text-sm text-slate-600 mb-6">Pesan</p><div class="flex gap-3"><button id="btnCustomConfirmCancel" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">Batal</button><button id="btnCustomConfirmOk" class="w-1/2 py-2.5 rounded-xl text-white font-semibold text-sm shadow-md transition">Ya</button></div></div></div>
 
     <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec";
         const TIPE_MODUL = 'kunci';
 
         let canvas, ctx, isDrawing = false;
@@ -952,7 +952,7 @@
                 try { await loadDataSequentially(); } catch (e2) {}
                 if (dummyData.some(d => String(d.ID) === idStr)) {
                     hideGlobalLoading();
-                    await customAlert("Pengajuan kunci berhasil dikirim! (data sudah tersimpan di server)","Berhasil","success");
+                    await customAlert("Data pengajuan SUDAH tersimpan di server.\n\n⚠️ Namun ada kendala saat memproses notifikasi:\n" + String(err.message || "respons tidak diterima").replace(/[<>&]/g, ""),"Tersimpan dengan Peringatan","warning");
                     return;
                 }
                 hideGlobalLoading();
