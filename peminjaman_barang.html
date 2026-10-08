@@ -2,6 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // Mulai mengunduh data SEKARANG (paralel dengan Tailwind/Font), tidak menunggu halaman selesai dimuat
+        window.__PRE = (function () { try { return fetch("https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec?action=getData&tipe=barang&_t=" + Date.now()).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return null; }); } catch (e) { return null; } })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Peminjaman Barang - RSUD Bandung Kiwari</title>
     
@@ -514,7 +518,7 @@
     <!-- ================= END CUSTOM MODALS ================= -->
 
     <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
         const TIPE_MODUL = 'barang';
 
         let canvas, ctx, isDrawing = false;
@@ -680,21 +684,44 @@
             return result;
         }
 
+        // ---- Cache lokal: tampilkan data kunjungan sebelumnya LANGSUNG, lalu perbarui di latar belakang ----
+        const CACHE_KEY = 'cache_' + TIPE_MODUL;
+        function readCache() { try { const v = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); return Array.isArray(v) ? v : null; } catch (e) { return null; } }
+        function writeCache(d) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch (e) {} }
+        async function fetchTrans(first) {
+            if (first && window.__PRE) { // pakai unduhan yang sudah dimulai di <head>
+                const p = window.__PRE; window.__PRE = null;
+                const pre = await p;
+                if (Array.isArray(pre)) return pre;
+            }
+            const r = await fetch(`${GAS_WEB_APP_URL}?action=getData&tipe=${TIPE_MODUL}&_t=${Date.now()}`);
+            if (!r.ok) throw new Error('Server status ' + r.status);
+            const data = await r.json();
+            if (!Array.isArray(data)) throw new Error((data && data.message) || 'Respons server tidak valid');
+            return data;
+        }
+
         async function loadTableData() {
             const icon = document.getElementById('reloadIcon');
             if(icon) icon.classList.add('fa-spin');
+            const first = !window.__loadedOnce; window.__loadedOnce = true;
+
+            if (dummyData.length === 0) {
+                const c = readCache();
+                if (c && c.length) { dummyData = c; renderTable(); } // tampil instan dari cache
+            }
             
             try {
-                const res = await fetch(`${GAS_WEB_APP_URL}?action=getData&tipe=${TIPE_MODUL}`);
-                if (!res.ok) throw new Error(`Status ${res.status}`);
-                const data = await res.json();
-                if (!Array.isArray(data)) throw new Error((data && data.message) || 'Respons server tidak valid');
+                const data = await fetchTrans(first);
                 dummyData = data;
+                writeCache(data);
                 renderTable();
             } catch (err) {
                 console.error("loadTableData error:", err);
-                const tbody = document.getElementById('tableBody');
-                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet. (${err.message || 'Periksa koneksi / URL Web App'})</td></tr>`;
+                if (dummyData.length === 0) {
+                    const tbody = document.getElementById('tableBody');
+                    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-rose-500"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i> Gagal memuat data dari Spreadsheet. (${(err.message || 'Periksa koneksi / URL Web App').replace(/[<>&]/g, '')})</td></tr>`;
+                }
             } finally {
                 if(icon) icon.classList.remove('fa-spin');
             }
