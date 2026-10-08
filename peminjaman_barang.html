@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script>
         // Mulai mengunduh data SEKARANG (paralel dengan Tailwind/Font), tidak menunggu halaman selesai dimuat
-        window.__PRE = (function () { try { return fetch("https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec?action=getData&tipe=barang&_t=" + Date.now()).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return null; }); } catch (e) { return null; } })();
+        window.__PRE = (function () { try { return fetch("https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec?action=getData&tipe=barang&_t=" + Date.now()).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(function () { return null; }); } catch (e) { return null; } })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Peminjaman Barang - RSUD Bandung Kiwari</title>
@@ -518,7 +518,7 @@
     <!-- ================= END CUSTOM MODALS ================= -->
 
     <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyubSk3U4H8aD8etELITXjPw4oN74nU2h4s6Czt8I21yLJEpy3rISREcFGZcJ_FOY75mQ/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxMeC2BDSwLWLk5jHylI6iGFWyMLQx342kN4AmFzSQla4RcybENLbFXnGQ0Hs5b4GmHg/exec";
         const TIPE_MODUL = 'barang';
 
         let canvas, ctx, isDrawing = false;
@@ -1530,7 +1530,7 @@
                 if (dummyData.some(d => String(d.ID) === idStr)) {
                     closeModal();
                     hideGlobalLoading();
-                    await customAlert(`Pengajuan peminjaman barang berhasil dikirim! (data sudah tersimpan di server)`, "Berhasil Terkirim", "success");
+                    await customAlert(`Data peminjaman SUDAH tersimpan di server.\n\n⚠️ Namun ada kendala saat memproses notifikasi/sinkron:\n${String(err.message || "respons tidak diterima").replace(/[<>&]/g, "")}`, "Tersimpan dengan Peringatan", "warning");
                     loadBarangDropdown();
                     return;
                 }
