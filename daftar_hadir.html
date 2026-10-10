@@ -448,7 +448,7 @@
         buildFormDH();
       } else if (eventData.template === 'TEMPLATE_DHPL') {
         title = "DAFTAR HADIR PESERTA PELATIHAN";
-        thead = "<tr><th width='5%'>No</th><th width='30%'>Nama</th><th width='25%'>Profesi</th><th width='25%'>No HP</th><th width='15%'>Tanda Tangan</th></tr>";
+        thead = "<tr><th width='5%'>No</th><th width='30%'>Nama</th><th width='25%'>Asal Institusi + Profesi</th><th width='25%'>No HP</th><th width='15%'>Tanda Tangan</th></tr>";
         buildFormDHPL();
       } else return showNone('none');
 
@@ -542,7 +542,7 @@
     function buildFormDHPL() {
       $('dynamic-fields').innerHTML = `
         <div class="modern-group"><label class="modern-label">Nama Lengkap</label><div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" placeholder="Masukkan nama..." required onblur="checkEditDH()"></div></div>
-        <div class="modern-group"><label class="modern-label">Profesi / Keahlian</label><div class="modern-input-wrap"><i class="bi bi-award modern-icon"></i><input type="text" id="f-profesi" class="modern-input" placeholder="Profesi saat ini..." required onblur="checkEditDH()"></div></div>
+        <div class="modern-group"><label class="modern-label">Asal Institusi + Profesi </label><div class="modern-input-wrap"><i class="bi bi-award modern-icon"></i><input type="text" id="f-profesi" class="modern-input" placeholder="Profesi saat ini..." required onblur="checkEditDH()"></div></div>
         <div class="modern-group"><label class="modern-label">Nomor Handphone</label><div class="modern-input-wrap"><i class="bi bi-telephone modern-icon"></i><input type="text" id="f-nohp" class="modern-input" placeholder="Contoh: 0812..." required></div></div>`;
       $('signature-section').style.display = 'block';
       $('btn-submit').style.display = 'block';
