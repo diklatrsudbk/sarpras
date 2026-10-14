@@ -231,7 +231,11 @@
         <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full relative">
             <i class="fa-solid fa-key text-3xl text-emerald-600 mb-3"></i><h3 class="font-bold mb-4">Verifikasi Admin</h3>
             <p class="text-xs text-slate-500 mb-3">Masukkan PIN Admin untuk melakukan aksi ini.</p>
-            <input type="text" id="adminPassword" placeholder="••••" autocomplete="off" onkeydown="handlePinKey(event)" class="secure-pin-input text-center text-lg font-bold w-full py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 mb-4 tracking-widest">
+            <input type="text" id="adminPassword" placeholder="••••" autocomplete="off"
+    inputmode="numeric" pattern="[0-9]*" maxlength="4"
+    oninput="this.value = this.value.replace(/\D/g, '')"
+    onkeydown="handlePinKey(event)"
+    class="secure-pin-input text-center text-lg font-bold w-full py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none mb-4 tracking-widest">
             <div class="flex gap-2.5">
                 <button onclick="closeAdminAuth()" class="w-1/2 py-2 border rounded-xl text-xs font-semibold hover:bg-slate-50">Batal</button>
                 <button onclick="verifyAdmin()" class="w-1/2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold">Konfirmasi</button>
@@ -369,7 +373,7 @@
         let currentAbortController = null;
         let dummyData = [], dbRuangan = [];
         let isValidNim = false, nimTimeout = null, searchTimeout = null;
-        const ADMIN_PASS = "admin";
+        const ADMIN_PASS = "1985";
 
         // =========================================
         // HELPER TANGGAL / JAM (tahan format "2026-10-06" & "06/10/2026")
