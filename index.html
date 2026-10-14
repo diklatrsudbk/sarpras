@@ -387,23 +387,26 @@
 
             <!-- Form Logika PIN -->
             <form @submit.prevent="
-                if(pin === 'diklat') { 
-                    window.location.href = targetUrl; 
-                } else { 
-                    error = 'PIN yang Anda masukkan salah!'; 
-                    pin = ''; 
-                    $refs.pinInput.focus();
-                }
-            ">
+                    if(pin === '1985') { 
+                        window.location.href = targetUrl; 
+                    } else { 
+                        error = 'PIN yang Anda masukkan salah!'; 
+                        pin = ''; 
+                        $refs.pinInput.focus();
+                    }
+                ">
                 <input 
-                    type="password" 
-                    x-model="pin" 
-                    x-ref="pinInput"
-                    class="pin-input" 
-                    placeholder="••••••" 
-                    maxlength="6"
-                    required
-                >
+                        type="password" 
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        x-model="pin" 
+                        x-ref="pinInput"
+                        @input="pin = pin.replace(/\D/g, '')"
+                        class="pin-input" 
+                        placeholder="••••" 
+                        maxlength="4"
+                        required
+                    >
                 
                 <!-- Pesan Error Dinamis -->
                 <div class="pin-error" x-show="error" x-text="error" x-transition></div>
