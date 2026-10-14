@@ -517,7 +517,7 @@
         <div id="dhpd-fields" style="display:none; margin-top:20px;">
           <div class="modern-group">
             <label class="modern-label">Nama Lengkap</label>
-            <div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" readonly></div>
+            <div class="modern-input-wrap"><i class="bi bi-person modern-icon"></i><input type="text" id="f-nama" class="modern-input" readonly onblur="cekModeEdit(this.value,'')"></div>
           </div>
           <div class="modern-group">
             <label class="modern-label">Institusi Pendidikan</label>
@@ -548,6 +548,17 @@
       $('btn-submit').style.display = 'block';
     }
 
+    // mode manual: kolom data diri bisa diketik; mode otomatis: terkunci (readonly)
+    function setManual(on) {
+      const ph = { 'f-nama': 'Nama lengkap...', 'f-institusi': 'Nama institusi pendidikan...', 'f-jurusan': 'Program studi / jurusan...' };
+      Object.keys(ph).forEach(id => {
+        const el = $(id);
+        el.readOnly = !on;
+        el.placeholder = on ? ph[id] : '';
+        if (on) el.value = '';
+      });
+    }
+
     function cariNIM() {
       const nimInput = $('nim'), nimValue = nimInput.value.trim();
       $('nim-msg').innerHTML = "";
@@ -556,25 +567,26 @@
       $('nim-msg').innerHTML = '<span class="text-warning"><i class="bi bi-hourglass-split"></i> Memverifikasi data...</span>';
 
       api(`${API_URL}?action=checkNIM&nim=${encodeURIComponent(nimValue)}`).then(response => {
-        nimInput.disabled = false;
-        if (response.data.found) {
-          $('dhpd-fields').style.display = 'block';
-          $('signature-section').style.display = 'block';
-          $('btn-submit').style.display = 'block';
-          $('nim-msg').innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> NIM Terverifikasi!</span>';
-          $('f-nama').value = response.data.nama;
-          $('f-institusi').value = response.data.institusi;
-          $('f-jurusan').value = response.data.jurusan;
-          cekModeEdit(response.data.nama, '');
-          resizeCanvas($('signature-pad')); // ukuran canvas dihitung ulang setelah tampil
-          padPeserta.clear();
-        } else {
-          $('nim-msg').innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NIM tidak ditemukan.</span>';
-          $('dhpd-fields').style.display = 'none';
-          $('signature-section').style.display = 'none';
-          $('btn-submit').style.display = 'none';
-        }
-      }).catch(() => { nimInput.disabled = false; $('nim-msg').innerHTML = '<span class="text-danger">Gagal terhubung. Coba lagi.</span>'; });
+  nimInput.disabled = false;
+  $('dhpd-fields').style.display = 'block';
+  $('signature-section').style.display = 'block';
+  $('btn-submit').style.display = 'block';
+
+  if (response.data.found) {
+    setManual(false);
+    $('nim-msg').innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> NIM Terverifikasi!</span>';
+    $('f-nama').value = response.data.nama;
+    $('f-institusi').value = response.data.institusi;
+    $('f-jurusan').value = response.data.jurusan;
+    cekModeEdit(response.data.nama, '');
+  } else {
+    setManual(true);
+    $('nim-msg').innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> NIM tidak ditemukan. Silakan isi data diri secara manual.</span>';
+    cekModeEdit('', '');
+  }
+  resizeCanvas($('signature-pad'));
+  padPeserta.clear();
+}).catch(() => { nimInput.disabled = false; $('nim-msg').innerHTML = '<span class="text-danger">Gagal terhubung. Coba lagi.</span>'; });
     }
 
     function checkEditDH() {
@@ -606,6 +618,7 @@
         if ($('nim')) $('nim').disabled = false;
         if ($('nim-msg')) $('nim-msg').innerHTML = "Sistem akan otomatis memverifikasi NIM Anda.";
         if ($('dhpd-fields')) $('dhpd-fields').style.display = 'none';
+        if ($('f-nama')) setManual(false);
         $('signature-section').style.display = 'none';
         btn.style.display = 'none';
       }
@@ -622,6 +635,9 @@
       } catch (err) { return; }
 
       if (!payload.nama) { alert("Nama wajib terisi."); return; }
+      if (activeEvent.template === 'TEMPLATE_DHPD' && (!String(payload.nama).trim() || !String(payload.institusi).trim() || !String(payload.jurusan).trim())) {
+  alert("Nama, institusi, dan program studi wajib diisi."); return;
+}
       showLoading(true, "Menyimpan Kehadiran...");
       fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'submitAttendance', data: payload }) })
         .then(res => res.json()).then(res => {
