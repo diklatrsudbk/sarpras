@@ -413,7 +413,11 @@
             <h3 class="text-base font-bold text-slate-800">Verifikasi Otorisasi</h3>
             <p class="text-xs text-slate-500 mt-1 mb-4">Masukkan PIN Admin untuk menyetujui aksi ini</p>
             
-            <input type="text" id="adminPassword" placeholder="••••" autocomplete="off" onkeydown="handlePinKey(event)" class="secure-pin-input text-center text-lg font-bold w-full py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none mb-4 tracking-widest">
+            <input type="text" id="adminPassword" placeholder="••••" autocomplete="off"
+    inputmode="numeric" pattern="[0-9]*" maxlength="4"
+    oninput="this.value = this.value.replace(/\D/g, '')"
+    onkeydown="handlePinKey(event)"
+    class="secure-pin-input text-center text-lg font-bold w-full py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none mb-4 tracking-widest">
             
             <div class="flex gap-2.5">
                 <button type="button" onclick="closeAdminAuth()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-slate-50 transition">Batal</button>
@@ -530,7 +534,7 @@
         let availableItems = [];
         
         let pendingAdminAction = null;
-        const ADMIN_PASS = "admin"; // PIN Admin
+        const ADMIN_PASS = "1985"; // PIN Admin
         // PERINGATAN KEAMANAN: PIN ini tersimpan di kode HTML yang bisa dilihat siapa saja
         // lewat "View Page Source" / DevTools. Untuk keamanan yang layak, verifikasi PIN
         // sebaiknya dipindahkan ke Kode.gs (server).
