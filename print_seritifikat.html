@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Cetak Sertifikat</title>
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* VARIABEL CSS DINAMIS UNTUK ATUR POSISI & UKURAN FONT */
+        :root {
+            --padding-top-cert: 48mm;
+            --nomor-y: 0mm;
+            --nomor-size: 14pt;
+            --nama-y: 0mm;
+            --nama-size: 48pt;
+            --jurusan-y: 0mm;
+            --jurusan-size: 16pt;
+            --acara-y: -5mm;
+            --acara-size: 16pt;
+            --kriteria-y: -5mm;
+            --kriteria-size: 15pt;
+            --tanggal-y: 0mm;      /* VARIABEL BARU TANGGAL */
+            --tanggal-size: 13pt;   /* VARIABEL BARU TANGGAL */
+            --ttd-bottom: 10mm;
+            --ttd-size: 13pt;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f4f6f9; padding-bottom: 50px; }
+        .app-container { max-width: 1400px; margin: 30px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .control-panel { background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9ecef; }
+        
+        .table-responsive { max-height: 50vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; }
+        table thead th { position: sticky; top: 0; background-color: #0d6efd; color: white; z-index: 2; }
+        
+        #loaderOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+
+        .setting-box { background: #eef2f7; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #d0d7de; }
+
+        /* CSS PRINT (A4 LANDSCAPE) */
+        #print-preview-area { display: none; }
+
+        @media print {
+            @page { size: A4 landscape; margin: 0; }
+            html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .app-container, .modal, .modal-backdrop, #loaderOverlay { display: none !important; }
+            
+            #print-preview-area { 
+                display: block !important; 
+                position: absolute; top: 0; left: 0; width: 100%; 
+            }
+            
+            .cert-page {
+                position: relative;
+                width: 297mm;
+                height: 210mm;
+                page-break-after: always;
+                overflow: hidden;
+                background: white;
+            }
+            .cert-page:last-child { page-break-after: auto; }
+            
+            .cert-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; object-fit: fill; }
+            
+            .cert-content { 
+                position: relative; 
+                z-index: 10; 
+                width: 100%; 
+                height: 100%; 
+                box-sizing: border-box; 
+                text-align: center; 
+                padding-top: var(--padding-top-cert);
+                font-family: 'Montserrat', sans-serif;
+                color: #2b4257;
+            }
+
+            .p-nomor { 
+                font-size: var(--nomor-size); 
+                margin-top: var(--nomor-y);
+                margin-bottom: 7mm; 
+                font-weight: 400; 
+            }
+            .p-diberikan { font-size: 15pt; margin-bottom: 5mm; font-weight: 400; }
+            
+            .p-nama { 
+                font-size: var(--nama-size); 
+                margin-top: var(--nama-y);
+                font-family: 'Lobster', cursive; 
+                color: #233e54; 
+                line-height: 1;
+                margin-bottom: 2mm;
+            }
+            
+            .p-underline { width: 65%; height: 2px; background-color: #1a1a1a; margin: 0 auto 6mm auto; }
+            
+            .p-jurusan-inst { 
+                font-size: var(--jurusan-size); 
+                margin-top: var(--jurusan-y);
+                margin-bottom: 6mm; 
+                font-weight: 500; 
+            }
+            
+            .p-acara-desc { 
+                font-size: var(--acara-size); 
+                margin-top: var(--acara-y);
+                line-height: 1.5; 
+                margin-bottom: 5mm; 
+                font-weight: 400; 
+            }
+            
+            .p-kriteria { 
+                font-size: var(--kriteria-size); 
+                margin-top: var(--kriteria-y);
+                font-weight: 400; 
+            }
+
+            /* KRITERIA DIBUAT TEBAL (BOLD) */
+            .p-kriteria-nilai {
+                font-weight: 700 !important;
+            }
+            
+            .p-ttd-area { 
+                position: absolute; 
+                bottom: var(--ttd-bottom); 
+                font-size: var(--ttd-size);
+                width: 100%; 
+                text-align: center; 
+                line-height: 1.3;
+            }
+            .p-tanggal { 
+                font-size: var(--tanggal-size); 
+                margin-top: var(--tanggal-y);
+                margin-bottom: 2mm; 
+            }
+            .p-jabatan-dir { font-size: 1em; margin-bottom: 22mm; }
+            .p-ttd-img { position: absolute; height: 65px; left: 50%; transform: translateX(-50%); margin-top: -70px; object-fit: contain; }
+            .p-pimpinan { font-size: 1em; font-weight: 400; }
+            .p-pangkat { font-size: 1em; font-weight: 400; }
+            .p-nip { font-size: 1em; font-weight: 400; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loaderOverlay">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <h5 class="mt-3 text-primary" id="loaderText">Memuat Data...</h5>
+</div>
+
+<div class="app-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-primary m-0"><i class="bi bi-award-fill"></i> Sistem Cetak Sertifikat</h3>
+        <button class="btn btn-success btn-lg shadow-sm" onclick="printAll()">
+            <i class="bi bi-printer-fill"></i> Print All
+        </button>
+    </div>
+
+    <!-- CONTROL PANEL -->
+    <div class="control-panel shadow-sm">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">1. Pilih Sheet Data</label>
+                <select id="sheetSelect" class="form-select border-secondary" onchange="fetchSpreadsheetData()">
+                    <option value="">-- Memuat Sheet... --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">2. Pilih Template (Folder: /Template/)</label>
+                <select id="templateSelect" class="form-select border-primary">
+                    <!-- Opsi template diisi dari JavaScript -->
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-bold">3. Cari (NIM / Nama)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Ketik untuk mencari..." onkeyup="applyFilter()">
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-2 pt-3 border-top">
+            <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">Filter Berdasarkan Institusi</label>
+                <select id="filterInstitusi" class="form-select form-select-sm" onchange="applyFilter()">
+                    <option value="">-- Semua Institusi --</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">Filter Berdasarkan Jurusan</label>
+                <select id="filterJurusan" class="form-select form-select-sm" onchange="applyFilter()">
+                    <option value="">-- Semua Jurusan --</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ACCORDION UNTUK PENGATURAN TATA LETAK POSISI TEKS -->
+        <div class="accordion mt-3" id="accordionLayout">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLayout">
+                        <i class="bi bi-sliders me-2"></i> Pengaturan Tata Letak & Ukuran Font (Geser Posisi Atas/Bawah)
+                    </button>
+                </h2>
+                <div id="collapseLayout" class="accordion-collapse collapse" data-bs-parent="#accordionLayout">
+                    <div class="accordion-body setting-box">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-muted">Sesuaikan posisi vertikal (mm) & ukuran font (pt) untuk masing-masing kolom:</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="resetLayout()"><i class="bi bi-arrow-counterclockwise"></i> Reset Posisi</button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1 fw-bold">Margin Atas Cetak (mm)</label>
+                                <input type="number" id="set_pad_top" class="form-control form-control-sm" value="48" oninput="updateLayout()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Nomor (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_nomor_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_nomor_size" class="form-control" value="14" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1 fw-bold text-primary">Nama Peserta (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_nama_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_nama_size" class="form-control" value="48" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Jurusan/Institusi (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_jurusan_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_jurusan_size" class="form-control" value="16" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Deskripsi Acara (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_acara_y" class="form-control" value="-5" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_acara_size" class="form-control" value="16" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Kriteria/Nilai (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_kriteria_y" class="form-control" value="-5" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_kriteria_size" class="form-control" value="15" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <!-- PENGATURAN TANGGAL TTD (BARU) -->
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1 fw-bold text-success">Tanggal TTD (Geser Y / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_tanggal_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_tanggal_size" class="form-control" value="13" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Area TTD (Jarak Bawah / Size)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="set_ttd_bottom" class="form-control" value="10" placeholder="Bottom (mm)" oninput="updateLayout()">
+                                    <input type="number" id="set_ttd_size" class="form-control" value="13" placeholder="pt" oninput="updateLayout()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted fw-bold">Total Data Ditampilkan: <span id="countData">0</span></span>
+    </div>
+
+    <!-- TABEL DATA -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>NIM</th>
+                    <th>Nama Peserta</th>
+                    <th>Institusi</th>
+                    <th>Jurusan</th>
+                    <th>Nilai</th>
+                    <th class="text-center" style="width: 160px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="6" class="text-center py-5 text-muted">Memuat data dari Google Spreadsheet...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- PREVIEW PRINT (A4 LANDSCAPE) -->
+<div id="print-preview-area"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // =========================================================================
+    // 1. URL WEB APP APPS SCRIPT
+    // =========================================================================
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzvvTP3Foo889g3YM5lKKwwDoG5rxxUeNCF8U3oms-7g06DDTy6fn9qbfMLuLy1agGSkA/exec";
+
+    // =========================================================================
+    // 2. DAFTAR TEMPLATE DI FOLDER GitHub: /Template/
+    // =========================================================================
+    const LOCAL_TEMPLATES = [
+        {
+            id: 'temp_pesertadidik',
+            nama: '1. Template Peserta Didik',
+            url_bg: './Template/TemplatePesertaDidik.png'
+        },
+        {
+            id: 'temp_pesertapelatihan',
+            nama: '2. Template Peserta Pelatihan',
+            url_bg: './Template/TemplatePesertaPelatihan.png'
+        },
+        {
+            id: 'temp_orientasi',
+            nama: '3. Template Orientasi',
+            url_bg: './Template/TemplateOrientasi.png'
+        }
+    ];
+
+    // INDEX KOLOM SPREADSHEET (0-based)
+    const COL = { NIM:0, NOMOR:1, NAMA:2, JURUSAN:3, INSTITUSI:4, NILAI:5, TANGGAL:6, ACARA:7, PIMPINAN:8, JABATAN:9, NIP:10, TTD:11 };
+    
+    let g_rawRows = [];      
+    let g_filteredRows = []; 
+
+    // INISIALISASI
+    window.onload = function() {
+        renderTemplateOptions();
+        updateLayout();
+        initFetchSheets();
+    };
+
+    // FUNGSI UNTUK MENGUBAH TEKS MENJADI CAPITALIZE EACH WORD (TITLE CASE)
+    function toTitleCase(str) {
+        if (!str) return '';
+        return str.toLowerCase().split(' ').map(function(word) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        }).join(' ');
+    }
+
+    // =========================================================================
+    // FUNGSI UPDATE TATA LETAK & POSISI DENGAN CSS VARIABLES
+    // =========================================================================
+    function updateLayout() {
+        const root = document.documentElement;
+        
+        root.style.setProperty('--padding-top-cert', (document.getElementById('set_pad_top').value || 48) + 'mm');
+        
+        root.style.setProperty('--nomor-y', (document.getElementById('set_nomor_y').value || 0) + 'mm');
+        root.style.setProperty('--nomor-size', (document.getElementById('set_nomor_size').value || 14) + 'pt');
+        
+        root.style.setProperty('--nama-y', (document.getElementById('set_nama_y').value || 0) + 'mm');
+        root.style.setProperty('--nama-size', (document.getElementById('set_nama_size').value || 48) + 'pt');
+        
+        root.style.setProperty('--jurusan-y', (document.getElementById('set_jurusan_y').value || 0) + 'mm');
+        root.style.setProperty('--jurusan-size', (document.getElementById('set_jurusan_size').value || 16) + 'pt');
+        
+        root.style.setProperty('--acara-y', (document.getElementById('set_acara_y').value || -5) + 'mm');
+        root.style.setProperty('--acara-size', (document.getElementById('set_acara_size').value || 16) + 'pt');
+        
+        root.style.setProperty('--kriteria-y', (document.getElementById('set_kriteria_y').value || -5) + 'mm');
+        root.style.setProperty('--kriteria-size', (document.getElementById('set_kriteria_size').value || 15) + 'pt');
+        
+        // PENGATURAN TANGGAL (BARU)
+        root.style.setProperty('--tanggal-y', (document.getElementById('set_tanggal_y').value || 0) + 'mm');
+        root.style.setProperty('--tanggal-size', (document.getElementById('set_tanggal_size').value || 13) + 'pt');
+
+        root.style.setProperty('--ttd-bottom', (document.getElementById('set_ttd_bottom').value || 10) + 'mm');
+        root.style.setProperty('--ttd-size', (document.getElementById('set_ttd_size').value || 13) + 'pt');
+    }
+
+    function resetLayout() {
+        document.getElementById('set_pad_top').value = 48;
+        document.getElementById('set_nomor_y').value = 0;
+        document.getElementById('set_nomor_size').value = 14;
+        document.getElementById('set_nama_y').value = 0;
+        document.getElementById('set_nama_size').value = 48;
+        document.getElementById('set_jurusan_y').value = 0;
+        document.getElementById('set_jurusan_size').value = 16;
+        document.getElementById('set_acara_y').value = -5;
+        document.getElementById('set_acara_size').value = 16;
+        document.getElementById('set_kriteria_y').value = -5;
+        document.getElementById('set_kriteria_size').value = 15;
+        document.getElementById('set_tanggal_y').value = 0;
+        document.getElementById('set_tanggal_size').value = 13;
+        document.getElementById('set_ttd_bottom').value = 10;
+        document.getElementById('set_ttd_size').value = 13;
+        updateLayout();
+    }
+
+    function showLoader(show, text="Memproses...") {
+        document.getElementById('loaderText').innerText = text;
+        document.getElementById('loaderOverlay').style.display = show ? 'flex' : 'none';
+    }
+
+    function renderTemplateOptions() {
+        const selT = document.getElementById('templateSelect');
+        selT.innerHTML = '';
+        LOCAL_TEMPLATES.forEach((t, i) => {
+            selT.innerHTML += `<option value="${t.id}" ${i===0?'selected':''}>${t.nama}</option>`;
+        });
+    }
+
+    async function apiGet(action, params = {}) {
+        const url = new URL(GAS_API_URL);
+        url.searchParams.append('action', action);
+        Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
+        const response = await fetch(url);
+        return await response.json();
+    }
+
+    async function initFetchSheets() {
+        showLoader(true, "Menghubungkan ke Spreadsheet...");
+        try {
+            const resSheets = await apiGet('getSheets');
+            showLoader(false);
+            if(resSheets.status === 'success') {
+                const sel = document.getElementById('sheetSelect');
+                sel.innerHTML = '<option value="">-- Pilih Sheet --</option>';
+                resSheets.data.forEach(s => sel.innerHTML += `<option value="${s}">${s}</option>`);
+                
+                if(resSheets.data.length > 0) {
+                    sel.value = resSheets.data[0];
+                    fetchSpreadsheetData();
+                }
+            }
+        } catch(err) {
+            showLoader(false);
+            alert("Gagal terhubung ke Apps Script API. Pastikan URL Web App valid dan dibuka izinnya.\nError: " + err.message);
+        }
+    }
+
+    async function fetchSpreadsheetData() {
+        const sheetName = document.getElementById('sheetSelect').value;
+        if(!sheetName) return;
+
+        showLoader(true, "Mengambil data dari Sheet: " + sheetName + "...");
+        try {
+            const res = await apiGet('getData', { sheet: sheetName });
+            showLoader(false);
+            if(res.status === 'success') {
+                g_rawRows = res.data.rows;
+                g_filteredRows = [...g_rawRows];
+                buildDynamicFilters(g_rawRows);
+                renderTable(g_filteredRows);
+            }
+        } catch(e) {
+            showLoader(false);
+            alert("Error: " + e.message);
+        }
+    }
+
+    function buildDynamicFilters(rows) {
+        let insts = new Set(), jurs = new Set();
+        rows.forEach(r => {
+            if(r[COL.INSTITUSI]) insts.add(r[COL.INSTITUSI]);
+            if(r[COL.JURUSAN]) jurs.add(r[COL.JURUSAN]);
+        });
+
+        const sInst = document.getElementById('filterInstitusi');
+        const sJur = document.getElementById('filterJurusan');
+        sInst.innerHTML = '<option value="">-- Semua Institusi --</option>';
+        sJur.innerHTML = '<option value="">-- Semua Jurusan --</option>';
+
+        Array.from(insts).sort().forEach(i => sInst.innerHTML += `<option value="${i}">${i}</option>`);
+        Array.from(jurs).sort().forEach(j => sJur.innerHTML += `<option value="${j}">${j}</option>`);
+    }
+
+    function renderTable(rows) {
+        const tbody = document.getElementById('tableBody');
+        document.getElementById('countData').innerText = rows.length;
+        tbody.innerHTML = '';
+
+        if(rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data ditemukan berdasarkan filter.</td></tr>';
+            return;
+        }
+
+        rows.forEach((r, idx) => {
+            const namaFormatted = toTitleCase(r[COL.NAMA]); // Nama di tabel juga ditransformasi
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${r[COL.NIM]}</td>
+                <td class="fw-bold text-primary">${namaFormatted}</td>
+                <td>${r[COL.INSTITUSI]}</td>
+                <td>${r[COL.JURUSAN]}</td>
+                <td><span class="badge bg-success">${r[COL.NILAI]}</span></td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-primary w-100" onclick="printSingle(${idx})">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function applyFilter() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const fInst = document.getElementById('filterInstitusi').value;
+        const fJur = document.getElementById('filterJurusan').value;
+
+        g_filteredRows = g_rawRows.filter(r => {
+            const matchSearch = !q || r[COL.NIM].toLowerCase().includes(q) || r[COL.NAMA].toLowerCase().includes(q);
+            const matchInst = !fInst || r[COL.INSTITUSI] === fInst;
+            const matchJur = !fJur || r[COL.JURUSAN] === fJur;
+            return matchSearch && matchInst && matchJur;
+        });
+
+        renderTable(g_filteredRows);
+    }
+
+    function generateCertificateHTML(r, config) {
+        let ttdHtml = (r[COL.TTD] && r[COL.TTD].startsWith('http')) 
+            ? `<img src="${r[COL.TTD]}" class="p-ttd-img" alt="TTD">` 
+            : ``;
+
+        let namaAcara = r[COL.ACARA] || "";
+        
+        // 1. Mengubah format nama menjadi Awalan Kapital Tiap Kata (Title Case)
+        let namaFormatted = toTitleCase(r[COL.NAMA]);
+
+        return `
+        <div class="cert-page">
+            <img src="${config.url_bg}" class="cert-bg" alt="Background Kosong" onerror="this.alt='Gambar Template Tidak Ditemukan.'">
+            <div class="cert-content">
+                <div class="p-nomor">Nomor : ${r[COL.NOMOR] || '-'}</div>
+                <div class="p-diberikan">diberikan kepada</div>
+                <div class="p-nama">${namaFormatted}</div>
+                <div class="p-underline"></div>
+                <div class="p-jurusan-inst">${r[COL.JURUSAN]} - ${r[COL.INSTITUSI]}</div>
+                <div class="p-acara-desc">
+                    Telah Mengikuti ${namaAcara}<br>
+                    di RSUD Bandung Kiwari
+                </div>
+                <!-- 2. Nilai Kriteria Kelulusan Dibuat Bold (Tebal) -->
+                <div class="p-kriteria">Kriteria Kelulusan : <span class="p-kriteria-nilai">${r[COL.NILAI]}</span></div>
+                
+                <div class="p-ttd-area">
+                    <div class="p-tanggal">${r[COL.TANGGAL]}</div>
+                    <div class="p-jabatan-dir">Direktur RSUD Bandung Kiwari</div>
+                    
+                    ${ttdHtml}
+                    
+                    <div class="p-pimpinan">${r[COL.PIMPINAN]}</div>
+                    <div class="p-pangkat">${r[COL.JABATAN]}</div>
+                    <div class="p-nip">NIP. ${r[COL.NIP]}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function printSingle(filteredIdx) {
+        const r = g_filteredRows[filteredIdx];
+        const tempId = document.getElementById('templateSelect').value;
+        const config = LOCAL_TEMPLATES.find(t => t.id === tempId);
+
+        if(!config) { alert("Pilih template terlebih dahulu!"); return; }
+
+        updateLayout();
+        const printArea = document.getElementById('print-preview-area');
+        printArea.innerHTML = generateCertificateHTML(r, config);
+
+        setTimeout(() => { window.print(); }, 300);
+    }
+
+    function printAll() {
+        if (g_filteredRows.length === 0) {
+            alert("Tidak ada data yang ditampilkan untuk dicetak.");
+            return;
+        }
+
+        const tempId = document.getElementById('templateSelect').value;
+        const config = LOCAL_TEMPLATES.find(t => t.id === tempId);
+
+        if(!config) { alert("Pilih template terlebih dahulu!"); return; }
+
+        showLoader(true, `Menyiapkan ${g_filteredRows.length} sertifikat untuk dicetak...`);
+        updateLayout();
+
+        let combinedHtml = '';
+        g_filteredRows.forEach(r => {
+            combinedHtml += generateCertificateHTML(r, config);
+        });
+
+        const printArea = document.getElementById('print-preview-area');
+        printArea.innerHTML = combinedHtml;
+
+        setTimeout(() => {
+            showLoader(false);
+            window.print();
+        }, 800);
+    }
+</script>
+</body>
+</html>
