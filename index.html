@@ -138,7 +138,6 @@
            STYLING MODAL PIN (Mengadaptasi Tailwind)
            ========================================= */
         
-        /* fixed inset-0, z-index tinggi, bg-slate-50 */
         .pin-modal-overlay {
             position: fixed;
             inset: 0;
@@ -149,7 +148,6 @@
             justify-content: center;
         }
 
-        /* SVG Pattern background transparant */
         .pin-modal-overlay::before {
             content: '';
             position: absolute;
@@ -160,7 +158,6 @@
             z-index: -1;
         }
 
-        /* Card putih, rounded-3xl, shadow-xl */
         .pin-card {
             background-color: #ffffff;
             border-radius: 1.5rem;
@@ -173,7 +170,6 @@
             border: 1px solid #f1f5f9;
         }
 
-        /* Ikon gembok (biru di box biru muda) */
         .pin-icon-box {
             background-color: #e0f2fe;
             width: 72px;
@@ -203,13 +199,12 @@
             margin-bottom: 24px;
         }
 
-        /* Input PIN: font-mono, text-center, teks besar, tracking lebar, rounded */
         .pin-input {
             width: 100%;
             text-align: center;
             font-family: monospace;
             font-size: 32px;
-            letter-spacing: 0.5em; /* tracking-[0.5em] */
+            letter-spacing: 0.5em;
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 1rem;
@@ -223,7 +218,6 @@
             box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
         }
 
-        /* Pesan Error */
         .pin-error {
             color: #ef4444;
             font-size: 13px;
@@ -232,7 +226,6 @@
             font-weight: 500;
         }
 
-        /* Tombol Buka Akses: bg-blue-600, glow shadow saat hover */
         .btn-submit-pin {
             width: 100%;
             background-color: #2563eb;
@@ -247,7 +240,7 @@
         }
         .btn-submit-pin:hover {
             background-color: #1d4ed8;
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); /* Shadow biru menyala */
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
             transform: translateY(-2px);
         }
 
@@ -266,7 +259,6 @@
             color: #0f172a;
         }
 
-        /* Copyright Footer Modal */
         .pin-copyright {
             position: absolute;
             bottom: 20px;
@@ -277,7 +269,6 @@
             color: #94a3b8;
         }
 
-        /* Mobile Adjustments */
         @media(max-width:768px){
             .hero h1{ font-size:34px; }
             .hero h2{ font-size:18px; }
@@ -285,8 +276,7 @@
     </style>
 </head>
 
-<!-- Alpine.js State: Menyimpan status modal PIN, nilai input, dan URL tujuan -->
-<body x-data="{ showModal: false, pin: '', targetUrl: '', error: '' }">
+<body x-data="{ showModal: false, pin: '', targetUrl: '', isNewTab: false, error: '' }">
 
     <section class="hero">
         <img src="img/rsudbk.png" alt="RSUDBK" class="hero-logo">
@@ -343,15 +333,29 @@
                 <p>Kelola dan cek ketersediaan data fasilitas atau sarpras diklat.</p>
             </a>
 
-            <!-- Menu 7: Print IDCard (Akses Terkunci via Modal PIN) -->
-            <a href="#" @click.prevent="showModal = true; targetUrl = 'print_idcard.html'; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+            <!-- Menu 7: Print IDCard -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'print_idcard.html'; isNewTab = false; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
                 <div class="icon">🪪</div>
                 <h3>Print IDCard</h3>
                 <p>Cetak ID Card untuk peserta didik dan keperluan identitas diklat.</p>
             </a>
 
-            <!-- Menu 8: Maintenance (Akses Terkunci via Modal PIN) -->
-            <a href="#" @click.prevent="showModal = true; targetUrl = 'maintenance.html'; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+            <!-- Menu Baru 1: Make Certificate (New Tab + PIN 1985) -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'print_sertifikat.html'; isNewTab = true; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+                <div class="icon">🎓</div>
+                <h3>Make Certificate</h3>
+                <p>Cetak dan buat sertifikat peserta didik secara otomatis.</p>
+            </a>
+
+            <!-- Menu Baru 2: Rekap Peserta Didik (New Tab + PIN 1985) -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'data_pesertadidik.html'; isNewTab = true; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
+                <div class="icon">📑</div>
+                <h3>Rekap Peserta Didik</h3>
+                <p>Lihat dan cetak rekapitulasi data lengkap seluruh peserta didik.</p>
+            </a>
+
+            <!-- Menu 8: Maintenance -->
+            <a href="#" @click.prevent="showModal = true; targetUrl = 'maintenance.html'; isNewTab = false; pin = ''; error = ''; setTimeout(() => $refs.pinInput.focus(), 100)" class="card">
                 <div class="icon">🛠️</div>
                 <h3>Maintenance</h3>
                 <p>Pemeliharaan, pemantauan, dan perbaikan sistem aplikasi.</p>
@@ -375,7 +379,6 @@
         
         <div class="pin-card" @click.outside="showModal = false" x-show="showModal" x-transition.scale.origin.bottom>
             
-            <!-- Ikon Gembok -->
             <div class="pin-icon-box">
                 <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
@@ -385,10 +388,14 @@
             <h3>Akses Terkunci</h3>
             <p>Menu ini membutuhkan akses khusus. Silakan masukkan PIN administrator.</p>
 
-            <!-- Form Logika PIN -->
             <form @submit.prevent="
                     if(pin === '1985') { 
-                        window.location.href = targetUrl; 
+                        if(isNewTab) {
+                            window.open(targetUrl, '_blank');
+                        } else {
+                            window.location.href = targetUrl;
+                        }
+                        showModal = false;
                     } else { 
                         error = 'PIN yang Anda masukkan salah!'; 
                         pin = ''; 
@@ -408,7 +415,6 @@
                         required
                     >
                 
-                <!-- Pesan Error Dinamis -->
                 <div class="pin-error" x-show="error" x-text="error" x-transition></div>
 
                 <button type="submit" class="btn-submit-pin">
