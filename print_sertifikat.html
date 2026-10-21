@@ -1,613 +1,741 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Cetak Sertifikat</title>
-    <!-- Bootstrap 5 & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Cetak Sertifikat - RSUD Bandung Kiwari</title>
+<link rel="icon" href="img/rsudbk.png">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lobster&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --brand:#1d5fd6; --brand-dark:#0f3d91; --brand-soft:#e8f0fe; --accent:#16b3a6;
+ --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9; --card:#ffffff;
+ --radius:18px; --shadow:0 10px 30px -12px rgba(15,23,42,.18);
+}
+*{box-sizing:border-box}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:60px}
 
-    <style>
-        /* VARIABEL CSS DINAMIS UNTUK ATUR POSISI & UKURAN FONT */
-        :root {
-            --padding-top-cert: 48mm;
-            --nomor-y: 0mm;
-            --nomor-size: 14pt;
-            --nama-y: 0mm;
-            --nama-size: 48pt;
-            --jurusan-y: 0mm;
-            --jurusan-size: 16pt;
-            --acara-y: -5mm;
-            --acara-size: 16pt;
-            --kriteria-y: -5mm;
-            --kriteria-size: 15pt;
-            --tanggal-y: 0mm;      /* VARIABEL BARU TANGGAL */
-            --tanggal-size: 13pt;   /* VARIABEL BARU TANGGAL */
-            --ttd-bottom: 10mm;
-            --ttd-size: 13pt;
-        }
+/* ===== HERO / HEADER ===== */
+.hero{background:linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,var(--accent) 120%);padding:22px 0 110px;position:relative;overflow:hidden}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero::before{width:380px;height:380px;right:-90px;top:-170px}
+.hero::after{width:240px;height:240px;left:-70px;bottom:-130px}
+.brand{display:flex;align-items:center;gap:14px;color:#fff}
+.brand-logo{width:56px;height:56px;border-radius:16px;background:#fff;display:grid;place-items:center;padding:7px;box-shadow:0 8px 20px -6px rgba(0,0,0,.35);flex-shrink:0}
+.brand-logo img{width:100%;height:100%;object-fit:contain}
+.brand-logo i{font-size:1.8rem;color:var(--brand)}
+.brand h1{font-size:1.35rem;font-weight:700;margin:0;letter-spacing:-.01em}
+.brand small{opacity:.85;font-weight:500}
+.btn-sheet{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:12px;font-weight:600;padding:.55rem 1rem;backdrop-filter:blur(6px);transition:.2s}
+.btn-sheet:hover{background:#fff;color:#0f7a3d}
+.btn-sheet i{color:#6ee7a1;margin-right:.4rem;font-size:1.05rem}
+.btn-sheet:hover i{color:#16a34a}
 
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f4f6f9; padding-bottom: 50px; }
-        .app-container { max-width: 1400px; margin: 30px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .control-panel { background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9ecef; }
-        
-        .table-responsive { max-height: 50vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; }
-        table thead th { position: sticky; top: 0; background-color: #0d6efd; color: white; z-index: 2; }
-        
-        #loaderOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+.main-wrap{max-width:1320px;margin:-80px auto 0;padding:0 16px;position:relative;z-index:5}
 
-        .setting-box { background: #eef2f7; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #d0d7de; }
+/* ===== CARDS ===== */
+.panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(226,232,240,.7);margin-bottom:22px}
+.panel-head{display:flex;align-items:center;gap:12px;padding:18px 24px 0}
+.step{width:34px;height:34px;border-radius:11px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700;flex-shrink:0}
+.panel-head h2{font-size:1.05rem;font-weight:700;margin:0}
+.panel-head p{margin:0;color:var(--muted);font-size:.82rem}
+.panel-body{padding:18px 24px 24px}
 
-        /* CSS PRINT (A4 LANDSCAPE) */
-        #print-preview-area { display: none; }
+/* ===== FORM FIELDS (ikon di setiap input) ===== */
+.flabel{font-size:.78rem;font-weight:600;color:#475569;margin-bottom:6px;display:block}
+.ifield{position:relative;flex:1 1 auto;min-width:0}
+.ifield>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;z-index:4;font-size:1rem;transition:.2s}
+.ifield .form-control,.ifield .form-select{padding-left:2.6rem}
+.form-control,.form-select{border-radius:12px;border:1.5px solid var(--line);background-color:#f8fafc;padding-top:.6rem;padding-bottom:.6rem;font-size:.92rem;transition:.2s}
+.form-control:focus,.form-select:focus{background-color:#fff;border-color:var(--brand);box-shadow:0 0 0 4px rgba(29,95,214,.12)}
+.ifield:focus-within>i{color:var(--brand)}
+.field-row{display:flex;gap:8px;align-items:stretch}
+.status-line{font-size:.76rem;margin-top:6px;color:var(--muted);min-height:1.1em}
+.status-line.ok{color:#15803d}.status-line.err{color:#b91c1c}
 
-        @media print {
-            @page { size: A4 landscape; margin: 0; }
-            html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .app-container, .modal, .modal-backdrop, #loaderOverlay { display: none !important; }
-            
-            #print-preview-area { 
-                display: block !important; 
-                position: absolute; top: 0; left: 0; width: 100%; 
-            }
-            
-            .cert-page {
-                position: relative;
-                width: 297mm;
-                height: 210mm;
-                page-break-after: always;
-                overflow: hidden;
-                background: white;
-            }
-            .cert-page:last-child { page-break-after: auto; }
-            
-            .cert-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; object-fit: fill; }
-            
-            .cert-content { 
-                position: relative; 
-                z-index: 10; 
-                width: 100%; 
-                height: 100%; 
-                box-sizing: border-box; 
-                text-align: center; 
-                padding-top: var(--padding-top-cert);
-                font-family: 'Montserrat', sans-serif;
-                color: #2b4257;
-            }
+.btn{border-radius:12px;font-weight:600}
+.btn-icon{width:44px;padding:0;display:inline-grid;place-items:center;flex-shrink:0}
+.btn-brand{background:linear-gradient(135deg,var(--brand),#2f7bf0);border:0;color:#fff;box-shadow:0 8px 18px -8px rgba(29,95,214,.7)}
+.btn-brand:hover{color:#fff;filter:brightness(1.08);transform:translateY(-1px)}
+.btn-brand:disabled{opacity:.55;transform:none}
+.btn-green{background:linear-gradient(135deg,#16a34a,#22c55e);border:0;color:#fff;box-shadow:0 8px 18px -8px rgba(22,163,74,.7)}
+.btn-green:hover{color:#fff;filter:brightness(1.07);transform:translateY(-1px)}
+.btn-soft{background:#f1f5f9;border:1.5px solid var(--line);color:#334155}
+.btn-soft:hover{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+.btn{transition:.18s}
 
-            .p-nomor { 
-                font-size: var(--nomor-size); 
-                margin-top: var(--nomor-y);
-                margin-bottom: 7mm; 
-                font-weight: 400; 
-            }
-            .p-diberikan { font-size: 15pt; margin-bottom: 5mm; font-weight: 400; }
-            
-            .p-nama { 
-                font-size: var(--nama-size); 
-                margin-top: var(--nama-y);
-                font-family: 'Lobster', cursive; 
-                color: #233e54; 
-                line-height: 1;
-                margin-bottom: 2mm;
-            }
-            
-            .p-underline { width: 65%; height: 2px; background-color: #1a1a1a; margin: 0 auto 6mm auto; }
-            
-            .p-jurusan-inst { 
-                font-size: var(--jurusan-size); 
-                margin-top: var(--jurusan-y);
-                margin-bottom: 6mm; 
-                font-weight: 500; 
-            }
-            
-            .p-acara-desc { 
-                font-size: var(--acara-size); 
-                margin-top: var(--acara-y);
-                line-height: 1.5; 
-                margin-bottom: 5mm; 
-                font-weight: 400; 
-            }
-            
-            .p-kriteria { 
-                font-size: var(--kriteria-size); 
-                margin-top: var(--kriteria-y);
-                font-weight: 400; 
-            }
+.official-card{margin-top:10px;border:1.5px dashed var(--line);border-radius:14px;padding:10px 14px;background:#fbfdff;display:none;gap:8px 16px;flex-wrap:wrap;font-size:.82rem;color:#475569}
+.official-card.show{display:flex}
+.official-card span i{color:var(--brand);margin-right:5px}
+.pill{border-radius:20px;padding:.12rem .6rem;font-weight:600;font-size:.74rem}
+.pill-ok{background:#d4f4dd;color:#1b6b34}.pill-no{background:#ffe4e6;color:#be123c}
 
-            /* KRITERIA DIBUAT TEBAL (BOLD) */
-            .p-kriteria-nilai {
-                font-weight: 700 !important;
-            }
-            
-            .p-ttd-area { 
-                position: absolute; 
-                bottom: var(--ttd-bottom); 
-                font-size: var(--ttd-size);
-                width: 100%; 
-                text-align: center; 
-                line-height: 1.3;
-            }
-            .p-tanggal { 
-                font-size: var(--tanggal-size); 
-                margin-top: var(--tanggal-y);
-                margin-bottom: 2mm; 
-            }
-            .p-jabatan-dir { font-size: 1em; margin-bottom: 22mm; }
-            .p-ttd-img { position: absolute; height: 65px; left: 50%; transform: translateX(-50%); margin-top: -70px; object-fit: contain; }
-            .p-pimpinan { font-size: 1em; font-weight: 400; }
-            .p-pangkat { font-size: 1em; font-weight: 400; }
-            .p-nip { font-size: 1em; font-weight: 400; }
-        }
-    </style>
+/* ===== FILTER ===== */
+.count-chip{margin-left:auto;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:.8rem;border-radius:20px;padding:.3rem .8rem}
+
+/* ===== TABLE CARD ===== */
+.table-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:18px 24px}
+.sel-info{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--muted)}
+.sel-info b{color:var(--brand);font-size:1.05rem}
+.sel-badge{background:var(--brand-soft);color:var(--brand);border-radius:12px;width:38px;height:38px;display:grid;place-items:center}
+.toolbar-actions{display:flex;flex-wrap:wrap;gap:8px}
+.table-scroll{max-height:56vh;overflow:auto;border-top:1px solid var(--line);border-radius:0 0 var(--radius) var(--radius)}
+.table{margin:0;--bs-table-bg:transparent}
+.table thead th{position:sticky;top:0;z-index:3;background:#f8fafc;color:#475569;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;border-bottom:1px solid var(--line);padding:.85rem .75rem;white-space:nowrap}
+.table tbody td{padding:.7rem .75rem;border-color:#f1f5f9;vertical-align:middle;font-size:.9rem}
+.table tbody tr{cursor:pointer;transition:background .15s}
+.table tbody tr:hover{background:#f8fbff}
+.table tbody tr.is-sel{background:#eaf2ff}
+.form-check-input{width:1.15rem;height:1.15rem;border-radius:6px;border:1.5px solid #cbd5e1;cursor:pointer}
+.form-check-input:checked{background-color:var(--brand);border-color:var(--brand)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#dbe7ff,#c7f3ee);color:var(--brand-dark);display:grid;place-items:center;font-weight:700;font-size:.82rem;flex-shrink:0}
+.pname{font-weight:600;color:var(--ink)}
+.row-actions{display:flex;gap:6px;justify-content:center}
+.row-actions .btn{width:34px;height:34px;padding:0;display:grid;place-items:center;border-radius:10px}
+.empty{padding:56px 20px;text-align:center;color:var(--muted)}
+.empty i{font-size:2.4rem;display:block;margin-bottom:8px;color:#cbd5e1}
+
+.nilai{font-size:.76rem;font-weight:600;padding:.42em .85em;border-radius:20px}
+.nilai-sb{background:#cfe8ff;color:#0a4d8c}
+.nilai-b{background:#d4f4dd;color:#1b6b34}
+.nilai-c{background:#fff3b0;color:#7a5b00}
+.nilai-t{background:#ffd6df;color:#a3213f}
+.nilai-x{background:#e9ecef;color:#495057}
+
+/* ===== LOADER, MODAL ===== */
+#loaderOverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);z-index:2000;justify-content:center;align-items:center;flex-direction:column}
+.loader-box{background:#fff;border-radius:20px;padding:28px 38px;text-align:center;box-shadow:0 20px 50px -10px rgba(0,0,0,.35)}
+.modal-content{border:0;border-radius:20px;box-shadow:0 30px 70px -20px rgba(15,23,42,.5)}
+.modal-header{border-bottom:1px solid var(--line);padding:18px 24px}
+.modal-footer{border-top:1px solid var(--line);padding:14px 24px}
+.modal-body{padding:20px 24px}
+.modal-title{font-weight:700;font-size:1.05rem}
+.toast-container{z-index:3000}
+
+/* ===== PRINT / PDF AREA ===== */
+#print-preview-area{display:none}
+#pdfStage{position:fixed;left:-10000px;top:0}
+@media print{
+ @page{size:A4 landscape;margin:0}
+ html,body{margin:0;padding:0;width:100%;height:100%;background:#fff;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ body>*:not(#print-preview-area){display:none!important}
+ #print-preview-area{display:block!important;position:absolute;top:0;left:0;width:100%}
+}
+@media (max-width:576px){
+ .hero{padding-bottom:100px}.brand h1{font-size:1.1rem}
+ .panel-head,.panel-body,.table-toolbar{padding-left:16px;padding-right:16px}
+}
+
+/* ===== SERTIFIKAT (jangan diubah kecuali ingin ubah desain sertifikat) ===== */
+.cert-page{position:relative;width:297mm;height:210mm;page-break-after:always;overflow:hidden;background:#fff}
+ .cert-page:last-child{page-break-after:auto}
+ .cert-bg{position:absolute;inset:0;width:100%;height:100%;z-index:1;object-fit:fill}
+ .cert-content{position:relative;z-index:10;width:100%;height:100%;box-sizing:border-box;text-align:center;padding-top:var(--pad-top);color:#2b4257}
+ .p-nomor{font:400 var(--nomor-s)/1.3 var(--nomor-f);margin-top:var(--nomor-y);margin-bottom:7mm}
+ .p-diberikan{font:400 var(--diberikan-s)/1.3 var(--diberikan-f);margin-top:var(--diberikan-y);margin-bottom:5mm}
+ .p-nama{font:400 var(--nama-s)/1 var(--nama-f);margin-top:var(--nama-y);color:#233e54;margin-bottom:2mm}
+ .p-underline{width:65%;height:2px;background:#1a1a1a;margin:0 auto 6mm}
+ .p-jurusan-inst{font:500 var(--jurusan-s)/1.3 var(--jurusan-f);margin-top:var(--jurusan-y);margin-bottom:6mm}
+ .p-acara-desc{font:400 var(--acara-s)/1.5 var(--acara-f);margin-top:var(--acara-y);margin-bottom:5mm}
+ .p-kriteria{font:400 var(--kriteria-s)/1.3 var(--kriteria-f);margin-top:var(--kriteria-y)}
+ .p-kriteria-nilai{font-weight:700!important}
+ .p-ttd-area{position:absolute;bottom:var(--ttd-y);font:400 var(--ttd-s)/1.3 var(--ttd-f);width:100%;text-align:center}
+ .p-tanggal{font:400 var(--tanggal-s)/1.3 var(--tanggal-f);margin-top:var(--tanggal-y);margin-bottom:2mm}
+ .p-jabatan-dir{margin-bottom:22mm}
+ .p-ttd-img{position:absolute;height:170px;left:50%;transform:translateX(-50%);margin-top:-120px;object-fit:contain}
+</style>
 </head>
 <body>
 
 <div id="loaderOverlay">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <h5 class="mt-3 text-primary" id="loaderText">Memuat Data...</h5>
+ <div class="loader-box">
+  <div class="spinner-border text-primary" style="width:2.8rem;height:2.8rem"></div>
+  <h6 class="mt-3 mb-0 fw-semibold text-primary" id="loaderText">Memuat...</h6>
+ </div>
 </div>
 
-<div class="app-container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-primary m-0"><i class="bi bi-award-fill"></i> Sistem Cetak Sertifikat</h3>
-        <button class="btn btn-success btn-lg shadow-sm" onclick="printAll()">
-            <i class="bi bi-printer-fill"></i> Print All
-        </button>
+<!-- ===== HEADER ===== -->
+<header class="hero">
+ <div class="main-wrap" style="margin-top:0">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+   <div class="brand">
+    <div class="brand-logo">
+     <img src="img/rsudbk.png" alt="Logo RSUD Bandung Kiwari" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-hospital-fill'}))">
     </div>
-
-    <!-- CONTROL PANEL -->
-    <div class="control-panel shadow-sm">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label fw-bold">1. Pilih Sheet Data</label>
-                <select id="sheetSelect" class="form-select border-secondary" onchange="fetchSpreadsheetData()">
-                    <option value="">-- Memuat Sheet... --</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold">2. Pilih Template (Folder: /Template/)</label>
-                <select id="templateSelect" class="form-select border-primary">
-                    <!-- Opsi template diisi dari JavaScript -->
-                </select>
-            </div>
-            <div class="col-md-5">
-                <label class="form-label fw-bold">3. Cari (NIM / Nama)</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Ketik untuk mencari..." onkeyup="applyFilter()">
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-3 mt-2 pt-3 border-top">
-            <div class="col-md-6">
-                <label class="form-label small fw-bold text-muted">Filter Berdasarkan Institusi</label>
-                <select id="filterInstitusi" class="form-select form-select-sm" onchange="applyFilter()">
-                    <option value="">-- Semua Institusi --</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-bold text-muted">Filter Berdasarkan Jurusan</label>
-                <select id="filterJurusan" class="form-select form-select-sm" onchange="applyFilter()">
-                    <option value="">-- Semua Jurusan --</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- ACCORDION UNTUK PENGATURAN TATA LETAK POSISI TEKS -->
-        <div class="accordion mt-3" id="accordionLayout">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLayout">
-                        <i class="bi bi-sliders me-2"></i> Pengaturan Tata Letak & Ukuran Font (Geser Posisi Atas/Bawah)
-                    </button>
-                </h2>
-                <div id="collapseLayout" class="accordion-collapse collapse" data-bs-parent="#accordionLayout">
-                    <div class="accordion-body setting-box">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-bold text-muted">Sesuaikan posisi vertikal (mm) & ukuran font (pt) untuk masing-masing kolom:</span>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="resetLayout()"><i class="bi bi-arrow-counterclockwise"></i> Reset Posisi</button>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1 fw-bold">Margin Atas Cetak (mm)</label>
-                                <input type="number" id="set_pad_top" class="form-control form-control-sm" value="48" oninput="updateLayout()">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Nomor (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_nomor_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_nomor_size" class="form-control" value="14" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1 fw-bold text-primary">Nama Peserta (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_nama_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_nama_size" class="form-control" value="48" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Jurusan/Institusi (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_jurusan_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_jurusan_size" class="form-control" value="16" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Deskripsi Acara (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_acara_y" class="form-control" value="-5" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_acara_size" class="form-control" value="16" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Kriteria/Nilai (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_kriteria_y" class="form-control" value="-5" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_kriteria_size" class="form-control" value="15" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <!-- PENGATURAN TANGGAL TTD (BARU) -->
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1 fw-bold text-success">Tanggal TTD (Geser Y / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_tanggal_y" class="form-control" value="0" placeholder="Y (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_tanggal_size" class="form-control" value="13" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Area TTD (Jarak Bawah / Size)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" id="set_ttd_bottom" class="form-control" value="10" placeholder="Bottom (mm)" oninput="updateLayout()">
-                                    <input type="number" id="set_ttd_size" class="form-control" value="13" placeholder="pt" oninput="updateLayout()">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <div>
+     <h1>Sistem Cetak Sertifikat</h1>
+     <small>RSUD Bandung Kiwari</small>
     </div>
+   </div>
+   <a class="btn btn-sheet" href="https://docs.google.com/spreadsheets/d/13pq1zDAUOJiMKPZ9slBJdMrmM-IlZfOEyErsZ3Ntekg/edit" target="_blank" rel="noopener" title="Buka Spreadsheet di tab baru">
+    <i class="bi bi-file-earmark-spreadsheet-fill"></i><span>Buka Spreadsheet</span><i class="bi bi-box-arrow-up-right ms-2" style="font-size:.8rem"></i>
+   </a>
+  </div>
+ </div>
+</header>
 
-    <div class="d-flex justify-content-between mb-2">
-        <span class="text-muted fw-bold">Total Data Ditampilkan: <span id="countData">0</span></span>
+<main class="main-wrap">
+
+ <!-- ===== CARD 1: SETTING SERTIFIKAT ===== -->
+ <section class="panel">
+  <div class="panel-head">
+   <div class="step"><i class="bi bi-sliders"></i></div>
+   <div><h2>Setting Sertifikat</h2><p>Isi data ini sekali, berlaku untuk semua sertifikat yang dicetak</p></div>
+  </div>
+  <div class="panel-body">
+   <div class="row g-3">
+    <div class="col-lg-4 col-md-6">
+     <label class="flabel" for="templateSelect">Template Sertifikat</label>
+     <div class="ifield"><i class="bi bi-palette2"></i><select id="templateSelect" class="form-select" onchange="onTemplate()"></select></div>
+     <div class="status-line" id="prepInfo"></div>
     </div>
-
-    <!-- TABEL DATA -->
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>NIM</th>
-                    <th>Nama Peserta</th>
-                    <th>Institusi</th>
-                    <th>Jurusan</th>
-                    <th>Nilai</th>
-                    <th class="text-center" style="width: 160px;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr><td colspan="6" class="text-center py-5 text-muted">Memuat data dari Google Spreadsheet...</td></tr>
-            </tbody>
-        </table>
+    <div class="col-lg-4 col-md-6">
+     <label class="flabel" for="f_nomor">Nomor Sertifikat</label>
+     <div class="ifield"><i class="bi bi-hash"></i><input id="f_nomor" list="dl_nomor" class="form-control" placeholder="KP.09/1543-RSUDBK/VII/2026" autocomplete="off"></div>
     </div>
-</div>
+    <div class="col-lg-4 col-md-6">
+     <label class="flabel" for="f_tempat">Tempat</label>
+     <div class="ifield"><i class="bi bi-geo-alt-fill"></i><input id="f_tempat" list="dl_tempat" class="form-control" placeholder="Bandung" autocomplete="off"></div>
+    </div>
+    <div class="col-lg-8 col-md-6">
+     <label class="flabel" for="f_deskripsi">Deskripsi Acara</label>
+     <div class="ifield"><i class="bi bi-card-text"></i><input id="f_deskripsi" list="dl_deskripsi" class="form-control" placeholder="Orientasi Virtual Peserta Didik Gelombang 9 Tahun 2026" autocomplete="off"></div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+     <label class="flabel" for="f_tanggal">Tanggal</label>
+     <div class="ifield"><i class="bi bi-calendar-event"></i><input type="date" id="f_tanggal" class="form-control"></div>
+    </div>
+    <div class="col-12">
+     <label class="flabel" for="m_pejabat">Nama Pejabat Penandatangan</label>
+     <div class="field-row">
+      <div class="ifield"><i class="bi bi-person-badge-fill"></i><select id="m_pejabat" class="form-select" onchange="onPejabat()"></select></div>
+      <button class="btn btn-soft btn-icon" onclick="loadMaster()" title="Muat ulang daftar pejabat"><i class="bi bi-arrow-repeat"></i></button>
+      <button class="btn btn-green" onclick="openPejabat()"><i class="bi bi-person-plus-fill me-1"></i><span class="d-none d-sm-inline">Pejabat Baru</span></button>
+     </div>
+     <div class="official-card" id="pejabatInfo"></div>
+    </div>
+   </div>
+  </div>
+ </section>
 
-<!-- PREVIEW PRINT (A4 LANDSCAPE) -->
+ <!-- ===== CARD 2: SHEET & FILTER ===== -->
+ <section class="panel">
+  <div class="panel-head">
+   <div class="step"><i class="bi bi-funnel-fill"></i></div>
+   <div><h2>Sumber Data &amp; Filter</h2><p>Pilih sheet, lalu saring peserta</p></div>
+   <span class="count-chip"><i class="bi bi-people-fill me-1"></i><span id="countData">0</span> data</span>
+  </div>
+  <div class="panel-body">
+   <div class="row g-3">
+    <div class="col-lg-3 col-md-6">
+     <label class="flabel" for="sheetSelect">Pilih Sheet</label>
+     <div class="ifield"><i class="bi bi-table"></i><select id="sheetSelect" class="form-select" onchange="fetchSpreadsheetData()"><option value="">Memuat sheet...</option></select></div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+     <label class="flabel" for="filterInstitusi">Filter Institusi</label>
+     <div class="ifield"><i class="bi bi-building"></i><select id="filterInstitusi" class="form-select" onchange="applyFilter()"><option value="">Semua Institusi</option></select></div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+     <label class="flabel" for="filterJurusan">Filter Jurusan</label>
+     <div class="ifield"><i class="bi bi-mortarboard-fill"></i><select id="filterJurusan" class="form-select" onchange="applyFilter()"><option value="">Semua Jurusan</option></select></div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+     <label class="flabel" for="searchInput">Cari Nama Peserta</label>
+     <div class="ifield"><i class="bi bi-search"></i><input type="text" id="searchInput" class="form-control" placeholder="Ketik nama..." oninput="applyFilter()" autocomplete="off"></div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <!-- ===== CARD 3: TABEL DATA ===== -->
+ <section class="panel">
+  <div class="table-toolbar">
+   <div class="sel-info">
+    <div class="sel-badge"><i class="bi bi-check2-square fs-5"></i></div>
+    <div><div id="selInfo">Belum ada yang dipilih</div><div class="small" id="selHint"></div></div>
+   </div>
+   <div class="toolbar-actions">
+    <button class="btn btn-soft" id="btnClear" onclick="clearSel()" disabled><i class="bi bi-x-circle me-1"></i>Clear Pilihan</button>
+    <button class="btn btn-green" onclick="printAll()"><i class="bi bi-printer-fill me-1"></i><span id="lblPrint">Print Semua</span></button>
+    <button class="btn btn-brand" onclick="downloadAll()"><i class="bi bi-file-earmark-zip-fill me-1"></i><span id="lblZip">Download Semua</span></button>
+   </div>
+  </div>
+  <div class="table-scroll">
+   <table class="table align-middle">
+    <thead><tr>
+     <th style="width:48px" class="text-center"><input type="checkbox" class="form-check-input" id="chkAll" onchange="toggleAll(this.checked)" title="Pilih semua yang tampil"></th>
+     <th style="width:60px">No</th><th>Nama Peserta</th><th>Jurusan</th><th>Institusi</th><th>Nilai</th><th class="text-center" style="width:120px">Aksi</th>
+    </tr></thead>
+    <tbody id="tableBody"><tr><td colspan="7"><div class="empty"><div class="spinner-border text-primary mb-2"></div><div>Memuat data...</div></div></td></tr></tbody>
+   </table>
+  </div>
+ </section>
+</main>
+
+<!-- ===== MODAL PEJABAT ===== -->
+<div class="modal fade" id="modalPejabat" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+ <div class="modal-header"><h5 class="modal-title"><i class="bi bi-person-plus-fill text-success me-2"></i>Input Pejabat Baru</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body">
+  <label class="flabel" for="p_nama">Nama Pejabat (beserta gelar)</label>
+  <div class="ifield mb-3"><i class="bi bi-person-fill"></i><input id="p_nama" class="form-control"></div>
+  <label class="flabel" for="p_jabatan">Jabatan</label>
+  <div class="ifield mb-3"><i class="bi bi-briefcase-fill"></i><input id="p_jabatan" class="form-control" placeholder="Direktur RSUD Bandung Kiwari"></div>
+  <label class="flabel" for="p_tingkat">Tingkat Jabatan</label>
+  <div class="ifield mb-3"><i class="bi bi-award-fill"></i><input id="p_tingkat" class="form-control" placeholder="Pembina Utama Muda (IV/c)"></div>
+  <label class="flabel" for="p_nip">NIP</label>
+  <div class="ifield mb-3"><i class="bi bi-credit-card-2-front-fill"></i><input id="p_nip" class="form-control" inputmode="numeric"></div>
+  <label class="flabel" for="p_ttd">Tanda Tangan <span class="text-muted fw-normal">(PNG/JPG, latar transparan lebih baik, maks. 3 MB)</span></label>
+  <div class="ifield"><i class="bi bi-pen-fill"></i><input type="file" id="p_ttd" class="form-control" accept="image/png,image/jpeg"></div>
+ </div>
+ <div class="modal-footer"><button class="btn btn-soft" data-bs-dismiss="modal">Batal</button><button class="btn btn-green" onclick="savePejabat()"><i class="bi bi-check-lg me-1"></i>Simpan</button></div>
+</div></div></div>
+
+<datalist id="dl_nomor"></datalist><datalist id="dl_tempat"></datalist><datalist id="dl_deskripsi"></datalist>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+<div id="pdfStage"></div>
 <div id="print-preview-area"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-    // =========================================================================
-    // 1. URL WEB APP APPS SCRIPT
-    // =========================================================================
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzvvTP3Foo889g3YM5lKKwwDoG5rxxUeNCF8U3oms-7g06DDTy6fn9qbfMLuLy1agGSkA/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzvvTP3Foo889g3YM5lKKwwDoG5rxxUeNCF8U3oms-7g06DDTy6fn9qbfMLuLy1agGSkA/exec";
 
-    // =========================================================================
-    // 2. DAFTAR TEMPLATE DI FOLDER GitHub: /Template/
-    // =========================================================================
-    const LOCAL_TEMPLATES = [
-        {
-            id: 'temp_pesertadidik',
-            nama: '1. Template Peserta Didik',
-            url_bg: './Template/TemplatePesertaDidik.png'
-        },
-        {
-            id: 'temp_pesertapelatihan',
-            nama: '2. Template Peserta Pelatihan',
-            url_bg: './Template/TemplatePesertaPelatihan.png'
-        },
-        {
-            id: 'temp_orientasi',
-            nama: '3. Template Orientasi',
-            url_bg: './Template/TemplateOrientasi.png'
-        }
-    ];
+// Template bawaan di GitHub. Spasi di nama file ditulis %20
+const LOCAL_TEMPLATES = [
+ { id:'pesertadidik', nama:'Peserta Didik', url_bg:'./img/template/pesertadidik.png' },
+ { id:'pesertapelatihan', nama:'Peserta Pelatihan', url_bg:'./img/template/pesertapelatihan.png' },
+ { id:'pesertaperlombaan', nama:'Peserta Perlombaan', url_bg:'./img/template/peserta%20perlombaan.png' }
+];
 
-    // INDEX KOLOM SPREADSHEET (0-based)
-    const COL = { NIM:0, NOMOR:1, NAMA:2, JURUSAN:3, INSTITUSI:4, NILAI:5, TANGGAL:6, ACARA:7, PIMPINAN:8, JABATAN:9, NIP:10, TTD:11 };
-    
-    let g_rawRows = [];      
-    let g_filteredRows = []; 
+// Pengaturan per bagian: y = geser (mm), s = ukuran (pt), f = font. Untuk 'ttd', y = jarak dari bawah.
+const FIELDS = [
+ {k:'nomor', y:0, s:14, f:'Montserrat'},
+ {k:'diberikan', y:0, s:15, f:'Montserrat'},
+ {k:'nama', y:0, s:48, f:'Lobster'},
+ {k:'jurusan', y:0, s:16, f:'Montserrat'},
+ {k:'acara', y:-5, s:16, f:'Montserrat'},
+ {k:'kriteria', y:-5, s:15, f:'Montserrat'},
+ {k:'tanggal', y:0, s:13, f:'Montserrat'},
+ {k:'ttd', y:10, s:13, f:'Montserrat'}
+];
+const SYSTEM_FONTS = ['Segoe UI','Arial','Times New Roman','Georgia','Verdana'];
+// Kolom sheet peserta: NO | NAMA_PESERTA | JURUSAN | INSTITUSI | NILAI. Indeks 5+ diisi dari form saat cetak.
+const COL = { NO:0, NAMA:1, JURUSAN:2, INSTITUSI:3, NILAI:4, NOMOR:5, TANGGAL:6, ACARA:7, PIMPINAN:8, JABATAN:9, NIP:10, TTD:11, JABDIR:12 };
 
-    // INISIALISASI
-    window.onload = function() {
-        renderTemplateOptions();
-        updateLayout();
-        initFetchSheets();
-    };
+let g_rawRows = [], g_filtered = [];       // g_filtered = daftar indeks ke g_rawRows
+const selected = new Set();                // indeks baris terpilih
+const blobCache = {};
+let pin = '';
 
-    // FUNGSI UNTUK MENGUBAH TEKS MENJADI CAPITALIZE EACH WORD (TITLE CASE)
-    function toTitleCase(str) {
-        if (!str) return '';
-        return str.toLowerCase().split(' ').map(function(word) {
-            return word.charAt(0).toUpperCase() + word.slice(1);
-        }).join(' ');
-    }
+window.onload = function () {
+ updateLayout();
+ renderTemplateOptions();
+ restoreForm();
+ initFetchSheets();
+ prefetch();
+ fillSuggest();
+ loadMaster();
+ if (!f_tanggal.value) initDate();
+ waitFontsReady();
+ ['f_nomor','f_tempat','f_deskripsi','templateSelect'].forEach(id => document.getElementById(id).addEventListener('input', saveForm));
+};
 
-    // =========================================================================
-    // FUNGSI UPDATE TATA LETAK & POSISI DENGAN CSS VARIABLES
-    // =========================================================================
-    function updateLayout() {
-        const root = document.documentElement;
-        
-        root.style.setProperty('--padding-top-cert', (document.getElementById('set_pad_top').value || 48) + 'mm');
-        
-        root.style.setProperty('--nomor-y', (document.getElementById('set_nomor_y').value || 0) + 'mm');
-        root.style.setProperty('--nomor-size', (document.getElementById('set_nomor_size').value || 14) + 'pt');
-        
-        root.style.setProperty('--nama-y', (document.getElementById('set_nama_y').value || 0) + 'mm');
-        root.style.setProperty('--nama-size', (document.getElementById('set_nama_size').value || 48) + 'pt');
-        
-        root.style.setProperty('--jurusan-y', (document.getElementById('set_jurusan_y').value || 0) + 'mm');
-        root.style.setProperty('--jurusan-size', (document.getElementById('set_jurusan_size').value || 16) + 'pt');
-        
-        root.style.setProperty('--acara-y', (document.getElementById('set_acara_y').value || -5) + 'mm');
-        root.style.setProperty('--acara-size', (document.getElementById('set_acara_size').value || 16) + 'pt');
-        
-        root.style.setProperty('--kriteria-y', (document.getElementById('set_kriteria_y').value || -5) + 'mm');
-        root.style.setProperty('--kriteria-size', (document.getElementById('set_kriteria_size').value || 15) + 'pt');
-        
-        // PENGATURAN TANGGAL (BARU)
-        root.style.setProperty('--tanggal-y', (document.getElementById('set_tanggal_y').value || 0) + 'mm');
-        root.style.setProperty('--tanggal-size', (document.getElementById('set_tanggal_size').value || 13) + 'pt');
+/* ---------------- UTIL ---------------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toTitleCase(str){ return !str ? '' : String(str).toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
+function showLoader(show, text='Memproses...'){ loaderText.innerText = text; loaderOverlay.style.display = show ? 'flex' : 'none'; }
+function b64blob(b64, mime){ const bin=atob(b64), a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return new Blob([a],{type:mime}); }
+function toast(msg, type='danger'){
+ const el = document.createElement('div');
+ el.className = `toast align-items-center text-bg-${type} border-0`;
+ el.innerHTML = `<div class="d-flex"><div class="toast-body">${esc(msg)}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+ toasts.appendChild(el);
+ el.addEventListener('hidden.bs.toast', () => el.remove());
+ new bootstrap.Toast(el, { delay: 5000 }).show();
+}
+function saveForm(){ try { localStorage.setItem('certForm', JSON.stringify({ nomor:f_nomor.value, tempat:f_tempat.value, deskripsi:f_deskripsi.value, template:templateSelect.value })); } catch(e){} }
+function restoreForm(){
+ try {
+  const d = JSON.parse(localStorage.getItem('certForm') || '{}');
+  if (d.nomor) f_nomor.value = d.nomor; if (d.tempat) f_tempat.value = d.tempat; if (d.deskripsi) f_deskripsi.value = d.deskripsi;
+  if (d.template && LOCAL_TEMPLATES.some(t => t.id === d.template)) templateSelect.value = d.template;
+ } catch(e){}
+}
 
-        root.style.setProperty('--ttd-bottom', (document.getElementById('set_ttd_bottom').value || 10) + 'mm');
-        root.style.setProperty('--ttd-size', (document.getElementById('set_ttd_size').value || 13) + 'pt');
-    }
+async function apiGet(action, params={}){
+ const url = new URL(GAS_API_URL); url.searchParams.append('action', action);
+ Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
+ return (await fetch(url)).json();
+}
+async function apiPost(body){
+ // text/plain agar tidak memicu preflight CORS pada Apps Script
+ const r = await fetch(GAS_API_URL, { method:'POST', body: JSON.stringify(body) });
+ return r.json();
+}
 
-    function resetLayout() {
-        document.getElementById('set_pad_top').value = 48;
-        document.getElementById('set_nomor_y').value = 0;
-        document.getElementById('set_nomor_size').value = 14;
-        document.getElementById('set_nama_y').value = 0;
-        document.getElementById('set_nama_size').value = 48;
-        document.getElementById('set_jurusan_y').value = 0;
-        document.getElementById('set_jurusan_size').value = 16;
-        document.getElementById('set_acara_y').value = -5;
-        document.getElementById('set_acara_size').value = 16;
-        document.getElementById('set_kriteria_y').value = -5;
-        document.getElementById('set_kriteria_size').value = 15;
-        document.getElementById('set_tanggal_y').value = 0;
-        document.getElementById('set_tanggal_size').value = 13;
-        document.getElementById('set_ttd_bottom').value = 10;
-        document.getElementById('set_ttd_size').value = 13;
-        updateLayout();
-    }
+/* ---------------- FONT & TATA LETAK ---------------- */
+async function waitFontsReady(){
+ const used = [...new Set(FIELDS.map(f => f.f))];
+ const loads = used.flatMap(n => ['400','500','700'].map(w => document.fonts.load(`${w} 16px "${n}"`).catch(()=>{})));
+ await Promise.race([Promise.all(loads), new Promise(r => setTimeout(r, 1500))]);
+}
+function updateLayout(){
+ const root = document.documentElement;
+ root.style.setProperty('--pad-top', '48mm');
+ FIELDS.forEach(f => {
+  root.style.setProperty(`--${f.k}-y`, f.y+'mm');
+  root.style.setProperty(`--${f.k}-s`, f.s+'pt');
+  root.style.setProperty(`--${f.k}-f`, `"${f.f}", sans-serif`);
+ });
+}
 
-    function showLoader(show, text="Memproses...") {
-        document.getElementById('loaderText').innerText = text;
-        document.getElementById('loaderOverlay').style.display = show ? 'flex' : 'none';
-    }
+/* ---------------- TEMPLATE & ASSET DRIVE ---------------- */
+function renderTemplateOptions(){
+ templateSelect.innerHTML = LOCAL_TEMPLATES.map(t => `<option value="${esc(t.id)}">${esc(t.nama)}</option>`).join('');
+}
 
-    function renderTemplateOptions() {
-        const selT = document.getElementById('templateSelect');
-        selT.innerHTML = '';
-        LOCAL_TEMPLATES.forEach((t, i) => {
-            selT.innerHTML += `<option value="${t.id}" ${i===0?'selected':''}>${t.nama}</option>`;
-        });
-    }
+// Cache permanen di browser: gambar dari Drive hanya diunduh sekali per perangkat
+const idb = new Promise((res, rej) => { const q = indexedDB.open('certCache', 1); q.onupgradeneeded = () => q.result.createObjectStore('b'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+idb.catch(()=>{});
+const idbGet = k => idb.then(d => new Promise(r => { const q = d.transaction('b').objectStore('b').get(k); q.onsuccess = () => r(q.result); q.onerror = () => r(); })).catch(()=>{});
+const idbSet = (k, v) => idb.then(d => { d.transaction('b','readwrite').objectStore('b').put(v, k); }).catch(()=>{});
 
-    async function apiGet(action, params = {}) {
-        const url = new URL(GAS_API_URL);
-        url.searchParams.append('action', action);
-        Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
-        const response = await fetch(url);
-        return await response.json();
-    }
+function fetchBlob(id, ver){
+ const key = id + '@' + ver;
+ if (blobCache[key]) return blobCache[key];
+ const p = (async () => {
+  let blob = await idbGet(key);
+  if (!blob) {
+   const r = await apiGet('getFile', { id });
+   if (r.status!=='success') throw new Error(r.message);
+   blob = b64blob(r.data.base64, r.data.mime); idbSet(key, blob);
+  }
+  return URL.createObjectURL(blob);
+ })();
+ blobCache[key] = p; p.catch(() => delete blobCache[key]);
+ return p;
+}
 
-    async function initFetchSheets() {
-        showLoader(true, "Menghubungkan ke Spreadsheet...");
-        try {
-            const resSheets = await apiGet('getSheets');
-            showLoader(false);
-            if(resSheets.status === 'success') {
-                const sel = document.getElementById('sheetSelect');
-                sel.innerHTML = '<option value="">-- Pilih Sheet --</option>';
-                resSheets.data.forEach(s => sel.innerHTML += `<option value="${s}">${s}</option>`);
-                
-                if(resSheets.data.length > 0) {
-                    sel.value = resSheets.data[0];
-                    fetchSpreadsheetData();
-                }
-            }
-        } catch(err) {
-            showLoader(false);
-            alert("Gagal terhubung ke Apps Script API. Pastikan URL Web App valid dan dibuka izinnya.\nError: " + err.message);
-        }
-    }
+function ensureTemplateURL(cfgId){
+ const t = LOCAL_TEMPLATES.find(x => x.id === cfgId);
+ if (!t) throw new Error('Template tidak ditemukan');
+ return t.url_bg;
+}
+const imgOk = u => !u ? Promise.resolve(true) : new Promise(r => { const i = new Image(); i.onload = () => r(true); i.onerror = () => r(false); i.src = u; });
+// Tunggu semua <img> di dalam elemen selesai dimuat (agar tidak tercetak kosong)
+const imagesReady = root => Promise.all([...root.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
 
-    async function fetchSpreadsheetData() {
-        const sheetName = document.getElementById('sheetSelect').value;
-        if(!sheetName) return;
+function setPrep(text, cls=''){ prepInfo.className = 'status-line ' + cls; prepInfo.innerHTML = text; }
+let prepSeq = 0;
+async function prefetch(){
+ const seq = ++prepSeq, o = curOfficial();
+ if (!templateSelect.value && !o?.ttd) return;
+ setPrep('<span class="spinner-border spinner-border-sm me-1"></span>Menyiapkan template & tanda tangan...');
+ try {
+  await Promise.all([templateSelect.value ? ensureTemplateURL(templateSelect.value) : 0, o?.ttd ? resolveTTD(o.ttd) : 0]);
+  const tp = LOCAL_TEMPLATES.find(x => x.id === templateSelect.value);
+  if (tp && !(await imgOk(tp.url_bg))) { if (seq===prepSeq) setPrep('<i class="bi bi-exclamation-triangle-fill me-1"></i>Gambar template tidak ditemukan: ' + esc(tp.url_bg), 'err'); return; }
+  if (seq===prepSeq) setPrep('<i class="bi bi-check-circle-fill me-1"></i>Template & tanda tangan siap', 'ok');
+ } catch(e){ if (seq===prepSeq) setPrep('<i class="bi bi-exclamation-triangle-fill me-1"></i>Gagal menyiapkan: ' + esc(e.message), 'err'); }
+}
 
-        showLoader(true, "Mengambil data dari Sheet: " + sheetName + "...");
-        try {
-            const res = await apiGet('getData', { sheet: sheetName });
-            showLoader(false);
-            if(res.status === 'success') {
-                g_rawRows = res.data.rows;
-                g_filteredRows = [...g_rawRows];
-                buildDynamicFilters(g_rawRows);
-                renderTable(g_filteredRows);
-            }
-        } catch(e) {
-            showLoader(false);
-            alert("Error: " + e.message);
-        }
-    }
+/* ---------------- DATA ---------------- */
+async function initFetchSheets(){
+ showLoader(true, 'Menghubungkan ke Spreadsheet...');
+ try {
+  const r = await apiGet('getSheets'); showLoader(false);
+  if (r.status==='success') {
+   sheetSelect.innerHTML = '<option value="">Pilih sheet</option>' + r.data.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+   if (r.data.length) { sheetSelect.value = r.data[0]; fetchSpreadsheetData(); }
+  } else toast('Gagal memuat daftar sheet: ' + (r.message || ''));
+ } catch(err){ showLoader(false); toast('Gagal terhubung ke Apps Script API. Pastikan URL Web App valid. ' + err.message); }
+}
 
-    function buildDynamicFilters(rows) {
-        let insts = new Set(), jurs = new Set();
-        rows.forEach(r => {
-            if(r[COL.INSTITUSI]) insts.add(r[COL.INSTITUSI]);
-            if(r[COL.JURUSAN]) jurs.add(r[COL.JURUSAN]);
-        });
+async function fetchSpreadsheetData(){
+ const name = sheetSelect.value; if (!name) return;
+ showLoader(true, 'Mengambil data sheet: '+name+'...');
+ try {
+  const res = await apiGet('getData', { sheet:name }); showLoader(false);
+  if (res.status!=='success') { toast('Gagal mengambil data: ' + (res.message || '')); return; }
+  g_rawRows = res.data.rows; selected.clear();
+  buildDynamicFilters(g_rawRows);
+  searchInput.value = ''; applyFilter();
+ } catch(e){ showLoader(false); toast('Error: '+e.message); }
+}
 
-        const sInst = document.getElementById('filterInstitusi');
-        const sJur = document.getElementById('filterJurusan');
-        sInst.innerHTML = '<option value="">-- Semua Institusi --</option>';
-        sJur.innerHTML = '<option value="">-- Semua Jurusan --</option>';
+function buildDynamicFilters(rows){
+ const insts = new Set(), jurs = new Set();
+ rows.forEach(r => { if (r[COL.INSTITUSI]) insts.add(r[COL.INSTITUSI]); if (r[COL.JURUSAN]) jurs.add(r[COL.JURUSAN]); });
+ filterInstitusi.innerHTML = '<option value="">Semua Institusi</option>' + [...insts].sort().map(i=>`<option value="${esc(i)}">${esc(i)}</option>`).join('');
+ filterJurusan.innerHTML = '<option value="">Semua Jurusan</option>' + [...jurs].sort().map(j=>`<option value="${esc(j)}">${esc(j)}</option>`).join('');
+}
 
-        Array.from(insts).sort().forEach(i => sInst.innerHTML += `<option value="${i}">${i}</option>`);
-        Array.from(jurs).sort().forEach(j => sJur.innerHTML += `<option value="${j}">${j}</option>`);
-    }
+const NILAI_CLASS = { 'SANGAT BAIK':'nilai-sb', 'BAIK':'nilai-b', 'CUKUP':'nilai-c', 'TIDAK BAIK':'nilai-t' };
+const nilaiBadge = v => `<span class="badge nilai ${NILAI_CLASS[String(v||'').trim().toUpperCase()] || 'nilai-x'}">${esc(v)}</span>`;
+const initials = n => String(n||'?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
 
-    function renderTable(rows) {
-        const tbody = document.getElementById('tableBody');
-        document.getElementById('countData').innerText = rows.length;
-        tbody.innerHTML = '';
+function applyFilter(){
+ const q = searchInput.value.toLowerCase().trim(), fi = filterInstitusi.value, fj = filterJurusan.value;
+ g_filtered = [];
+ g_rawRows.forEach((r, id) => {
+  if ((!q || String(r[COL.NAMA]).toLowerCase().includes(q)) && (!fi || r[COL.INSTITUSI]===fi) && (!fj || r[COL.JURUSAN]===fj)) g_filtered.push(id);
+ });
+ renderTable();
+}
 
-        if(rows.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data ditemukan berdasarkan filter.</td></tr>';
-            return;
-        }
+function renderTable(){
+ countData.innerText = g_filtered.length;
+ if (!g_filtered.length) {
+  tableBody.innerHTML = '<tr><td colspan="7"><div class="empty"><i class="bi bi-inbox"></i>Tidak ada data yang cocok.</div></td></tr>';
+  updateSelUI(); return;
+ }
+ tableBody.innerHTML = g_filtered.map(id => {
+  const r = g_rawRows[id], on = selected.has(id);
+  return `<tr class="${on?'is-sel':''}" data-id="${id}" onclick="rowClick(event,${id})">
+  <td class="text-center"><input type="checkbox" class="form-check-input row-chk" ${on?'checked':''} onchange="toggleRow(${id},this.checked)"></td>
+  <td class="text-muted">${esc(r[COL.NO])}</td>
+  <td><div class="d-flex align-items-center gap-2"><div class="avatar">${esc(initials(r[COL.NAMA]))}</div><span class="pname">${esc(toTitleCase(r[COL.NAMA]))}</span></div></td>
+  <td>${esc(r[COL.JURUSAN])}</td><td>${esc(r[COL.INSTITUSI])}</td>
+  <td>${nilaiBadge(r[COL.NILAI])}</td>
+  <td><div class="row-actions">
+   <button class="btn btn-brand" onclick="printSingle(${id})" title="Print peserta ini"><i class="bi bi-printer"></i></button>
+   <button class="btn btn-soft" style="color:#dc2626" onclick="pdfSingle(${id})" title="Download PDF peserta ini"><i class="bi bi-file-earmark-pdf"></i></button></div></td></tr>`;
+ }).join('');
+ updateSelUI();
+}
 
-        rows.forEach((r, idx) => {
-            const namaFormatted = toTitleCase(r[COL.NAMA]); // Nama di tabel juga ditransformasi
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${r[COL.NIM]}</td>
-                <td class="fw-bold text-primary">${namaFormatted}</td>
-                <td>${r[COL.INSTITUSI]}</td>
-                <td>${r[COL.JURUSAN]}</td>
-                <td><span class="badge bg-success">${r[COL.NILAI]}</span></td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-primary w-100" onclick="printSingle(${idx})">
-                        <i class="bi bi-printer"></i> Print
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
+/* ---------------- PILIHAN (CHECKBOX) ---------------- */
+function rowClick(e, id){
+ if (e.target.closest('button,input,a')) return;
+ toggleRow(id, !selected.has(id));
+ const tr = tableBody.querySelector(`tr[data-id="${id}"]`); if (tr) tr.querySelector('.row-chk').checked = selected.has(id);
+}
+function toggleRow(id, on){
+ on ? selected.add(id) : selected.delete(id);
+ const tr = tableBody.querySelector(`tr[data-id="${id}"]`); if (tr) tr.classList.toggle('is-sel', on);
+ updateSelUI();
+}
+function toggleAll(on){ g_filtered.forEach(id => on ? selected.add(id) : selected.delete(id)); renderTable(); }
+function clearSel(){ selected.clear(); renderTable(); }
+function updateSelUI(){
+ const n = selected.size, vis = g_filtered.length, visSel = g_filtered.filter(id => selected.has(id)).length, hidden = n - visSel;
+ chkAll.checked = vis > 0 && visSel === vis;
+ chkAll.indeterminate = visSel > 0 && visSel < vis;
+ selInfo.innerHTML = n ? `<b>${n}</b> peserta dipilih` : 'Belum ada yang dipilih';
+ selHint.textContent = n ? (hidden > 0 ? `${hidden} di antaranya tersembunyi oleh filter` : 'Hanya yang dicentang yang diproses') : 'Tombol di kanan akan memproses semua data yang tampil';
+ btnClear.disabled = !n;
+ lblPrint.textContent = n ? `Print Terpilih (${n})` : `Print Semua (${vis})`;
+ lblZip.textContent = n ? `Download Terpilih (${n})` : `Download Semua (${vis})`;
+}
+// Baris yang diproses: yang dicentang, atau semua yang tampil bila belum ada yang dicentang
+function targetRows(){
+ const ids = selected.size ? [...selected].sort((a,b) => a-b) : g_filtered;
+ return ids.map(id => g_rawRows[id]);
+}
 
-    function applyFilter() {
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        const fInst = document.getElementById('filterInstitusi').value;
-        const fJur = document.getElementById('filterJurusan').value;
+/* ---------------- SARAN KATA ---------------- */
+const ROMAWI = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+function suggestions(){
+ const d = new Date(), Y = d.getFullYear(), R = ROMAWI[d.getMonth()];
+ return {
+  nomor: ['KP.09/', `KP.09/XXXX-RSUDBK/${R}/${Y}`, 'KP.09/1543-RSUDBK/VII/2026'],
+  tempat: ['Bandung', 'Kota Bandung'],
+  deskripsi: {
+   pesertadidik: [`Orientasi Virtual Peserta Didik Gelombang 9 Tahun ${Y}`, `Orientasi Peserta Didik Gelombang X Tahun ${Y}`, `Orientasi Peserta Didik Tahun ${Y}`],
+   pesertapelatihan: [`Pelatihan Bantuan Hidup Dasar (BLS) Tahun ${Y}`, `Pelatihan Pencegahan dan Pengendalian Infeksi (PPI) Tahun ${Y}`, `Workshop Keperawatan Tahun ${Y}`],
+   pesertaperlombaan: [`Lomba Karya Tulis Ilmiah Tahun ${Y}`, `Lomba Poster Kesehatan Tahun ${Y}`, `Perlombaan Hari Kesehatan Nasional Tahun ${Y}`]
+  }
+ };
+}
+function fillSuggest(){
+ const s = suggestions(), opt = a => a.map(v => `<option value="${esc(v)}">`).join('');
+ dl_nomor.innerHTML = opt(s.nomor);
+ dl_tempat.innerHTML = opt(s.tempat);
+ dl_deskripsi.innerHTML = opt(s.deskripsi[templateSelect.value] || Object.values(s.deskripsi).flat());
+}
+function onTemplate(){ fillSuggest(); prefetch(); saveForm(); }
 
-        g_filteredRows = g_rawRows.filter(r => {
-            const matchSearch = !q || r[COL.NIM].toLowerCase().includes(q) || r[COL.NAMA].toLowerCase().includes(q);
-            const matchInst = !fInst || r[COL.INSTITUSI] === fInst;
-            const matchJur = !fJur || r[COL.JURUSAN] === fJur;
-            return matchSearch && matchInst && matchJur;
-        });
+/* ---------------- MASTER PEJABAT, FORM ---------------- */
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+let officials = [];
+const curOfficial = () => m_pejabat.value === '' ? null : (officials[+m_pejabat.value] || null);
 
-        renderTable(g_filteredRows);
-    }
+function initDate(){ const t = new Date(); f_tanggal.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; }
+function fmtTanggal(v){ const [y,m,d] = v.split('-'); return `${+d} ${BULAN[+m-1]} ${y}`; }
+const fileB64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
-    function generateCertificateHTML(r, config) {
-        let ttdHtml = (r[COL.TTD] && r[COL.TTD].startsWith('http')) 
-            ? `<img src="${r[COL.TTD]}" class="p-ttd-img" alt="TTD">` 
-            : ``;
+async function loadMaster(sel){
+ try {
+  const r = await apiGet('getMaster'); if (r.status!=='success') throw new Error(r.message);
+  const keep = sel==='last' ? null : (curOfficial()?.nama || localStorage.getItem('certPejabat'));
+  officials = r.data;
+  m_pejabat.innerHTML = '<option value="">Pilih pejabat penandatangan</option>' + officials.map((o,i) => `<option value="${i}">${esc(o.nama)} — ${esc(o.jabatan)}</option>`).join('');
+  if (sel==='last') m_pejabat.value = String(officials.length-1);
+  else { const i = officials.findIndex(o => o.nama===keep); if (i>=0) m_pejabat.value = String(i); }
+  onPejabat();
+ } catch(e){ pejabatInfo.className = 'official-card show'; pejabatInfo.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i>Gagal memuat pejabat: ${esc(e.message)}. Deploy ulang Code.gs sebagai versi baru.</span>`; }
+}
+function onPejabat(){
+ const o = curOfficial();
+ if (!o) { pejabatInfo.className = 'official-card'; pejabatInfo.innerHTML = ''; return; }
+ pejabatInfo.className = 'official-card show';
+ pejabatInfo.innerHTML = `<span><i class="bi bi-briefcase"></i>${esc(o.jabatan)}</span><span><i class="bi bi-award"></i>${esc(o.tingkat)}</span><span><i class="bi bi-credit-card-2-front"></i>NIP ${esc(o.nip)}</span>
+  <span class="pill ${o.ttd ? 'pill-ok' : 'pill-no'}"><i class="bi bi-pen me-1"></i>TTD ${o.ttd ? 'ada' : 'belum ada'}</span>`;
+ localStorage.setItem('certPejabat', o.nama); prefetch();
+}
 
-        let namaAcara = r[COL.ACARA] || "";
-        
-        // 1. Mengubah format nama menjadi Awalan Kapital Tiap Kata (Title Case)
-        let namaFormatted = toTitleCase(r[COL.NAMA]);
+function getForm(){
+ const t = id => document.getElementById(id).value.trim();
+ return { nomor:t('f_nomor'), deskripsi:t('f_deskripsi'), tempat:t('f_tempat'), tanggal:t('f_tanggal'), pejabat:curOfficial() };
+}
 
-        return `
-        <div class="cert-page">
-            <img src="${config.url_bg}" class="cert-bg" alt="Background Kosong" onerror="this.alt='Gambar Template Tidak Ditemukan.'">
-            <div class="cert-content">
-                <div class="p-nomor">Nomor : ${r[COL.NOMOR] || '-'}</div>
-                <div class="p-diberikan">diberikan kepada</div>
-                <div class="p-nama">${namaFormatted}</div>
-                <div class="p-underline"></div>
-                <div class="p-jurusan-inst">${r[COL.JURUSAN]} - ${r[COL.INSTITUSI]}</div>
-                <div class="p-acara-desc">
-                    Telah Mengikuti ${namaAcara}<br>
-                    di RSUD Bandung Kiwari
-                </div>
-                <!-- 2. Nilai Kriteria Kelulusan Dibuat Bold (Tebal) -->
-                <div class="p-kriteria">Kriteria Kelulusan : <span class="p-kriteria-nilai">${r[COL.NILAI]}</span></div>
-                
-                <div class="p-ttd-area">
-                    <div class="p-tanggal">${r[COL.TANGGAL]}</div>
-                    <div class="p-jabatan-dir">Direktur RSUD Bandung Kiwari</div>
-                    
-                    ${ttdHtml}
-                    
-                    <div class="p-pimpinan">${r[COL.PIMPINAN]}</div>
-                    <div class="p-pangkat">${r[COL.JABATAN]}</div>
-                    <div class="p-nip">NIP. ${r[COL.NIP]}</div>
-                </div>
-            </div>
-        </div>`;
-    }
+// Link Google Drive -> ID file
+const driveId = u => (String(u||'').match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]+)/) || [])[1];
+async function resolveTTD(url){
+ if (!url) return '';
+ const id = driveId(url);
+ if (!id) return url;
+ try { return await fetchBlob(id, ''); } catch(e){ return `https://drive.google.com/thumbnail?id=${id}&sz=w800`; }
+}
 
-    function printSingle(filteredIdx) {
-        const r = g_filteredRows[filteredIdx];
-        const tempId = document.getElementById('templateSelect').value;
-        const config = LOCAL_TEMPLATES.find(t => t.id === tempId);
+function openPejabat(){ ['p_nama','p_jabatan','p_tingkat','p_nip','p_ttd'].forEach(i => document.getElementById(i).value=''); bootstrap.Modal.getOrCreateInstance(modalPejabat).show(); }
+async function savePejabat(){
+ const g = id => document.getElementById(id).value.trim();
+ if (!g('p_nama') || !g('p_jabatan') || !g('p_tingkat') || !g('p_nip')) { toast('Nama, Jabatan, Tingkat Jabatan, dan NIP wajib diisi.', 'warning'); return; }
+ const f = p_ttd.files[0];
+ if (f && f.size > 3*1024*1024) { toast('File tanda tangan terlalu besar (maks. 3 MB).', 'warning'); return; }
+ showLoader(true, 'Menyimpan pejabat...');
+ try {
+  const body = { action:'addOfficial', nama:g('p_nama'), jabatan:g('p_jabatan'), tingkat:g('p_tingkat'), nip:g('p_nip') };
+  if (f) body.ttd = { name:f.name, mime:f.type, base64:await fileB64(f) };
+  let res = await apiPost({ ...body, pin });
+  if (res.status==='error' && /PIN/i.test(res.message)) { pin = prompt('Masukkan PIN:') || ''; res = await apiPost({ ...body, pin }); }
+  if (res.status!=='success') throw new Error(res.message);
+  bootstrap.Modal.getOrCreateInstance(modalPejabat).hide();
+  await loadMaster('last');
+  toast('Pejabat berhasil disimpan.', 'success');
+ } catch(e){ toast('Gagal menyimpan pejabat: '+e.message); }
+ showLoader(false);
+}
 
-        if(!config) { alert("Pilih template terlebih dahulu!"); return; }
+/* ---------------- CETAK ---------------- */
+function generateCertificateHTML(r, bgUrl){
+ const ttd = r[COL.TTD] ? `<img src="${esc(r[COL.TTD])}" class="p-ttd-img" alt="TTD">` : '';
+ return `
+ <div class="cert-page">
+  <img src="${bgUrl}" class="cert-bg" alt="">
+  <div class="cert-content">
+   <div class="p-nomor">Nomor : ${esc(r[COL.NOMOR] || '-')}</div>
+   <div class="p-diberikan">diberikan kepada</div>
+   <div class="p-nama">${esc(toTitleCase(r[COL.NAMA]))}</div>
+   <div class="p-underline"></div>
+   <div class="p-jurusan-inst">${esc(r[COL.JURUSAN])} - ${esc(r[COL.INSTITUSI])}</div>
+   <div class="p-acara-desc">Telah Mengikuti ${esc(r[COL.ACARA] || '')}<br>di RSUD Bandung Kiwari</div>
+   <div class="p-kriteria">Kriteria Kelulusan : <span class="p-kriteria-nilai">${esc(r[COL.NILAI])}</span></div>
+   <div class="p-ttd-area">
+    <div class="p-tanggal">${esc(r[COL.TANGGAL])}</div>
+    <div class="p-jabatan-dir">${esc(r[COL.JABDIR])}</div>
+    ${ttd}
+    <div>${esc(r[COL.PIMPINAN])}</div>
+    <div>${esc(r[COL.JABATAN])}</div>
+    <div>NIP. ${esc(r[COL.NIP])}</div>
+   </div>
+  </div>
+ </div>`;
+}
 
-        updateLayout();
-        const printArea = document.getElementById('print-preview-area');
-        printArea.innerHTML = generateCertificateHTML(r, config);
+function validate(rows){
+ if (!rows.length) { toast('Tidak ada data untuk diproses.', 'warning'); return null; }
+ if (!templateSelect.value) { toast('Pilih template terlebih dahulu!', 'warning'); return null; }
+ const F = getForm();
+ const miss = [[F.nomor,'Nomor Sertifikat'],[F.deskripsi,'Deskripsi Acara'],[F.tempat,'Tempat'],[F.tanggal,'Tanggal'],[F.pejabat,'Nama Pejabat']].filter(x => !x[0]).map(x => x[1]);
+ if (miss.length) { toast('Lengkapi dulu di Setting Sertifikat: ' + miss.join(', '), 'warning'); window.scrollTo({ top:0, behavior:'smooth' }); return null; }
+ return F;
+}
 
-        setTimeout(() => { window.print(); }, 300);
-    }
+async function prepare(rows, F){
+ const O = F.pejabat;
+ updateLayout();
+ const [bg, ttd] = await Promise.all([ensureTemplateURL(templateSelect.value), resolveTTD(O.ttd)]);
+ if (!(await imgOk(bg))) throw new Error('Gambar template tidak ditemukan: ' + bg);
+ await imgOk(ttd);
+ await waitFontsReady();
+ const merged = rows.map(r => {
+  const c = r.slice();
+  c[COL.NOMOR] = F.nomor; c[COL.ACARA] = F.deskripsi; c[COL.TANGGAL] = `${F.tempat}, ${fmtTanggal(F.tanggal)}`;
+  c[COL.PIMPINAN] = O.nama; c[COL.JABDIR] = O.jabatan; c[COL.JABATAN] = O.tingkat; c[COL.NIP] = O.nip; c[COL.TTD] = ttd;
+  return c;
+ });
+ return { merged, bg };
+}
 
-    function printAll() {
-        if (g_filteredRows.length === 0) {
-            alert("Tidak ada data yang ditampilkan untuk dicetak.");
-            return;
-        }
+async function doPrint(rows){
+ const F = validate(rows); if (!F) return;
+ showLoader(true, `Menyiapkan ${rows.length} sertifikat...`);
+ try {
+  const { merged, bg } = await prepare(rows, F);
+  const area = document.getElementById('print-preview-area');
+  area.innerHTML = merged.map(r => generateCertificateHTML(r, bg)).join('');
+  await imagesReady(area);
+  showLoader(false);
+  setTimeout(() => window.print(), 200);
+ } catch(e){ showLoader(false); toast('Gagal menyiapkan cetak: '+e.message); }
+}
+window.addEventListener('afterprint', () => { document.getElementById('print-preview-area').innerHTML = ''; });
 
-        const tempId = document.getElementById('templateSelect').value;
-        const config = LOCAL_TEMPLATES.find(t => t.id === tempId);
+/* ---------------- DOWNLOAD PDF (satu file per peserta; banyak peserta = ZIP) ---------------- */
+function pdfName(r, i, used){
+ const no = String(r[COL.NO] || i+1).padStart(3,'0');
+ const base = `${no} - ${toTitleCase(r[COL.NAMA])}`.replace(/[\\/:*?"<>|]+/g,'').trim();
+ let f = base, k = 2; while (used.has(f)) f = `${base} (${k++})`;
+ used.add(f); return f + '.pdf';
+}
+function saveBlob(blob, name){
+ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+ document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
 
-        if(!config) { alert("Pilih template terlebih dahulu!"); return; }
-
-        showLoader(true, `Menyiapkan ${g_filteredRows.length} sertifikat untuk dicetak...`);
-        updateLayout();
-
-        let combinedHtml = '';
-        g_filteredRows.forEach(r => {
-            combinedHtml += generateCertificateHTML(r, config);
-        });
-
-        const printArea = document.getElementById('print-preview-area');
-        printArea.innerHTML = combinedHtml;
-
-        setTimeout(() => {
-            showLoader(false);
-            window.print();
-        }, 800);
-    }
+async function downloadPDF(rows){
+ if (!window.html2canvas || !window.jspdf || !window.JSZip) { toast('Pustaka PDF/ZIP belum termuat. Periksa koneksi internet lalu muat ulang halaman.'); return; }
+ const F = validate(rows); if (!F) return;
+ const multi = rows.length > 1;
+ showLoader(true, 'Menyiapkan template, font & tanda tangan...');
+ try {
+  const { merged, bg } = await prepare(rows, F);
+  const { jsPDF } = window.jspdf, zip = multi ? new JSZip() : null, used = new Set(), stage = document.getElementById('pdfStage');
+  for (let i = 0; i < merged.length; i++) {
+   showLoader(true, `Membuat PDF ${i+1} dari ${merged.length}...`);
+   stage.innerHTML = generateCertificateHTML(merged[i], bg);
+   await imagesReady(stage);
+   const canvas = await html2canvas(stage.firstElementChild, {
+    scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
+    onclone: d => { const s = d.getElementById('pdfStage'); s.style.left = '0'; s.style.top = '0'; }
+   });
+   const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4', compress:true });
+   pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210);
+   const name = pdfName(merged[i], i, used);
+   if (multi) zip.file(name, pdf.output('arraybuffer')); else pdf.save(name);
+  }
+  stage.innerHTML = '';
+  if (multi) {
+   showLoader(true, 'Mengemas ZIP...');
+   const slug = F.deskripsi.replace(/[^A-Za-z0-9]+/g,'_').slice(0,40);
+   saveBlob(await zip.generateAsync({ type:'blob', compression:'STORE' }), `Sertifikat_${slug}_${F.tanggal}.zip`);
+  }
+  showLoader(false);
+  toast(multi ? `${merged.length} sertifikat berhasil dikemas ke ZIP.` : 'PDF berhasil dibuat.', 'success');
+ } catch(e){ showLoader(false); toast('Gagal membuat PDF: '+e.message); }
+}
+const printSingle = id => doPrint([g_rawRows[id]]);
+const pdfSingle = id => downloadPDF([g_rawRows[id]]);
+const printAll = () => doPrint(targetRows());
+const downloadAll = () => downloadPDF(targetRows());
 </script>
 </body>
 </html>
