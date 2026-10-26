@@ -100,14 +100,52 @@
             transition: background-color 5000s ease-in-out 0s;
         }
 
+        /* ===== TEMPLATE CETAK: A4 LANDSCAPE ===== */
+        @page { size: A4 landscape; margin: 15mm 20mm; }
+
+        #printSheet { display: none; }
+
         @media print {
-            body { background: white; color: black; }
-            .no-print, .btn-action { display: none !important; }
-            .print-area { width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; }
-            table { border-collapse: collapse; width: 100%; font-size: 12px; }
-            th, td { border: 1px solid #cbd5e1 !important; padding: 8px; text-align: left; }
-            /* Menambahkan print-color-adjust standar sesuai saran VS Code */
-            th { background-color: #f1f5f9 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            html, body { background: #fff !important; color: #000 !important; }
+            body > *:not(#printSheet) { display: none !important; }
+            #printSheet { display: block !important; font-family: Arial, Helvetica, sans-serif; color: #000; }
+
+            /* Kop surat modern */
+            #printSheet .kop {
+                display: flex; align-items: center; justify-content: space-between;
+                gap: 6mm; padding-bottom: 3mm; margin-bottom: 1.5mm;
+                border-bottom: 1.2mm solid #1e3a8a;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            #printSheet .kop-logo { width: 38mm; height: 20mm; display: flex; align-items: center; justify-content: flex-start; }
+            #printSheet .kop-logo img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: 0; }
+            #printSheet .kop-spacer { width: 38mm; flex-shrink: 0; }
+            #printSheet .kop-text { flex: 1; text-align: center; }
+            #printSheet .print-title {
+                text-align: center; font-size: 15pt; font-weight: 800;
+                line-height: 1.3; margin: 0; text-transform: uppercase; color: #0f172a;
+            }
+            #printSheet .kop-line {
+                border: 0; border-top: 0.4mm solid #1e3a8a; margin: 0 0 4mm;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            #printSheet .print-room {
+                font-size: 11pt; font-weight: 600; margin: 0 0 4mm;
+            }
+            #printSheet table { width: 100%; border-collapse: collapse; font-size: 10pt; table-layout: fixed; }
+            #printSheet th, #printSheet td {
+                border: 1px solid #000; padding: 4px 6px; vertical-align: middle; word-wrap: break-word;
+            }
+            #printSheet thead th {
+                background: #e5e7eb !important; text-align: center; font-weight: 700;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            #printSheet thead { display: table-header-group; }
+            #printSheet tr { page-break-inside: avoid; break-inside: avoid; }
+            #printSheet td.c { text-align: center; }
+            #printSheet td.cek { font-size: 15pt; font-weight: 700; line-height: 1; }
+            #printSheet td.cek small { display: block; font-size: 7pt; font-weight: 400; margin-top: 1px; }
+            #printSheet img { width: 22mm; height: 16mm; object-fit: cover; display: block; margin: 0 auto; }
         }
     </style>
 </head>
@@ -175,7 +213,7 @@
                 </h2>
                 
                 <div class="flex gap-2 no-print">
-                    <button onclick="window.print()" id="btnPrint" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-all text-sm items-center gap-2">
+                    <button onclick="printWithImages()" id="btnPrint" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-all text-sm items-center gap-2">
                         <i class="fas fa-print"></i> Cetak
                     </button>
                      <button onclick="openModalAddItem('add')" id="btnTambahBarang" class="hidden px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-brand-500/30 text-sm flex items-center gap-2 transform hover:-translate-y-0.5">
@@ -214,6 +252,40 @@
                 <p class="text-slate-500 dark:text-slate-400 max-w-sm text-sm leading-relaxed">Pilih ruangan pada menu di atas, atau klik tombol "Tambah Aset" untuk memulai inventarisasi.</p>
             </div>
         </main>
+    </div>
+
+    <!-- Lembar Cetak (hanya tampil saat print) -->
+    <div id="printSheet">
+        <div class="kop">
+            <div class="kop-logo"><img src="img/rsudbk.png" alt="Logo RSUD Bandung Kiwari"></div>
+            <div class="kop-text">
+                <h1 class="print-title">KARTU INVENTARIS RUANGAN<br>SARANA DAN PRASARANA DIKLAT<br>RSUD BANDUNG KIWARI</h1>
+            </div>
+            <div class="kop-spacer"></div>
+        </div>
+        <hr class="kop-line">
+        <p class="print-room" id="printRoom"></p>
+        <table>
+            <colgroup>
+                <col style="width:5%"><col style="width:30%"><col style="width:9%">
+                <col style="width:10%"><col style="width:9%"><col style="width:9%"><col style="width:28%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">NO</th>
+                    <th rowspan="2">NAMA ALAT/BARANG</th>
+                    <th rowspan="2">JUMLAH</th>
+                    <th rowspan="2">SATUAN</th>
+                    <th colspan="2">KUANTITAS</th>
+                    <th rowspan="2">FOTO</th>
+                </tr>
+                <tr>
+                    <th>BAIK</th>
+                    <th>RUSAK</th>
+                </tr>
+            </thead>
+            <tbody id="printBody"></tbody>
+        </table>
     </div>
 
     <!-- Modal Tambah Ruangan -->
@@ -469,7 +541,92 @@
             } catch (error) {}
         }
 
+        // ===== Helper & Lembar Cetak =====
+        function getDriveId(url) {
+            const m = (url || '').match(/[-\w]{25,}/);
+            return m ? m[0] : '';
+        }
+
+        // Urutan sumber gambar cadangan jika satu gagal dimuat
+        function driveImgSources(id) {
+            return [
+                `https://drive.google.com/thumbnail?id=${id}&sz=w300-h220`,
+                `https://lh3.googleusercontent.com/d/${id}=w300-h220`,
+                `https://drive.google.com/uc?export=view&id=${id}`
+            ];
+        }
+
+        // Muat semua foto cetak (dengan retry & sumber cadangan), baru cetak
+        async function printWithImages() {
+            const imgs = Array.from(document.querySelectorAll('#printBody img'));
+            if (imgs.length) {
+                showToast('Menyiapkan', 'Memuat foto untuk dicetak...', 'warning');
+                await Promise.all(imgs.map(loadPrintImage));
+            }
+            window.print();
+        }
+
+        function loadPrintImage(img) {
+            return new Promise(resolve => {
+                const id = img.dataset.fid;
+                if (!id) return resolve();
+                const sources = driveImgSources(id);
+                let attempt = 0;
+                const timer = setTimeout(resolve, 20000); // batas maksimal tunggu per foto
+                const done = () => { clearTimeout(timer); resolve(); };
+
+                const tryLoad = () => {
+                    const probe = new Image();
+                    probe.referrerPolicy = 'no-referrer';
+                    probe.onload = () => { img.src = probe.src; done(); };
+                    probe.onerror = () => {
+                        attempt++;
+                        if (attempt < sources.length * 2) setTimeout(tryLoad, 400);
+                        else done();
+                    };
+                    probe.src = sources[attempt % sources.length];
+                };
+                tryLoad();
+            });
+        }
+
+        function getDriveThumb(url, size = 'w300-h220') {
+            if (!url || url === '-' || !url.includes('http')) return '';
+            const m = url.match(/[-\w]{25,}/);
+            return m ? `https://drive.google.com/thumbnail?id=${m[0]}&sz=${size}` : url;
+        }
+
+        function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function renderPrintSheet(data) {
+            const select = document.getElementById('roomSelect');
+            document.getElementById('printRoom').textContent =
+                select.value ? 'Ruangan / Area: ' + select.value.replace(/_/g, ' ') : '';
+
+            const tbody = document.getElementById('printBody');
+            tbody.innerHTML = data.map((item, i) => {
+                const isBaik = item.kondisi === 'Baik';
+                const label = item.kondisi === 'Rusak Ringan' ? ' (R. Ringan)'
+                            : item.kondisi === 'Rusak Berat' ? ' (R. Berat)' : '';
+                const thumb = getDriveThumb(item.foto);
+                return `
+                <tr>
+                    <td class="c">${i + 1}</td>
+                    <td>${escHtml(item.nama)}</td>
+                    <td class="c">${escHtml(item.jumlah)}</td>
+                    <td class="c">${escHtml(item.satuan)}</td>
+                    <td class="c cek">${isBaik ? '&#10003;' : ''}</td>
+                    <td class="c cek">${!isBaik ? '&#10003;' + (label ? `<small>${label.trim()}</small>` : '') : ''}</td>
+                    <td class="c">${thumb ? `<img src="${thumb}" data-fid="${getDriveId(item.foto)}" data-try="0" alt="Foto" referrerpolicy="no-referrer" loading="eager" decoding="sync">` : ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
         function renderTable(data) {
+            renderPrintSheet(data);
+
             const tbody = document.getElementById('tableBody');
             const emptyState = document.getElementById('emptyState');
             const tableContainer = document.getElementById('tableContainer');
@@ -493,12 +650,7 @@
                 let photoHtml = '<span class="text-xs text-slate-400 italic">Kosong</span>';
                 if(item.foto && item.foto !== '-' && item.foto.includes('http')) {
                      // Ekstrak ID file dari URL Google Drive untuk membuat direct link gambar (thumbnail)
-                     let directImgUrl = item.foto;
-                     const idMatch = item.foto.match(/[-\w]{25,}/);
-                     if (idMatch && idMatch[0]) {
-                         // Menggunakan format API Thumbnail bawaan Drive yang lebih aman dari blokir
-                         directImgUrl = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w150-h150`;
-                     }
+                     const directImgUrl = getDriveThumb(item.foto, 'w150-h150');
                      
                      photoHtml = `
                      <a href="${item.foto}" target="_blank" class="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden block mx-auto relative group shadow-sm tooltip-trigger">
