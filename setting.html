@@ -543,16 +543,17 @@ async function prosesCetakDH(o, pakaiTTD, w) {
 
   const baris = rows.map((r, i) => {
     const fid = idDariLink(r[6] || '');
-    const src = (typeof r[7] === 'string' && r[7].indexOf('data:image/') === 0) ? r[7] : (fid ? `https://drive.google.com/thumbnail?id=${fid}&sz=w300` : '');
-    return `<tr><td class="c">${i + 1}</td><td class="b">${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td class="c p">${src ? `<img src="${esc(src)}">` : '-'}</td></tr>`;
+    const inline = (typeof r[7] === 'string' && r[7].indexOf('data:image/') === 0) ? r[7] : '';
+    const ttd = inline ? `<img src="${esc(inline)}">` : (fid ? `<img data-id="${esc(fid)}">` : '-'); // data-id: dimuat oleh skrip di jendela cetak
+    return `<tr><td class="c">${i + 1}</td><td class="b">${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td class="c p">${ttd}</td></tr>`;
   }).join('') || `<tr><td colspan="5" class="c">Belum ada yang mengisi daftar hadir.</td></tr>`;
 
   let pm = '';
   if (pakaiTTD) {
     const [y, m, d] = (a || nowIso()).slice(0, 10).split('-').map(Number);
     const t = String(o['LINK TTD'] || ''), id = idDariLink(t);
-    const img = id ? `https://drive.google.com/thumbnail?id=${id}&sz=w400` : (/^https:\/\//.test(t) ? t : '');
-    pm = `<div class="pm"><p>Bandung, ${d} ${BULAN[m - 1]} ${y}</p><p class="bd">${esc(String(o.JABATAN || '').toUpperCase())}</p><div class="ttd">${img ? `<img src="${esc(img)}">` : ''}</div><p class="bd u">${esc(o.NAMA_PIMPINAN || '')}</p><p>NIP. ${esc(o.NIP || '')}</p></div>`;
+    const tag = id ? `<img data-id="${esc(id)}" data-w="400">` : (/^https:\/\//.test(t) ? `<img src="${esc(t)}">` : '');
+    pm = `<div class="pm"><p>Bandung, ${d} ${BULAN[m - 1]} ${y}</p><p class="bd">${esc(String(o.JABATAN || '').toUpperCase())}</p><div class="ttd">${tag}</div><p class="bd u">${esc(o.NAMA_PIMPINAN || '')}</p><p>NIP. ${esc(o.NIP || '')}</p></div>`;
   }
 
   w.document.open();
@@ -580,7 +581,25 @@ table.h thead{display:table-header-group}table.h tr{break-inside:avoid;page-brea
 <tr><td>Tempat</td><td>:</td><td>${esc(o.TEMPAT || '-')}</td></tr></table>
 <table class="h"><thead><tr><th style="width:5%">No</th><th style="width:30%">${tp.cols[0]}</th><th style="width:25%">${tp.cols[1]}</th><th style="width:25%">${tp.cols[2]}</th><th style="width:15%">Tanda Tangan</th></tr></thead><tbody>${baris}</tbody></table>
 ${pm}
-<script>var d=0;function go(){if(d++)return;setTimeout(function(){window.focus();window.print()},300)}window.addEventListener('load',go);setTimeout(go,15000)<\/script>
+<script>
+(function(){
+var printed=0;
+function cetak(){if(printed++)return;setTimeout(function(){window.focus();window.print()},300)}
+function urls(id,w){return['https://drive.google.com/thumbnail?id='+id+'&sz=w'+w,'https://lh3.googleusercontent.com/d/'+id+'=w'+w,'https://drive.google.com/uc?export=view&id='+id]}
+function muat(im){return new Promise(function(done){
+  var id=im.getAttribute('data-id');
+  im.referrerPolicy='no-referrer';
+  if(!id){if(im.complete)return done();im.onload=im.onerror=function(){done()};return}
+  var u=urls(id,im.getAttribute('data-w')||300),k=0;
+  im.onload=function(){done()};
+  im.onerror=function(){k++;if(k<u.length)im.src=u[k];else{im.onerror=null;im.removeAttribute('src');im.style.display='none';done()}};
+  im.src=u[0];
+})}
+var imgs=[].slice.call(document.images).filter(function(i){return !i.closest('.kl')});
+Promise.all(imgs.map(muat)).then(cetak);
+setTimeout(cetak,20000);
+})();
+<\/script>
 </body></html>`);
   w.document.close();
 }
