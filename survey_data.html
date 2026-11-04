@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Survey Kepuasan - RSUD Bandung Kiwari</title>
+<link rel="icon" href="img/rsudbk.png">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+ :root{--c:#0f766e;--cl:#ccfbf1}
+ body{background:linear-gradient(180deg,var(--cl) 0,#f8fafc 280px) no-repeat #f8fafc;transition:background .3s}
+ .hdr{background:linear-gradient(120deg,var(--c),color-mix(in srgb,var(--c) 60%,#000))}
+ .tab{border:2px solid transparent;transition:.2s}
+ .tab.on{background:var(--c);color:#fff;box-shadow:0 6px 16px -6px var(--c)}
+ .tab:not(.on){background:#fff;color:#475569}.tab:not(.on):hover{border-color:var(--c)}
+ .card{background:#fff;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+ table{border-collapse:separate;border-spacing:0;width:100%}
+ th{position:sticky;top:0;background:var(--c);color:#fff;z-index:1;white-space:nowrap}
+ th,td{padding:9px 10px;font-size:13px;text-align:left;vertical-align:top;border-bottom:1px solid #eef2f7}
+ tbody tr:hover{background:var(--cl)}
+ .b{display:inline-block;text-align:center;white-space:nowrap;border-radius:8px;padding:1px 7px;font-weight:700}
+ .inp{border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#fff;font-size:14px;max-width:100%}
+ .inp:focus{outline:2px solid var(--c);border-color:transparent}
+ .pg{min-width:34px;height:34px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-size:13px}
+ .pg.on{background:var(--c);color:#fff;border-color:var(--c)}.pg:disabled{opacity:.4}
+ #ld{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff}
+ #ld.on{display:flex}
+ .ring{width:64px;height:64px;border-radius:50%;border:6px solid rgba(255,255,255,.3);border-top-color:#fff;animation:s .9s linear infinite}
+ .dots::after{content:'';animation:d 1.2s steps(4) infinite}@keyframes d{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+ .spin{animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+ @media(max-width:768px){
+  thead{display:none}tr{display:block;margin:10px;border:1px solid #e2e8f0;border-radius:14px;padding:6px;background:#fff}
+  td{display:flex;gap:10px;justify-content:space-between;border:0;padding:5px 8px;text-align:right}
+  td::before{content:attr(data-label);font-weight:600;color:var(--c);text-align:left;flex:0 0 38%}
+  td>*{min-width:0}
+ }
+</style>
+</head>
+<body class="text-slate-800">
+<div id="ld"><div class="ring" style="border-top-color:#fff"></div><div id="ldt" class="font-medium dots">Memuat data</div></div>
+<header class="hdr text-white">
+ <div class="max-w-[1800px] mx-auto px-4 py-4 flex items-center gap-3">
+  <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-12 sm:h-14 w-auto bg-white rounded-xl p-1" onerror="this.style.display='none'">
+  <div class="flex-1"><div class="text-lg sm:text-2xl font-bold leading-tight">Dashboard Survey Kepuasan</div>
+   <div class="text-xs sm:text-sm opacity-90">RSUD Bandung Kiwari</div></div>
+  <a href="survey_grafik.html" class="bg-white/20 hover:bg-white/30 rounded-xl px-3 py-2 text-sm">Grafik</a>
+  <button id="logout" class="bg-white/20 hover:bg-white/30 rounded-xl px-3 py-2 text-sm">Keluar</button>
+ </div>
+</header>
+
+<main class="max-w-[1800px] mx-auto p-3 sm:p-4 space-y-3">
+ <nav id="tabs" class="flex gap-2 overflow-x-auto pb-1"></nav>
+ <h2 id="ttl" class="font-bold text-lg sm:text-xl" style="color:var(--c)"></h2>
+
+ <section class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="stats"></section>
+
+ <section class="card p-3 sm:p-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2 items-end">
+   <label class="text-xs font-medium text-slate-500">Tahun<select id="year" class="inp w-full mt-1"></select></label>
+   <label class="text-xs font-medium text-slate-500">Bulan<select id="month" class="inp w-full mt-1"></select></label>
+   <label class="text-xs font-medium text-slate-500">Penilaian<select id="rate" class="inp w-full mt-1">
+     <option value="">Semua</option><option>Sangat Baik</option><option>Baik</option><option>Cukup</option><option>Kurang</option><option>Sangat Kurang</option></select></label>
+   <span id="filters" class="contents"></span>
+   <label class="text-xs font-medium text-slate-500 col-span-2 md:col-span-1">Cari<input id="q" class="inp w-full mt-1" placeholder="Kata kunci..."></label>
+   <div class="flex gap-2 col-span-2 md:col-span-1">
+    <button id="reload" title="Reload data dari spreadsheet" class="inp flex-1 flex items-center justify-center gap-1 hover:bg-slate-100">
+     <svg id="ric" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Reload</button>
+    <button id="add" class="flex-1 rounded-[10px] px-3 text-white font-medium" style="background:var(--c)">+ Tambah</button>
+   </div>
+  </div>
+ </section>
+
+ <section class="card overflow-hidden">
+  <div class="overflow-auto" style="max-height:70vh"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  <div class="p-3 flex flex-wrap items-center justify-between gap-2 border-t">
+   <div class="text-sm text-slate-500 flex items-center gap-2">Tampilkan
+    <select id="ps" class="inp !py-1"><option>10</option><option selected>25</option><option>50</option><option>100</option></select> per halaman</div>
+   <div id="pager" class="flex flex-wrap gap-1"></div>
+  </div>
+ </section>
+</main>
+
+<div id="gate" class="fixed inset-0 flex items-center justify-center p-4" style="z-index:200;background:linear-gradient(135deg,#0f766e,#134e4a);display:none">
+ <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+  <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-16 mx-auto mb-3" onerror="this.style.display='none'">
+  <div class="font-bold text-lg text-teal-800">Survey Kepuasan</div>
+  <div class="text-sm text-slate-500 mb-4">RSUD Bandung Kiwari &middot; Masukkan PIN untuk melanjutkan</div>
+  <input id="gpin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" class="w-full border rounded-xl p-3 text-center text-2xl tracking-[.4em] focus:outline-teal-700">
+  <div id="gerr" class="text-red-600 text-sm h-5 mt-2"></div>
+  <button id="gbtn" class="w-full mt-2 rounded-xl p-3 text-white font-medium bg-teal-700 hover:bg-teal-800">Masuk</button>
+ </div>
+</div>
+
+<div id="modal" class="hidden fixed inset-0 bg-black/50 items-center justify-center p-3 z-50">
+ <div class="bg-white rounded-2xl p-4 w-full max-w-2xl max-h-[92vh] overflow-auto">
+  <h2 id="mt" class="font-bold mb-3"></h2><div id="mf" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+  <div class="flex justify-end gap-2 mt-4"><button id="cx" class="inp">Batal</button><button id="sv" class="rounded-[10px] px-4 py-2 text-white" style="background:var(--c)">Simpan</button></div>
+ </div>
+</div>
+
+<script>
+// ====== tempel URL Web App Apps Script di sini ======
+const API = 'https://script.google.com/macros/s/AKfycbyyTj1c9pm2XeKFoa3x-MMUNsQLHva4Mt7q5cJCUGbrnjWQQntquId4EOIVjGv0o-di/exec';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Nilai Q berupa teks: Sangat Kurang=1, Kurang=2, Cukup=3, Baik=4, Sangat Baik=5
+const LABELS = ['Sangat Kurang','Kurang','Cukup','Baik','Sangat Baik'];
+const WARNA = ['#fecaca','#fed7aa','#fef08a','#d9f99d','#bbf7d0'];
+const num = v => { const i = LABELS.findIndex(l => l.toLowerCase() === String(v ?? '').trim().toLowerCase());
+  if (i >= 0) return i + 1; const n = Number(v); return n >= 1 && n <= 5 ? Math.round(n) : 0; };
+const badge = v => { const n = num(v);
+  return `<span class="b" style="background:${n?WARNA[n-1]:'#f1f5f9'}">${esc(v)}</span>`; };
+const qs = (p, n) => Array.from({length:n}, (_, i) => ({t: p+'Q'+(i+1), f: r => badge(r[p+'Q'+(i+1)])}));
+const two = (a, b) => r => `<b>${esc(r[a])}</b><br><span class="text-slate-500">${esc(r[b])}</span>`;
+const saran = {t:'Saran & Kritik', f: r => esc(r['Saran & Kritik'] ?? r['Saran']), w:'min-w-[220px]'};
+const periode = r => `${esc(r['Tanggal Mulai'])} s/d ${esc(r['Tanggal Selesai'])}`;
+const pdBase = [
+  {t:'Waktu', f: r => esc(r['Timestamp'])},
+  {t:'Institusi + Program Studi', f: two('Nama Institusi','Program Studi')},
+  {t:'State', f: r => esc(r['Stase'])},
+  {t:'Tanggal Mulai - Selesai', f: periode}];
+const pdFilters = [['Nama Institusi','Institusi'],['Program Studi','Program Studi'],['Stase','State']];
+const cat = {A:3,B:4,C:3,D:3,E:4};
+const resCols = Object.entries(cat).flatMap(([k,n]) => qs('Kat '+k+' - ', n).map(c => ({...c, t:'Kat '+k+' - Q'+c.t.slice(-1)})));
+
+const TYPES = {
+ ci: {file:'ci', short:'CI → Peserta Didik', color:['#0f766e','#ccfbf1'], re:/^Q\d$/, name:'Data Survey Kepuasan CI Terhadap Peserta Didik', filters:[],
+  cols:[{t:'Waktu & Periode', f:r=>`${esc(r['Timestamp'])}<br><span class="text-slate-500">Praktik: ${esc(r['Tanggal Praktik'])}</span>`},
+   {t:'Nama Institusi & Program Studi', f:two('Nama Institusi','Program Studi')},
+   {t:'Stase & Ruangan', f:two('Stase','Ruangan')}, ...qs('',5), saran]},
+ pasien: {file:'pasien', short:'Pasien', color:['#e11d48','#ffe4e6'], re:/^Q\d$/, name:'Data Survey Kepuasan Pasien Terhadap Peserta Didik', filters:[['Ruangan','Ruangan']],
+  cols:[{t:'Waktu', f:r=>esc(r['Timestamp'])},
+   {t:'Nama + Gender + Usia', f:r=>`<b>${esc(r['Nama'])}</b><br><span class="text-slate-500">${esc(r['Gender'])}, ${esc(r['Usia'])} th</span>`},
+   {t:'Ruangan', f:r=>esc(r['Ruangan'])}, ...qs('',5), saran]},
+ komkordik: {file:'pd', short:'Diklat / Komkordik', color:['#4f46e5','#e0e7ff'], re:/^Komkordik Q\d$/, name:'Data Survey Kepuasan Peserta Didik Terhadap Diklat / Komkordik', filters:pdFilters,
+  cols:[...pdBase, ...qs('Komkordik ',5), saran]},
+ ci2: {file:'pd', short:'CI / Pembimbing', color:['#d97706','#fef3c7'], re:/^CI Q\d$/, name:'Data Survey Kepuasan Peserta Didik Terhadap Para CI / Pembimbing', filters:pdFilters,
+  cols:[...pdBase, ...qs('CI ',5), saran]},
+ sarpras: {file:'pd', short:'Fasilitas / Sarpras', color:['#0284c7','#e0f2fe'], re:/^Sarpras Q\d$/, name:'Data Survey Kepuasan Peserta Didik Terhadap Fasilitas / Sarpras', filters:pdFilters,
+  cols:[...pdBase, ...qs('Sarpras ',5), saran]},
+ residen: {file:'residen', short:'Residen / PPDS-1', color:['#7c3aed','#ede9fe'], re:/^Kat [A-E] - Q\d$/, name:'Data Survey Kepuasan Residen / PPDS-1', filters:[['Prodi/Departemen','Prodi/Departemen']],
+  cols:[{t:'Waktu', f:r=>esc(r['Timestamp'])}, {t:'Nama + NIM/NPM', f:two('Nama','NIM/NPM')},
+   {t:'Prodi/Departemen + Semester/Tingkatan', f:two('Prodi/Departemen','Semester/Tingkatan')},
+   {t:'Tanggal Mulai - Selesai', f:periode}, ...resCols, saran]}
+};
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+let cur = 'ci', page = 1;
+let S = {headers:[], rows:[], filtered:[], editRow:null};
+const cfg = () => TYPES[cur];
+const pin = () => sessionStorage.getItem('pin') || '';
+const toObj = row => { const o = {_row: row._row}; S.headers.forEach((h,i) => o[h] = row.v[i]); return o; };
+const avg = r => { const v = S.headers.filter(h => cfg().re.test(h)).map(h => num(r[h])).filter(n => n > 0);
+  return v.length ? v.reduce((a,b) => a+b, 0) / v.length : null; };
+const label = a => a == null ? '' : LABELS[Math.min(5, Math.max(1, Math.round(a))) - 1];
+const rataCol = {t:'Rata-rata', f: r => { const a = avg(r); return a == null ? '-' : `<span class="b" style="background:${WARNA[Math.round(a)-1]}">${a.toFixed(1)}</span><br><span class="text-xs text-slate-500">${label(a)}</span>`; }};
+
+async function get(params) {
+  const r = await fetch(API + '?' + new URLSearchParams({...params, pin: pin()}));
+  const j = await r.json(); if (!j.ok) { if (j.error === 'PIN salah') { sessionStorage.removeItem('pin'); busy(false); showGate('PIN salah'); } throw new Error(j.error); } return j;
+}
+async function post(body) {
+  const r = await fetch(API, {method:'POST', body: JSON.stringify({...body, pin: pin()})});
+  const j = await r.json();
+  if (!j.ok) { if (j.error === 'PIN salah') { sessionStorage.removeItem('pin'); busy(false); showGate('PIN salah'); } throw new Error(j.error); }
+  return j;
+}
+const busy = (on, msg) => { $('ric').classList.toggle('spin', on); $('ld').classList.toggle('on', on);
+  if (on) $('ldt').textContent = msg || 'Memuat data'; };
+
+function theme() {
+  const [c, cl] = cfg().color;
+  document.documentElement.style.setProperty('--c', c);
+  document.documentElement.style.setProperty('--cl', cl);
+  $('ttl').textContent = cfg().name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.k === cur));
+}
+async function loadYears() {
+  theme(); busy(true, 'Memuat daftar tahun');
+  try {
+    const {sheets} = await get({action:'sheets', type: cfg().file});
+    $('year').innerHTML = sheets.map(y => `<option>${y}</option>`).join('');
+    await loadData();
+  } catch (e) { busy(false); toast('Error: ' + e.message); }
+}
+async function loadData() {
+  busy(true, 'Mengambil data dari spreadsheet');
+  try {
+    const j = await get({action:'list', type: cfg().file, year: $('year').value});
+    S.headers = j.headers; S.rows = j.rows.map(toObj).reverse(); // terbaru di atas
+    $('rate').value = ''; $('q').value = ''; $('month').value = '';
+    buildFilters(); page = 1; render();
+  } catch (e) { toast('Error: ' + e.message); S.rows = []; render(); }
+  busy(false);
+}
+const toast = m => { $('tbody').innerHTML = `<tr><td colspan="30" class="text-center p-6 text-red-600">${esc(m)}</td></tr>`; };
+
+function buildFilters() {
+  $('filters').innerHTML = cfg().filters.map(([k, label], i) =>
+    `<label class="text-xs font-medium text-slate-500">${label}<select data-i="${i}" class="fsel inp w-full mt-1"></select></label>`).join('');
+  document.querySelectorAll('.fsel').forEach(s => s.onchange = () => { fillFilters(+s.dataset.i + 1); fillMonth(); page = 1; render(); });
+  fillFilters(0); fillMonth();
+}
+// filter bertahap: opsi hanya dari data yang cocok dengan filter sebelumnya
+function fillFilters(from) {
+  const f = cfg().filters, sels = [...document.querySelectorAll('.fsel')];
+  for (let i = from; i < f.length; i++) {
+    let rows = S.rows;
+    for (let j = 0; j < i; j++) if (sels[j].value) rows = rows.filter(r => r[f[j][0]] === sels[j].value);
+    const opts = [...new Set(rows.map(r => r[f[i][0]]).filter(Boolean))].sort();
+    sels[i].innerHTML = `<option value="">Semua ${f[i][1]}</option>` + opts.map(o => `<option>${esc(o)}</option>`).join('');
+  }
+}
+
+// opsi bulan dibaca dari data Timestamp yang ada (sesuai tahun & filter bertahap)
+function fillMonth() {
+  const f = cfg().filters, sels = [...document.querySelectorAll('.fsel')], old = $('month').value;
+  const rows = S.rows.filter(r => f.every((x, i) => !sels[i].value || r[x[0]] === sels[i].value));
+  const ms = [...new Set(rows.map(r => String(r['Timestamp']).slice(5, 7)).filter(m => /^(0[1-9]|1[0-2])$/.test(m)))].sort();
+  $('month').innerHTML = '<option value="">Semua Bulan</option>' + ms.map(m => `<option value="${m}">${BULAN[+m-1]}</option>`).join('');
+  $('month').value = ms.includes(old) ? old : '';
+}
+
+function render() {
+  const c = cfg(), f = c.filters, sels = [...document.querySelectorAll('.fsel')];
+  const kw = $('q').value.toLowerCase(), mo = $('month').value, rt = $('rate').value;
+  S.filtered = S.rows.filter(r => f.every((x, i) => !sels[i].value || r[x[0]] === sels[i].value)
+    && (!mo || String(r['Timestamp']).slice(5, 7) === mo)
+    && (!rt || label(avg(r)) === rt)
+    && (!kw || S.headers.some(h => String(r[h] ?? '').toLowerCase().includes(kw))));
+  const ps = +$('ps').value, pages = Math.max(1, Math.ceil(S.filtered.length / ps));
+  page = Math.min(page, pages);
+  const start = (page - 1) * ps, view = S.filtered.slice(start, start + ps);
+  const cols = [...c.cols.slice(0, -1), rataCol, c.cols.at(-1)];
+
+  $('thead').innerHTML = '<tr><th>No</th>' + cols.map(x => `<th>${esc(x.t)}</th>`).join('') + '<th>Aksi</th></tr>';
+  $('tbody').innerHTML = view.length ? view.map((r, i) =>
+    `<tr><td data-label="No">${start+i+1}</td>` + cols.map(x => `<td data-label="${esc(x.t)}" class="${x.w||''}">${x.f(r)}</td>`).join('') +
+    `<td data-label="Aksi" class="whitespace-nowrap"><button class="text-blue-600 font-medium" onclick="openForm(${r._row})">Edit</button> · <button class="text-red-600 font-medium" onclick="del(${r._row})">Hapus</button></td></tr>`).join('')
+    : `<tr><td colspan="${cols.length+2}" class="text-center p-8 text-slate-500">Tidak ada data</td></tr>`;
+
+  const avgs = S.filtered.map(avg).filter(a => a != null), mean = avgs.length ? (avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2) : '-';
+  const stat = (t, v, s) => `<div class="card p-3 sm:p-4"><div class="text-xs text-slate-500">${t}</div><div class="text-2xl sm:text-3xl font-bold" style="color:var(--c)">${v}</div><div class="text-xs text-slate-400">${s}</div></div>`;
+  $('stats').innerHTML = stat('Total Survei', S.rows.length, 'tahun ' + ($('year').value||'-'))
+    + stat('Sesuai Filter', S.filtered.length, 'dari ' + S.rows.length + ' survei')
+    + stat('Ditampilkan', view.length ? `${start+1}–${start+view.length}` : 0, 'halaman ' + page + ' / ' + pages)
+    + stat('Rata-rata Nilai', mean, avgs.length ? label(+mean) : '');
+
+  // pagination
+  const btn = (p, t, dis, on) => `<button class="pg ${on?'on':''}" ${dis?'disabled':''} onclick="go(${p})">${t}</button>`;
+  let h = btn(page-1, '‹', page===1);
+  const nums = [...new Set([1, page-1, page, page+1, pages])].filter(n => n>=1 && n<=pages).sort((a,b)=>a-b);
+  nums.forEach((n, i) => { if (i && n - nums[i-1] > 1) h += '<span class="px-1 self-center">…</span>'; h += btn(n, n, false, n===page); });
+  $('pager').innerHTML = h + btn(page+1, '›', page===pages);
+}
+const go = p => { page = p; render(); $('tbody').parentElement.scrollTop = 0; };
+
+function openForm(row) {
+  S.editRow = row;
+  const r = row ? S.rows.find(x => x._row === row) : {};
+  $('mt').textContent = row ? 'Edit Data (baris ' + row + ')' : 'Tambah Data';
+  $('mf').innerHTML = S.headers.map(h => {
+    const long = /saran|kritik|alamat|link|drive/i.test(h), v = esc(r[h] ?? '');
+    return `<label class="text-xs ${long?'sm:col-span-2':''}">${esc(h)}${long
+      ? `<textarea data-h="${esc(h)}" class="inp w-full mt-1" rows="2">${v}</textarea>`
+      : `<input data-h="${esc(h)}" value="${v}" class="inp w-full mt-1">`}</label>`; }).join('');
+  $('modal').classList.replace('hidden', 'flex');
+}
+$('cx').onclick = () => $('modal').classList.replace('flex', 'hidden');
+$('sv').onclick = async () => {
+  const data = {}; document.querySelectorAll('#mf [data-h]').forEach(e => data[e.dataset.h] = e.value);
+  $('sv').disabled = true; busy(true, 'Menyimpan data');
+  try {
+    await post({action: S.editRow ? 'update' : 'create', type: cfg().file, year: $('year').value, row: S.editRow, data});
+    $('cx').click(); await loadData();
+  } catch (e) { busy(false); alert('Gagal: ' + e.message); }
+  $('sv').disabled = false;
+};
+async function del(row) {
+  if (!confirm('Hapus data baris ' + row + '? Tindakan ini tidak bisa dibatalkan.')) return;
+  busy(true, 'Menghapus data');
+  try { await post({action:'delete', type: cfg().file, year: $('year').value, row}); await loadData(); }
+  catch (e) { busy(false); alert('Gagal: ' + e.message); }
+}
+
+$('tabs').innerHTML = Object.entries(TYPES).map(([k, v], i) =>
+  `<button class="tab whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium" data-k="${k}" style="--c:${v.color[0]}">${i+1}. ${v.short}</button>`).join('');
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { cur = t.dataset.k; loadYears(); });
+$('year').onchange = loadData;
+$('reload').onclick = loadData;
+$('add').onclick = () => openForm(null);
+$('q').oninput = () => { page = 1; render(); };
+['month','rate','ps'].forEach(id => $(id).onchange = () => { page = 1; render(); });
+const START = () => loadYears();
+// ===== Gerbang PIN (PIN diperiksa di server / Code.gs) =====
+const showGate = m => { $('gerr').textContent = m || ''; $('gate').style.display = 'flex'; $('gpin').value = ''; $('gpin').focus(); };
+$('gbtn').onclick = () => { const v = $('gpin').value.trim(); if (!v) return;
+  sessionStorage.setItem('pin', v); $('gate').style.display = 'none'; START(); };
+$('gpin').onkeydown = e => { if (e.key === 'Enter') $('gbtn').click(); };
+$('logout').onclick = () => { sessionStorage.removeItem('pin'); location.reload(); };
+if (sessionStorage.getItem('pin')) START(); else showGate();
+</script>
+</body>
+</html>

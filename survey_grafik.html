@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grafik Survey Kepuasan - RSUD Bandung Kiwari</title>
+<link rel="icon" href="img/rsudbk.png">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+ :root{--c:#0f766e;--cl:#ccfbf1}
+ body{background:linear-gradient(180deg,var(--cl) 0,#f8fafc 280px) no-repeat #f8fafc}
+ .hdr{background:linear-gradient(120deg,var(--c),color-mix(in srgb,var(--c) 60%,#000))}
+ .tab{border:2px solid transparent;transition:.2s}
+ .tab.on{background:var(--c);color:#fff;box-shadow:0 6px 16px -6px var(--c)}
+ .tab:not(.on){background:#fff;color:#475569}.tab:not(.on):hover{border-color:var(--c)}
+ .card{background:#fff;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+ .inp{border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#fff;font-size:14px;max-width:100%}
+ .inp:focus{outline:2px solid var(--c);border-color:transparent}
+ .seg button{padding:8px 14px;font-size:14px;border:1px solid #cbd5e1;background:#fff}
+ .seg button:first-child{border-radius:10px 0 0 10px}.seg button:last-child{border-radius:0 10px 10px 0;border-left:0}
+ .seg button.on{background:var(--c);color:#fff;border-color:var(--c)}
+ .dl{font-size:12px;color:var(--c);border:1px solid var(--c);border-radius:8px;padding:2px 8px}
+ #ld{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff}
+ #ld.on{display:flex}
+ .ring{width:64px;height:64px;border-radius:50%;border:6px solid rgba(255,255,255,.3);border-top-color:#fff;animation:s .9s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+ .dots::after{content:'';animation:d 1.2s steps(4) infinite}@keyframes d{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+ .ch{position:relative;height:320px}
+ @media print{header,nav,#flt,.dl,#ld{display:none!important}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body class="text-slate-800">
+<div id="ld"><div class="ring"></div><div id="ldt" class="font-medium dots">Memuat data</div></div>
+<header class="hdr text-white">
+ <div class="max-w-[1800px] mx-auto px-4 py-4 flex items-center gap-3">
+  <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-12 sm:h-14 w-auto bg-white rounded-xl p-1" onerror="this.style.display='none'">
+  <div class="flex-1"><div class="text-lg sm:text-2xl font-bold leading-tight">Grafik Survey Kepuasan</div>
+   <div class="text-xs sm:text-sm opacity-90">RSUD Bandung Kiwari</div></div>
+  <a href="survey_data.html" class="bg-white/20 hover:bg-white/30 rounded-xl px-3 py-2 text-sm">Tabel Data</a>
+  <button id="logout" class="bg-white/20 hover:bg-white/30 rounded-xl px-3 py-2 text-sm">Keluar</button>
+ </div>
+</header>
+
+<div id="gate" class="fixed inset-0 flex items-center justify-center p-4" style="z-index:200;background:linear-gradient(135deg,#0f766e,#134e4a);display:none">
+ <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+  <img src="img/rsudbk.png" alt="Logo RSUD BK" class="h-16 mx-auto mb-3" onerror="this.style.display='none'">
+  <div class="font-bold text-lg text-teal-800">Survey Kepuasan</div>
+  <div class="text-sm text-slate-500 mb-4">RSUD Bandung Kiwari &middot; Masukkan PIN untuk melanjutkan</div>
+  <input id="gpin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" class="w-full border rounded-xl p-3 text-center text-2xl tracking-[.4em] focus:outline-teal-700">
+  <div id="gerr" class="text-red-600 text-sm h-5 mt-2"></div>
+  <button id="gbtn" class="w-full mt-2 rounded-xl p-3 text-white font-medium bg-teal-700 hover:bg-teal-800">Masuk</button>
+ </div>
+</div>
+
+<main class="max-w-[1800px] mx-auto p-3 sm:p-4 space-y-3">
+ <nav id="tabs" class="flex gap-2 overflow-x-auto pb-1"></nav>
+ <h2 id="ttl" class="font-bold text-lg sm:text-xl" style="color:var(--c)"></h2>
+
+ <section id="flt" class="card p-3 sm:p-4 grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
+  <label class="text-xs font-medium text-slate-500">Tahun<select id="year" class="inp w-full mt-1"></select></label>
+  <label class="text-xs font-medium text-slate-500"><span id="glabel">Kelompok</span><select id="grp" class="inp w-full mt-1"></select></label>
+  <div class="text-xs font-medium text-slate-500">Periode<div class="seg flex mt-1"><button data-m="month" class="on flex-1">Per Bulan</button><button data-m="sem" class="flex-1">Per Semester</button></div></div>
+  <button id="reload" class="inp hover:bg-slate-100">⟳ Reload</button>
+  <button onclick="print()" class="inp hover:bg-slate-100">🖨 Cetak</button>
+ </section>
+
+ <section id="kpi" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
+
+ <section class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+  <div class="card p-3 sm:p-4"><div class="flex justify-between mb-2"><b id="t1">Tren</b><button class="dl" data-c="trend">PNG</button></div><div class="ch"><canvas id="trend"></canvas></div></div>
+  <div class="card p-3 sm:p-4"><div class="flex justify-between mb-2"><b>Distribusi Jawaban (%)</b><button class="dl" data-c="dist">PNG</button></div><div class="ch"><canvas id="dist"></canvas></div></div>
+  <div class="card p-3 sm:p-4"><div class="flex justify-between mb-2"><b>Rata-rata per Pertanyaan</b><button class="dl" data-c="perq">PNG</button></div><div class="ch" id="perqbox"><canvas id="perq"></canvas></div></div>
+  <div id="gcard" class="card p-3 sm:p-4" style="display:none"><div class="flex justify-between mb-2"><b>Komposisi Gender Pasien</b><button class="dl" data-c="gender">PNG</button></div><div class="ch"><canvas id="gender"></canvas></div></div>
+  <div class="card p-3 sm:p-4"><div class="flex justify-between mb-2"><b id="t4">Perbandingan Kelompok</b><button class="dl" data-c="group">PNG</button></div><div class="ch" id="groupbox"><canvas id="group"></canvas></div></div>
+ </section>
+ <p class="text-xs text-slate-500">Skala nilai: Sangat Kurang = 1, Kurang = 2, Cukup = 3, Baik = 4, Sangat Baik = 5. Indeks kepuasan = persentase jawaban Baik + Sangat Baik. Bulan & semester (kalender: Sem 1 Jan–Jun, Sem 2 Jul–Des) dihitung dari kolom Timestamp.</p>
+</main>
+
+<script>
+// ====== tempel URL Web App Apps Script yang sama dengan index.html ======
+const API = 'https://script.google.com/macros/s/AKfycbyyTj1c9pm2XeKFoa3x-MMUNsQLHva4Mt7q5cJCUGbrnjWQQntquId4EOIVjGv0o-di/exec';
+
+const $ = id => document.getElementById(id);
+const LABELS = ['Sangat Kurang','Kurang','Cukup','Baik','Sangat Baik'];
+const WARNA = ['#ef4444','#fb923c','#facc15','#a3e635','#22c55e'];
+const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+// Arti tiap pertanyaan per survey (urut Q1..Q5). Residen: isi nanti, mis. residen:{'Kat A - Q1':'...'}
+const QTEXT = {
+ ci:{'Q1':'Frekuensi Bimbingan','Q2':'Partisipasi Monev','Q3':'Transfer Knowledge','Q4':'Kecakapan Peserta Didik','Q5':'Tridarma Institusi Pendidikan'},
+ pasien:{'Q1':'Keramahan','Q2':'Etika','Q3':'Respon','Q4':'Keterampilan','Q5':'Manfaat'},
+ komkordik:{'Komkordik Q1':'Pelayanan','Komkordik Q2':'Partisipasi','Komkordik Q3':'Komunikasi','Komkordik Q4':'Kerja Sama','Komkordik Q5':'Kemudahan'},
+ ci2:{'CI Q1':'Ketersediaan Waktu','CI Q2':'Keramahan dan Kedisiplinan','CI Q3':'Keragaman Tindakan','CI Q4':'Dukungan','CI Q5':'Komunikasi'},
+ sarpras:{'Sarpras Q1':'Ketersediaan Fasilitas','Sarpras Q2':'Biaya Fasilitas','Sarpras Q3':'Loker, Toilet, Mushola','Sarpras Q4':'Kemudahan Sistem Peminjaman','Sarpras Q5':'Kemudahan Sistem Biodata'},
+ residen:{}
+};
+const qname = h => { const t = (QTEXT[cur] || {})[h]; return t ? `${h.match(/Q\d$/)[0]} – ${t}` : h; };
+const TYPES = {
+ ci:{file:'ci', short:'CI → Peserta Didik', color:'#0f766e', light:'#ccfbf1', re:/^Q\d$/, grp:'Ruangan', name:'Kepuasan CI Terhadap Peserta Didik'},
+ pasien:{file:'pasien', short:'Pasien', color:'#e11d48', light:'#ffe4e6', re:/^Q\d$/, grp:'Ruangan', name:'Kepuasan Pasien Terhadap Peserta Didik'},
+ komkordik:{file:'pd', short:'Diklat / Komkordik', color:'#4f46e5', light:'#e0e7ff', re:/^Komkordik Q\d$/, grp:'Nama Institusi', name:'Kepuasan Peserta Didik Terhadap Diklat / Komkordik'},
+ ci2:{file:'pd', short:'CI / Pembimbing', color:'#d97706', light:'#fef3c7', re:/^CI Q\d$/, grp:'Nama Institusi', name:'Kepuasan Peserta Didik Terhadap Para CI / Pembimbing'},
+ sarpras:{file:'pd', short:'Fasilitas / Sarpras', color:'#0284c7', light:'#e0f2fe', re:/^Sarpras Q\d$/, grp:'Nama Institusi', name:'Kepuasan Peserta Didik Terhadap Fasilitas / Sarpras'},
+ residen:{file:'residen', short:'Residen / PPDS-1', color:'#7c3aed', light:'#ede9fe', re:/^Kat [A-E] - Q\d$/, grp:'Prodi/Departemen', name:'Kepuasan Residen / PPDS-1'}
+};
+let cur = 'ci', mode = 'month', cache = {}, D = {headers:[], rows:[]}, charts = {};
+
+const num = v => { const i = LABELS.findIndex(l => l.toLowerCase() === String(v ?? '').trim().toLowerCase());
+  if (i >= 0) return i + 1; const n = Number(v); return n >= 1 && n <= 5 ? Math.round(n) : 0; };
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const busy = (on, m) => { $('ld').classList.toggle('on', on); if (on) $('ldt').textContent = m || 'Memuat data'; };
+async function get(p) { const r = await fetch(API + '?' + new URLSearchParams({...p, pin: sessionStorage.getItem('pin') || ''})); const j = await r.json(); if (!j.ok) { if (j.error === 'PIN salah') { sessionStorage.removeItem('pin'); busy(false); showGate('PIN salah'); } throw new Error(j.error); } return j; }
+
+// ambil semua sheet tahun dari file (di-cache; 3 survey Peserta Didik berbagi file yang sama)
+async function loadFile(file, force) {
+  if (!force && cache[file]) return cache[file];
+  const {sheets} = await get({action:'sheets', type:file});
+  const parts = await Promise.all(sheets.map(y => get({action:'list', type:file, year:y})));
+  const rows = [], headers = parts[0] ? parts[0].headers : [];
+  parts.forEach(j => j.rows.forEach(r => { const o = {}; j.headers.forEach((h, i) => o[h] = r.v[i]); rows.push(o); }));
+  return cache[file] = {headers, rows};
+}
+
+async function load(force) {
+  const c = TYPES[cur];
+  document.documentElement.style.setProperty('--c', c.color);
+  document.documentElement.style.setProperty('--cl', c.light);
+  $('ttl').textContent = 'Survey ' + c.name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.k === cur));
+  busy(true, 'Mengambil data dari spreadsheet');
+  try {
+    const f = await loadFile(c.file, force);
+    const qh = f.headers.filter(h => c.re.test(h));
+    D.headers = qh;
+    D.rows = f.rows.map(r => { const ts = String(r['Timestamp'] ?? '');
+      const q = qh.map(h => num(r[h]));
+      return {y: ts.slice(0, 4), m: ts.slice(5, 7), gen: String(r['Gender'] ?? '').trim() || 'Tidak diisi', g: r[c.grp] || '(kosong)', q, a: mean(q.filter(n => n > 0))}; })
+      .filter(r => /^\d{4}$/.test(r.y) && /^(0[1-9]|1[0-2])$/.test(r.m) && r.a != null);
+    const ys = [...new Set(D.rows.map(r => r.y))].sort().reverse();
+    $('year').innerHTML = '<option value="">Semua Tahun</option>' + ys.map(y => `<option>${y}</option>`).join('');
+    if (ys[0]) $('year').value = ys[0];
+    $('glabel').textContent = c.grp;
+    $('grp').innerHTML = '<option value="">Semua</option>' + [...new Set(D.rows.map(r => r.g))].sort().map(g => `<option>${g.replace(/</g,'&lt;')}</option>`).join('');
+    draw();
+  } catch (e) { alert('Gagal memuat: ' + e.message); }
+  busy(false);
+}
+
+const period = r => mode === 'month' ? `${r.y}-${r.m}` : `${r.y}-S${+r.m <= 6 ? 1 : 2}`;
+const plabel = k => mode === 'month' ? `${BLN[+k.slice(5) - 1]} ${k.slice(0, 4)}` : `Sem ${k.slice(-1)} ${k.slice(0, 4)}`;
+const pct = (n, d) => d ? Math.round(n / d * 1000) / 10 : 0;
+
+// menampilkan angka jumlah responden di atas tiap bar (dataset indeks 1 pada grafik tren)
+const barLabels = {id:'barLabels', afterDatasetsDraw(ch) {
+  const ctx = ch.ctx, m = ch.getDatasetMeta(1);
+  ctx.save(); ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#334155'; ctx.textAlign = 'center';
+  m.data.forEach((b, i) => ctx.fillText(ch.data.datasets[1].data[i], b.x, b.y - 4));
+  ctx.restore(); }};
+// gradasi warna berdasarkan nilai 1–5: merah → oranye → kuning → hijau muda → hijau
+const scoreColor = v => {
+  if (!(v >= 1)) return '#cbd5e1';
+  const x = Math.min(5, v) - 1, i = Math.min(3, Math.floor(x)), t = x - i;
+  const h = c => [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16));
+  const a = h(WARNA[i]), b = h(WARNA[i + 1]);
+  return `rgb(${a.map((n, k) => Math.round(n + (b[k] - n) * t)).join(',')})`;
+};
+function mk(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), {...cfg, options: {responsive:true, maintainAspectRatio:false, ...cfg.options}});
+}
+
+function draw() {
+  const c = TYPES[cur], y = $('year').value, g = $('grp').value;
+  // semester selalu lintas tahun bila "Semua Tahun"; filter tahun berlaku untuk semua grafik
+  const rows = D.rows.filter(r => (!y || r.y === y) && (!g || r.g === g));
+  const keys = [...new Set(rows.map(period))].sort();
+  const by = k => rows.filter(r => period(r) === k);
+  const avgOf = rs => mean(rs.map(r => r.a));
+  const good = rs => { let n = 0, t = 0; rs.forEach(r => r.q.forEach(v => { if (v > 0) { t++; if (v >= 4) n++; } })); return pct(n, t); };
+
+  // KPI
+  const all = avgOf(rows), last = keys.length ? avgOf(by(keys.at(-1))) : null, prev = keys.length > 1 ? avgOf(by(keys.at(-2))) : null;
+  const d = last != null && prev != null ? last - prev : null;
+  const kp = (t, v, s) => `<div class="card p-3 sm:p-4"><div class="text-xs text-slate-500">${t}</div><div class="text-2xl sm:text-3xl font-bold" style="color:var(--c)">${v}</div><div class="text-xs text-slate-400">${s}</div></div>`;
+  $('kpi').innerHTML = kp('Jumlah Responden', rows.length, y ? 'tahun ' + y : 'semua tahun')
+    + kp('Rata-rata Nilai', all == null ? '-' : all.toFixed(2), all == null ? '' : LABELS[Math.round(all) - 1])
+    + kp('Indeks Kepuasan', rows.length ? good(rows) + '%' : '-', 'jawaban Baik + Sangat Baik')
+    + kp('Perubahan', d == null ? '-' : (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(2), keys.length > 1 ? `${plabel(keys.at(-1))} vs ${plabel(keys.at(-2))}` : 'butuh ≥ 2 periode');
+
+  const labels = keys.map(plabel), col = c.color;
+  $('t1').textContent = mode === 'month' ? 'Tren Per Bulan' : 'Perbandingan Per Semester';
+
+  mk('trend', {data:{labels, datasets:[
+    {type:'line', label:'Rata-rata nilai', data:keys.map(k => +avgOf(by(k)).toFixed(2)), borderColor:col, backgroundColor:col, tension:.3, yAxisID:'y', pointRadius:4},
+    {type:'bar', label:'Jumlah responden', data:keys.map(k => by(k).length), backgroundColor:col + '55', yAxisID:'y1'}]}, plugins:[barLabels],
+    options:{scales:{y:{min:1, max:5, title:{display:true, text:'Nilai (1–5)'}}, y1:{position:'right', beginAtZero:true, grace:'15%', grid:{drawOnChartArea:false}, title:{display:true, text:'Responden'}, ticks:{precision:0}}}}});
+
+  const cnt = rs => { const a = [0,0,0,0,0]; rs.forEach(r => r.q.forEach(v => { if (v > 0) a[v - 1]++; })); return a; };
+  const dist = keys.map(k => { const a = cnt(by(k)), t = a.reduce((x, z) => x + z, 0); return a.map(n => pct(n, t)); });
+  mk('dist', {type:'bar', data:{labels, datasets:LABELS.map((l, i) => ({label:l, data:dist.map(a => a[i]), backgroundColor:WARNA[i]}))},
+    options:{scales:{x:{stacked:true}, y:{stacked:true, max:100, ticks:{callback:v => v + '%'}}}, plugins:{tooltip:{callbacks:{label:t => `${t.dataset.label}: ${t.parsed.y}%`}}}}});
+
+  const hbar = (id, lab, vals, boxId) => {
+    $(boxId).style.height = Math.max(320, lab.length * 28 + 60) + 'px';
+    mk(id, {type:'bar', data:{labels:lab, datasets:[{label:'Rata-rata', data:vals, backgroundColor:vals.map(scoreColor)}]},
+      options:{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{min:1, max:5}}}});
+  };
+  hbar('perq', D.headers.map(qname), D.headers.map((h, i) => { const v = rows.map(r => r.q[i]).filter(n => n > 0); return v.length ? +mean(v).toFixed(2) : 0; }), 'perqbox');
+
+  // pie gender: hanya survei Pasien (mengikuti filter tahun & ruangan)
+  $('gcard').style.display = cur === 'pasien' ? '' : 'none';
+  if (cur === 'pasien') {
+    const gc = {}; rows.forEach(r => gc[r.gen] = (gc[r.gen] || 0) + 1);
+    const gk = Object.keys(gc), gt = rows.length;
+    const gcol = k => /^l/i.test(k) ? '#3b82f6' : /^p/i.test(k) ? '#ec4899' : '#94a3b8';
+    mk('gender', {type:'pie', data:{labels:gk.map(k => `${k}: ${gc[k]} (${pct(gc[k], gt)}%)`), datasets:[{data:gk.map(k => gc[k]), backgroundColor:gk.map(gcol)}]},
+      options:{plugins:{legend:{position:'bottom'}}}});
+  } else if (charts.gender) { charts.gender.destroy(); delete charts.gender; }
+
+  // perbandingan kelompok (abaikan filter kelompok agar tetap bisa dibandingkan)
+  const base = D.rows.filter(r => !y || r.y === y), gs = [...new Set(base.map(r => r.g))];
+  const gd = gs.map(k => { const rs = base.filter(r => r.g === k); return {k:`${k} (${rs.length})`, v:+avgOf(rs).toFixed(2)}; }).sort((a, b) => b.v - a.v);
+  $('t4').textContent = 'Perbandingan per ' + c.grp;
+  hbar('group', gd.map(x => x.k), gd.map(x => x.v), 'groupbox');
+}
+
+$('tabs').innerHTML = Object.entries(TYPES).map(([k, v], i) =>
+  `<button class="tab whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium" data-k="${k}" style="--c:${v.color}">${i + 1}. ${v.short}</button>`).join('');
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { cur = t.dataset.k; $('grp').value = ''; load(false); });
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  mode = b.dataset.m; document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+['year', 'grp'].forEach(id => $(id).onchange = draw);
+$('reload').onclick = () => load(true);
+document.querySelectorAll('.dl').forEach(b => b.onclick = () => {
+  const a = document.createElement('a'); a.href = charts[b.dataset.c].toBase64Image(); a.download = `grafik-${cur}-${b.dataset.c}.png`; a.click(); });
+const START = () => load(false);
+// ===== Gerbang PIN (PIN diperiksa di server / Code.gs) =====
+const showGate = m => { $('gerr').textContent = m || ''; $('gate').style.display = 'flex'; $('gpin').value = ''; $('gpin').focus(); };
+$('gbtn').onclick = () => { const v = $('gpin').value.trim(); if (!v) return;
+  sessionStorage.setItem('pin', v); $('gate').style.display = 'none'; START(); };
+$('gpin').onkeydown = e => { if (e.key === 'Enter') $('gbtn').click(); };
+$('logout').onclick = () => { sessionStorage.removeItem('pin'); location.reload(); };
+if (sessionStorage.getItem('pin')) START(); else showGate();
+</script>
+</body>
+</html>
