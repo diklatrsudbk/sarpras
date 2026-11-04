@@ -37,11 +37,50 @@
             -webkit-tap-highlight-color:transparent;
         }
 
+        /* Top Actions / Admin Buttons */
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px 0;
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: #fff;
+            color: var(--brand);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 30px;
+            border: 1px solid var(--line);
+            box-shadow: 0 4px 12px rgba(15,23,42,.03);
+            transition: all .2s ease;
+        }
+
+        .btn-action:hover, .btn-action:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15,23,42,.06);
+            border-color: var(--brand);
+            color: var(--brand-dark);
+            outline: none;
+        }
+        
+        .btn-action:active {
+            transform: scale(0.96);
+        }
+
         /* Hero */
         .hero{
             max-width:820px;
             margin:0 auto;
-            padding:clamp(20px,5vh,56px) 20px clamp(14px,3vh,32px);
+            padding:clamp(10px,4vh,40px) 20px clamp(14px,3vh,32px);
             text-align:center;
         }
 
@@ -170,7 +209,17 @@
 
         /* HP: satu kolom ringkas, teks lengkap tetap tampil */
         @media (max-width:600px){
-            .hero{padding:14px 16px 10px}
+            .top-actions {
+                justify-content: center; /* Menengah di HP agar rapi */
+                padding: 12px 16px 0;
+            }
+
+            .btn-action {
+                font-size: 12px;
+                padding: 6px 14px;
+            }
+
+            .hero{padding:10px 16px 10px}
             .hero-logo{width:52px;margin-bottom:8px}
             .hero h1{font-size:18px}
             .hero h2{font-size:13px;margin-bottom:8px}
@@ -199,6 +248,10 @@
 
         /* HP landscape: 2x2, teks tetap lengkap */
         @media (orientation:landscape) and (max-height:520px){
+            .top-actions {
+                padding: 8px 18px 0;
+            }
+
             .hero{
                 display:grid;
                 grid-template-columns:auto 1fr;
@@ -240,6 +293,16 @@
     </style>
 </head>
 <body>
+
+    <!-- Tombol Admin / Top Actions -->
+    <div class="top-actions">
+        <a href="survey_data.html" target="_blank" rel="noopener" class="btn-action">
+            <i class="fa-solid fa-database"></i> Data
+        </a>
+        <a href="survey_grafik.html" target="_blank" rel="noopener" class="btn-action">
+            <i class="fa-solid fa-chart-pie"></i> Grafik
+        </a>
+    </div>
 
     <section class="hero">
         <img src="img/rsudbk.png" alt="Logo RSUDBK" class="hero-logo">
