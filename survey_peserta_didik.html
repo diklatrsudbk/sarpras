@@ -377,49 +377,46 @@
         const tglMulai = document.getElementById('tanggalMulai');
         const tglSelesai = document.getElementById('tanggalSelesai');
 
+        // (Opsional UX) Nonaktifkan tanggal selesai sebelum tanggal mulai diisi
+        tglSelesai.disabled = true;
+
         tglMulai.addEventListener('change', function() {
             if (this.value) {
+                tglSelesai.disabled = false; // Aktifkan input
+                
                 // Set Minimal Selesai = Mulai + 7 Hari
                 let startDate = new Date(this.value);
                 startDate.setDate(startDate.getDate() + 7);
-                tglSelesai.min = startDate.toISOString().split("T")[0];
                 
-                // Pastikan nilai max dihilangkan agar bisa lebih dari seminggu
+                tglSelesai.min = startDate.toISOString().split("T")[0];
                 tglSelesai.max = "";
                 
-                // Jika user sudah isi tgl selesai tapi kurang dari batas minimal, reset valuenya
-                if(tglSelesai.value) {
-                    let endDate = new Date(tglSelesai.value);
-                    let start = new Date(this.value);
-                    let diffTime = endDate - start;
-                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    if(diffDays < 7) {
-                        tglSelesai.value = '';
-                        // Beri animasi error sedikit
-                        tglSelesai.classList.add('ring-2', 'ring-red-500');
-                        setTimeout(() => tglSelesai.classList.remove('ring-2', 'ring-red-500'), 1000);
-                    }
-                }
+                // Cek ulang validitas jika tanggal mulai diubah
+                validateEndDate();
+            } else {
+                tglSelesai.disabled = true;
+                tglSelesai.value = '';
             }
         });
         
-        // Mencegah pengetikan manual kurang dari batas (fallback)
-        tglSelesai.addEventListener('change', function() {
-            if(tglMulai.value && this.value) {
-                let endDate = new Date(this.value);
+        // Gunakan event 'input' agar di-cek saat mengetik TANPA menghapus isi ketikan
+        tglSelesai.addEventListener('input', validateEndDate);
+
+        function validateEndDate() {
+            if(tglMulai.value && tglSelesai.value) {
+                let endDate = new Date(tglSelesai.value);
                 let start = new Date(tglMulai.value);
                 let diffTime = endDate - start;
                 let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // Gunakan setCustomValidity, ini akan terhubung otomatis dengan checkValidity() di fungsi goToStep()
                 if(diffDays < 7) {
-                    this.value = '';
-                    alert("Peringatan: Periode praktik minimal 7 hari dari tanggal mulai.");
+                    tglSelesai.setCustomValidity("Periode praktik minimal 7 hari dari tanggal mulai.");
+                } else {
+                    tglSelesai.setCustomValidity(""); // Valid, hapus error
                 }
-            } else if (!tglMulai.value) {
-                this.value = '';
-                tglMulai.focus();
             }
-        });
+        }
 
         // --- 2. DATA & RENDER PERTANYAAN ELEGANT ---
         const questionsKomkordik = [
