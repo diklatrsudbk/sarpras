@@ -227,10 +227,10 @@
                 </div>
             </div>
 
-            <!-- STEP 3: Evaluasi CI -->
+            <!-- STEP 3: Evaluasi Preceptor -->
             <div id="step-3" class="step-inactive p-6 md:p-10">
                 <div class="mb-8 border-b border-slate-200 dark:border-slate-700 pb-4">
-                    <h2 class="text-xl md:text-2xl font-bold text-primary mb-2">Evaluasi Pembimbing / CI Ruangan</h2>
+                    <h2 class="text-xl md:text-2xl font-bold text-primary mb-2">Evaluasi Preceptor Ruangan</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Bagaimana kualitas bimbingan klinis yang Anda dapatkan? (<span class="font-bold text-red-500">wajib diisi</span>)</p>
                 </div>
 
@@ -427,11 +427,11 @@
             "Kemudahan dalam pelayanan Administrasi dan Koordinasi dalam proses pendidikan sejak perencanaan hingga penarikan kembali peserta didik."
         ];
         const questionsCI = [
-            "Ketersediaan waktu perseptor/CI  untuk melakukan pembimbingan praktik dan pembelajaran",
-            "Keramahan dan kedisiplinan perseptor/CI terhadap proses pembelajaran bagi peserta didik",
+            "Ketersediaan waktu perseptor  untuk melakukan pembimbingan praktik dan pembelajaran",
+            "Keramahan dan kedisiplinan perseptor terhadap proses pembelajaran bagi peserta didik",
             "Keragaman tindakan/kelolaan pasien yang diberikan perseptor untuk peningkatan kompetensi peserta didik",
             "Apakah perseptor menciptakan atmosfer belajar yang aman dan bebas dari intimidasi atau perundungan (bullying) dan memberi dukungan moral ketika anda menghadapi kesulitan ?",
-            "Komunikasi dan profesinalisme Perseptor/CI sebagai role model selama pembelajaran"
+            "Komunikasi dan profesinalisme Perseptor sebagai role model selama pembelajaran"
         ];
         const questionsSarpras = [
             "Pemenuhan sarana prasarana dan ketersediaan alat kesehatan dari Rumah Sakit apakah sudah memadai bagi para peserta didik?",
@@ -441,7 +441,7 @@
             "Kemudahan mengakses sistem pendataan Peserta Didik untuk pembuatan ID Card dan kemudahan absensi digital dari ID Card?"
         ];
 
-        const scaleOptions = ["Sangat Kurang", "Kurang", "Cukup", "Baik", "Sangat Baik"];
+        const scaleOptions = ["Tidak Puas", "Kurang Puas", "Cukup Puas", "Puas", "Sangat Puas"];
 
         function renderQuestions(containerId, questions, prefix) {
             const container = document.getElementById(containerId);
@@ -595,7 +595,7 @@
         const dataObj = Object.fromEntries(formData.entries());
 
         // MENGIRIM TANGGAL SEBAGAI 2 KOLOM TERPISAH (Sesuai dengan update GS)
-        // Diperbaiki dengan pengecekan DOM untuk mencegah error
+        // DiperPuasi dengan pengecekan DOM untuk mencegah error
         const elTglMulai = document.getElementById('tanggalMulai');
         const elTglSelesai = document.getElementById('tanggalSelesai');
         
