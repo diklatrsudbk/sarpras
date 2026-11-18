@@ -391,7 +391,7 @@
           <!-- Pertanyaan 5 -->
           <div class="space-y-4 pt-6">
             <h4 class="text-sm font-semibold text-slate-800 leading-relaxed">
-              5. Dengan adanya Peserta Didik yang melakukan praktik klinis di RSUD Bandung Kiwari apakah cukup membantu anda? <span class="text-red-500">*</span>
+              5. Dengan adanya Peserta Didik yang melakukan praktik klinis di RSUD Bandung Kiwari apakah Cukup Puas membantu anda? <span class="text-red-500">*</span>
             </h4>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <template x-for="opt in options">
@@ -680,11 +680,11 @@
 
         // Options for the Likert scale questions
         options: [
-          { val: 'sk', label: 'Sangat Kurang', emoji: '😞' },
-          { val: 'k', label: 'Kurang', emoji: '🙁' },
-          { val: 'c', label: 'Cukup', emoji: '😐' },
-          { val: 'b', label: 'Baik', emoji: '🙂' },
-          { val: 'sb', label: 'Sangat Baik', emoji: '😀' }
+          { val: 'sk', label: 'Tidak Puas', emoji: '😞' },
+          { val: 'k', label: 'Kurang Puas', emoji: '🙁' },
+          { val: 'c', label: 'Cukup Puas', emoji: '😐' },
+          { val: 'b', label: 'Puas', emoji: '🙂' },
+          { val: 'sb', label: 'Sangat Puas', emoji: '😀' }
         ],
 
         // Show Custom Toast Alert
@@ -790,7 +790,7 @@
           }
         },
 
-        // 2. LOGIKA PENGIRIMAN DIPERBAIKI (TIDAK ADA LAGI "FAKE SUCCESS")
+        // 2. LOGIKA PENGIRIMAN DIPERPuasI (TIDAK ADA LAGI "FAKE SUCCESS")
         async submitForm() {
           this.showValidationError = false;
 
